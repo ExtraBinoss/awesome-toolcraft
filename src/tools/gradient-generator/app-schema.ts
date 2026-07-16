@@ -85,5 +85,5 @@ export const appSchema = defineToolcraft({
   },
   persistence: { storage: "localStorage", key: "toolcraft:gradient-generator:state:v2", version: 2, include: ["values", "canvas", "panels"] },
   settingsTransfer: { enabled: true, appId: "gradient-generator", fileName: "gradient-generator-settings" },
-  toolbar: { history: true, radar: true, theme: true, zoom: true },
+  toolbar: { back: { href: "/", label: "Back to tools" }, history: true, radar: true, theme: true, zoom: true },
 });

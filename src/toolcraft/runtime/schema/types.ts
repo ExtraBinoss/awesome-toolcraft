@@ -171,6 +171,7 @@ export type ToolcraftCanvasSchema = {
 };
 
 export type ToolcraftToolbarSchema = {
+  back?: false | { href: string; label?: string };
   history?: boolean;
   radar?: boolean;
   theme?: boolean;

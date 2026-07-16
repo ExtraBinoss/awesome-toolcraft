@@ -160,6 +160,7 @@ export function resolveToolcraftToolbar({
   toolbar: ToolcraftAppSchema["toolbar"];
 }): Required<ToolcraftToolbarSchema> {
   return {
+    back: toolbar?.back ?? false,
     history: toolbar?.history ?? canvasEnabled,
     radar: toolbar?.radar ?? canvasEnabled,
     theme: toolbar?.theme ?? true,

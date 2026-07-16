@@ -79,7 +79,7 @@ export function createToolcraftAssemblyContract({
   const components: ToolcraftAssemblyComponentId[] = [];
   const capabilities: ToolcraftAssemblyCapability[] = [];
   const commands: ToolcraftAssemblyCommand[] = [];
-  const toolbarEnabled = toolbar.history || toolbar.radar || toolbar.theme || toolbar.zoom;
+  const toolbarEnabled = Boolean(toolbar.back || toolbar.history || toolbar.radar || toolbar.theme || toolbar.zoom);
   const canvasEditableSize = canvas.sizing.mode === "editable-output";
 
   if (canvas.enabled) {

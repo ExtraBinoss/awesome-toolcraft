@@ -30,6 +30,7 @@ function hasVisibleRuntimePanel({
     panels.controls ||
       panels.layers ||
       panels.timeline ||
+      toolbar.back ||
       toolbar.history ||
       toolbar.radar ||
       toolbar.theme ||

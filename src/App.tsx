@@ -7,6 +7,11 @@ const GradientGeneratorPage = lazy(() =>
     default: module.GradientGeneratorPage,
   })),
 );
+const AuroraGeneratorPage = lazy(() =>
+  import("./tools/aurora-generator/AuroraGeneratorPage").then((module) => ({
+    default: module.AuroraGeneratorPage,
+  })),
+);
 
 export function App() {
   const path = window.location.pathname.replace(/\/+$/, "") || "/";
@@ -15,6 +20,13 @@ export function App() {
     return (
       <Suspense fallback={<div className="route-loading">Loading Gradient Generator…</div>}>
         <GradientGeneratorPage />
+      </Suspense>
+    );
+  }
+  if (path === "/tools/aurora-generator") {
+    return (
+      <Suspense fallback={<div className="route-loading">Loading Aurora Generator…</div>}>
+        <AuroraGeneratorPage />
       </Suspense>
     );
   }

@@ -18,6 +18,14 @@ export const tools: ToolEntry[] = [
     href: "/tools/gradient-generator",
   },
   {
+    slug: "aurora-generator",
+    name: "Aurora Generator",
+    category: "Design",
+    status: "Available",
+    image: "/images/aurora-generator.webp",
+    href: "/tools/aurora-generator",
+  },
+  {
     slug: "awesome-toolcraft2",
     name: "Awesome Toolcraft",
     category: "Creative",

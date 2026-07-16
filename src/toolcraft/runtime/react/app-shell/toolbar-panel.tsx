@@ -9,7 +9,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/toolcraft/ui";
-import { Moon, Redo2, Sun, Undo2, ZoomIn, ZoomOut } from "lucide-react";
+import { ArrowLeft, Moon, Redo2, Sun, Undo2, ZoomIn, ZoomOut } from "lucide-react";
 
 import type { ToolcraftPanelState } from "../../state/types";
 import { PanelContainer } from "../panel-host/panel-host";
@@ -106,6 +106,7 @@ export function ToolbarPanel({
   const nextTheme = resolvedTheme === "dark" ? "light" : "dark";
   const canUndo = state.history.undo.length > 0;
   const canRedo = state.history.redo.length > 0;
+  const back = state.schema.toolbar.back;
   const historyEnabled = state.schema.toolbar.history;
   const radarEnabled = state.schema.toolbar.radar;
   const themeEnabled = state.schema.toolbar.theme;
@@ -120,6 +121,17 @@ export function ToolbarPanel({
       data-toolcraft-inspect-toolbar="true"
       data-panel-id="toolbar"
     >
+      {back ? (
+        <>
+          <ToolbarIconButton
+            label={back.label ?? "Back to tools"}
+            onClick={() => window.location.assign(back.href)}
+          >
+            <ArrowLeft />
+          </ToolbarIconButton>
+          <ToolbarDivider />
+        </>
+      ) : null}
       {historyEnabled ? (
         <>
           <ToolbarIconButton
