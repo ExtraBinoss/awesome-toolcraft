@@ -1,0 +1,33 @@
+.output {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  isolation: isolate;
+}
+
+.field {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.grain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  mix-blend-mode: soft-light;
+  background-image:
+    repeating-radial-gradient(circle at 17% 23%, #fff 0 0.45px, transparent 0.8px 2.8px),
+    repeating-radial-gradient(circle at 81% 67%, #000 0 0.45px, transparent 0.8px 3.1px);
+}
+
+.vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 42%, #050509 100%);
+  mix-blend-mode: multiply;
+}

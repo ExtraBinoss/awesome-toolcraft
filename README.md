@@ -23,4 +23,8 @@ npm install
 npm run dev
 ```
 
+Run installation and dependency commands from Windows PowerShell. One Vite app
+serves the Hub at `/` and every tool through an internal route such as
+`/tools/gradient-generator`.
+
 Run each Toolcraft application's commands from its own directory under `tools/`.

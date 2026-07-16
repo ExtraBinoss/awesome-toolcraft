@@ -10,11 +10,19 @@ export type ToolEntry = {
 // Add future tools here. Images must use AVIF or WebP.
 export const tools: ToolEntry[] = [
   {
+    slug: "gradient-generator",
+    name: "Gradient Generator",
+    category: "Design",
+    status: "Available",
+    image: "/images/gradient-generator.webp",
+    href: "/tools/gradient-generator",
+  },
+  {
     slug: "awesome-toolcraft2",
     name: "Awesome Toolcraft",
     category: "Creative",
     status: "Available",
     image: "/images/awesome-toolcraft2.webp",
-    href: "/tools/awesome-toolcraft2/",
+    href: "/tools/awesome-toolcraft2",
   },
 ];
