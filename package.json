@@ -1,0 +1,22 @@
+{
+  "name": "toolcraft-hub",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tools/awesome-toolcraft2/node_modules/.bin/vite",
+    "build": "tools/awesome-toolcraft2/node_modules/.bin/tsc --noEmit && tools/awesome-toolcraft2/node_modules/.bin/vite build",
+    "preview": "tools/awesome-toolcraft2/node_modules/.bin/vite preview"
+  },
+  "dependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.0"
+  }
+}

@@ -1,0 +1,56 @@
+# Dependencies (hub and every Toolcraft app)
+node_modules/
+**/node_modules/
+
+# Build output and caches
+dist/
+**/dist/
+dist-ssr/
+**/dist-ssr/
+.vite/
+**/.vite/
+.turbo/
+**/.turbo/
+.output/
+**/.output/
+.next/
+**/.next/
+*.tsbuildinfo
+
+# Test and browser output
+coverage/
+**/coverage/
+test-results/
+**/test-results/
+playwright-report/
+**/playwright-report/
+
+# Local environment and Toolcraft runtime state
+.env
+.env.*
+**/.env
+**/.env.*
+!.env.example
+!**/.env.example
+.toolcraft/
+**/.toolcraft/
+
+# Logs
+logs/
+**/logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+
+# Operating system and editor files
+.DS_Store
+**/.DS_Store
+Thumbs.db
+**/Thumbs.db
+.idea/
+**/.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+node_modules
