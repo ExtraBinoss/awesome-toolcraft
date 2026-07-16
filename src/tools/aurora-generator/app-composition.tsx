@@ -18,9 +18,13 @@ export const appComposition: ToolcraftAppComposition = {
     if (action.value === "aurora.randomize") {
       dispatch({ type: "controls.setValue", target: "aurora.seed", value: 1 + Math.floor(Math.random()*100), label: "Randomize seed" });
       dispatch({ type: "controls.setValue", target: "aurora.turbulence", value: 30 + Math.floor(Math.random()*66), label: "Randomize turbulence" });
+      dispatch({ type: "controls.setValue", target: "aurora.organic", value: 42 + Math.floor(Math.random()*59), label: "Randomize organic flow" });
+      dispatch({ type: "controls.setValue", target: "aurora.complexity", value: 15 + Math.floor(Math.random()*71), label: "Randomize complexity" });
       dispatch({ type: "controls.setValue", target: "aurora.scale", value: 25 + Math.floor(Math.random()*61), label: "Randomize scale" });
       dispatch({ type: "controls.setValue", target: "aurora.width", value: 25 + Math.floor(Math.random()*56), label: "Randomize width" });
       dispatch({ type: "controls.setValue", target: "aurora.depth", value: 35 + Math.floor(Math.random()*66), label: "Randomize depth" });
+      dispatch({ type: "controls.setValue", target: "aurora.softness", value: 55 + Math.floor(Math.random()*46), label: "Randomize softness" });
+      dispatch({ type: "controls.setValue", target: "aurora.negativeSpace", value: 38 + Math.floor(Math.random()*58), label: "Randomize negative space" });
     }
     if (action.value === "aurora.randomizeColors") {
       const current = state.values["aurora.palette"] as { stops?: Array<Record<string, unknown>> } | undefined;

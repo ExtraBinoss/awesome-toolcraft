@@ -18,10 +18,14 @@ export const appSchema = defineToolcraft({
     { title: "Light Flow", controls: {
       ribbons: { type: "slider", target: "aurora.ribbons", label: "Ribbons", defaultValue: 5, min: 2, max: 8, step: 1, variant: "discrete", sliderValueKind: "discrete", ...responsive("Ribbon count changes the layered light structure.") },
       turbulence: { type: "slider", target: "aurora.turbulence", label: "Turbulence", defaultValue: 52, min: 0, max: 100, step: 1, unit: "%", sliderValueKind: "continuous", ...responsive("Turbulence bends the wave paths.") },
+      organic: { type: "slider", target: "aurora.organic", label: "Organic flow", defaultValue: 68, min: 0, max: 100, step: 1, unit: "%", sliderValueKind: "continuous", ...responsive("Organic flow warps ribbons through a second coherent noise field.") },
+      complexity: { type: "slider", target: "aurora.complexity", label: "Complexity", defaultValue: 38, min: 0, max: 100, step: 1, unit: "%", sliderValueKind: "continuous", ...responsive("Complexity adds smaller natural folds to the broad waves.") },
       flowScale: { type: "slider", target: "aurora.scale", label: "Flow scale", defaultValue: 48, min: 10, max: 100, step: 1, unit: "%", sliderValueKind: "continuous", ...responsive("Flow scale changes the size of the waves.") },
       width: { type: "slider", target: "aurora.width", label: "Ribbon width", defaultValue: 42, min: 8, max: 100, step: 1, unit: "%", sliderValueKind: "continuous", ...responsive("Width controls the light body around each path.") },
+      softness: { type: "slider", target: "aurora.softness", label: "Softness", defaultValue: 76, min: 0, max: 100, step: 1, unit: "%", sliderValueKind: "continuous", ...responsive("Softness feathers the body and halo without introducing hard bands.") },
       depth: { type: "slider", target: "aurora.depth", label: "Depth", defaultValue: 64, min: 0, max: 100, step: 1, unit: "%", sliderValueKind: "continuous", ...responsive("Depth separates foreground and background ribbons.") },
       glow: { type: "slider", target: "aurora.glow", label: "Glow", defaultValue: 78, min: 0, max: 100, step: 1, unit: "%", sliderValueKind: "continuous", ...responsive("Glow controls the atmospheric halo.") },
+      negativeSpace: { type: "slider", target: "aurora.negativeSpace", label: "Negative space", defaultValue: 58, min: 0, max: 100, step: 1, unit: "%", sliderValueKind: "continuous", ...responsive("Negative space deepens the black gaps between light ribbons.") },
     } },
     { title: "Motion", controls: {
       animate: { type: "switch", target: "motion.animate", label: "Animate", defaultValue: true, ...responsive("Animation moves the procedural noise field.") },

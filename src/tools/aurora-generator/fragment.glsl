@@ -2,8 +2,8 @@
 
 precision highp float;
 uniform vec2 resolution;
-uniform float time, seed, turbulence, flowScale, ribbonWidth, depth, glow, exposure, saturation, grain;
-uniform int ribbonCount, stopCount, includeBackground;
+uniform float time, seed, turbulence, organic, complexity, flowScale, ribbonWidth, softness, depth, glow, negativeSpace, exposure, saturation, grain, paletteAngle;
+uniform int ribbonCount, stopCount, includeBackground, paletteMode;
 uniform vec4 stops[8];
 uniform vec3 backgroundColor;
 out vec4 outColor;
@@ -35,19 +35,29 @@ void main(){
   vec3 light=vec3(0);float alpha=0.0;float scale=mix(.65,2.4,flowScale);
   for(int i=0;i<8;i++){
     if(i>=ribbonCount)break;float fi=float(i),layer=fi/max(1.0,float(ribbonCount-1));
-    float z=seed*.09+fi*7.31;float n=cnoise(vec3(p.x*scale+fi*1.7,time*.12+z,p.x*.18+z));
-    float fine=cnoise(vec3(p.x*scale*2.1-fi,time*.19+z+9.0,z))*.22*turbulence;
+    float z=seed*.09+fi*7.31;
+    float warpA=cnoise(vec3(p*scale*.72+vec2(fi,time*.09),z));
+    float warpB=cnoise(vec3(p*scale*.91+vec2(8.3,-3.7)+warpA*organic,time*.08+z));
+    float n=cnoise(vec3(p.x*scale+fi*1.7+warpB*organic,time*.12+z,p.x*.18+z));
+    float fine=cnoise(vec3(p.x*scale*2.1-fi+warpA,time*.19+z+9.0,z))*.22*turbulence*complexity;
     float center=mix(-.48,.48,layer)+sin(p.x*(1.05+layer*.65)+time*.16+fi)*.10;
     center+=(n*.32+fine)*turbulence;
     float distanceToWave=abs(p.y-center);
     float body=exp(-distanceToWave*distanceToWave/mix(.003,.055,ribbonWidth));
-    float halo=exp(-distanceToWave*mix(4.0,1.25,glow));
+    body=pow(body,mix(1.65,.48,softness));
+    float halo=exp(-distanceToWave*mix(5.2,.85,glow*softness));
     float perspective=mix(.42,1.18,pow(layer,mix(1.8,.55,depth)));
-    vec3 color=palette(fract(layer*.78+uv.x*.16+n*.08));
+    float colorT=layer;
+    if(paletteMode==1)colorT=abs(layer-.5)*2.0;
+    else if(paletteMode==2)colorT=fract(layer+uv.x+paletteAngle);
+    else if(paletteMode==3)colorT=max(abs(layer-.5)*2.0,abs(uv.x-.5)*2.0);
+    colorT=clamp(colorT+n*.055+paletteAngle*.12,0.0,1.0);
+    vec3 color=palette(colorT);
     light+=color*(body*1.35+halo*glow*.42)*perspective;
     alpha=max(alpha,body+halo*glow*.32);
   }
-  float lum=dot(light,vec3(.2126,.7152,.0722));light=mix(vec3(lum),light,saturation)*exposure;
+  float blackCut=mix(0.0,.48,negativeSpace);alpha=smoothstep(blackCut,blackCut+mix(.32,.08,softness),alpha);
+  light*=alpha;float lum=dot(light,vec3(.2126,.7152,.0722));light=mix(vec3(lum),light,saturation)*exposure;
   light+=vec3((hash(floor(gl_FragCoord.xy))-0.5)*grain*.07);
   alpha=clamp(alpha,0.0,1.0);if(includeBackground==1){light=mix(backgroundColor,light,alpha);alpha=1.0;}
   outColor=vec4(clamp(light,0.0,1.0),alpha);
