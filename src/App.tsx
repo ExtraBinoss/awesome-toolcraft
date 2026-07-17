@@ -12,6 +12,11 @@ const AuroraGeneratorPage = lazy(() =>
     default: module.AuroraGeneratorPage,
   })),
 );
+const SvgPatternGeneratorPage = lazy(() =>
+  import("./tools/svg-pattern-generator/SvgPatternGeneratorPage").then((module) => ({
+    default: module.SvgPatternGeneratorPage,
+  })),
+);
 
 export function App() {
   const path = window.location.pathname.replace(/\/+$/, "") || "/";
@@ -27,6 +32,13 @@ export function App() {
     return (
       <Suspense fallback={<div className="route-loading">Loading Aurora Generator…</div>}>
         <AuroraGeneratorPage />
+      </Suspense>
+    );
+  }
+  if (path === "/tools/svg-pattern-generator") {
+    return (
+      <Suspense fallback={<div className="route-loading">Loading Pattern Generator…</div>}>
+        <SvgPatternGeneratorPage />
       </Suspense>
     );
   }

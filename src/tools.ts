@@ -10,6 +10,14 @@ export type ToolEntry = {
 // Add future tools here. Images must use AVIF or WebP.
 export const tools: ToolEntry[] = [
   {
+    slug: "svg-pattern-generator",
+    name: "SVG Pattern Generator",
+    category: "Design",
+    status: "Available",
+    image: "/images/svg-pattern-generator.webp",
+    href: "/tools/svg-pattern-generator",
+  },
+  {
     slug: "gradient-generator",
     name: "Gradient Generator",
     category: "Design",

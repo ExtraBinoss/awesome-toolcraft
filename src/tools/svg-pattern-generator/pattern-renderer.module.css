@@ -1,0 +1,4 @@
+.output { position: absolute; inset: 0; overflow: hidden; background-position: center; image-rendering: auto; }
+.output::after { content: "SEAMLESS SVG · LIVE PREVIEW"; position: absolute; left: 20px; top: 20px; padding: 8px 10px; color: rgb(255 255 255 / 72%); border: 1px solid rgb(255 255 255 / 16%); border-radius: 6px; background: rgb(12 12 12 / 68%); backdrop-filter: blur(8px); font: 600 10px/1 ui-monospace, monospace; letter-spacing: .1em; }
+.tile { position: absolute; right: 24px; bottom: 24px; border: 1px dashed rgb(255 255 255 / 62%); box-shadow: 0 0 0 9999px rgb(0 0 0 / 4%); pointer-events: none; }
+.tile span { position: absolute; right: -1px; top: -23px; padding: 4px 6px; color: #ddd; background: rgb(15 15 15 / 86%); font: 500 9px/1 ui-monospace, monospace; white-space: nowrap; }
