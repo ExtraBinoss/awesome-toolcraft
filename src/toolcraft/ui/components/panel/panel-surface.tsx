@@ -32,6 +32,10 @@ export const PanelSurface = React.forwardRef<
 export const PanelContentSurface = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement> & {
+    contentRenderer?: (
+      children: React.ReactNode,
+      viewportElement: HTMLDivElement | null,
+    ) => React.ReactNode;
     scrollFadeMode?: "always" | "overflow";
     stickyFooterActive?: boolean;
     stickyFooterProgress?: number | null;
@@ -41,6 +45,7 @@ export const PanelContentSurface = React.forwardRef<
   {
     children,
     className,
+    contentRenderer,
     scrollFadeMode = "always",
     stickyFooter,
     stickyFooterActive = false,
@@ -70,6 +75,9 @@ export const PanelContentSurface = React.forwardRef<
     [ref],
   );
   const hasStickyFooter = React.Children.count(stickyFooter) > 0;
+  const renderedChildren = contentRenderer
+    ? contentRenderer(children, viewportElement)
+    : children;
 
   React.useLayoutEffect(() => {
     if (scrollFadeMode !== "overflow") {
@@ -120,7 +128,7 @@ export const PanelContentSurface = React.forwardRef<
         )}
         ref={attachViewport}
       >
-        {children}
+        {renderedChildren}
       </div>
     );
 
@@ -152,7 +160,7 @@ export const PanelContentSurface = React.forwardRef<
       visibilityMode="terminal"
       viewportRef={attachViewport}
     >
-      {children}
+      {renderedChildren}
     </ScrollFade>
   );
 

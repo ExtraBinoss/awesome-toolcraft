@@ -11,6 +11,10 @@ import { PanelSection } from "./panel-section";
 export type PanelProps = {
   children: React.ReactNode;
   className?: string;
+  contentRenderer?: (
+    children: React.ReactNode,
+    viewportElement: HTMLDivElement | null,
+  ) => React.ReactNode;
   collapsed?: boolean;
   contentTransitionSuppressionKey?: unknown;
   defaultCollapsed?: boolean;
@@ -25,6 +29,7 @@ export function Panel({
   children,
   className,
   collapsed,
+  contentRenderer,
   contentTransitionSuppressionKey,
   defaultCollapsed = false,
   onCollapsedChange,
@@ -76,6 +81,7 @@ export function Panel({
             suppressContentTransitions ? "true" : undefined
           }
           data-slot="toolcraft-panel-content"
+          contentRenderer={contentRenderer}
           stickyFooter={
             stickyFooterChildren.length > 0 ? stickyFooterChildren : undefined
           }

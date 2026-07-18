@@ -6,6 +6,7 @@ import type {
   ToolcraftAssetLibraryItem,
   ToolcraftAssetLibrarySource,
 } from "../../schema/types";
+import { useAssetLibraryVirtualGrid } from "./use-asset-library-virtual-grid";
 
 export type ToolcraftAssetLibraryProps = {
   accept?: string;
@@ -33,8 +34,7 @@ export function AssetLibrary({
   uploadPreview,
   value,
 }: ToolcraftAssetLibraryProps): React.JSX.Element {
-  const images = items.filter((item) => item.kind === "image");
-  const videos = items.filter((item) => item.kind === "video");
+  const { bottomSpacerHeight, rowRef, topSpacerHeight, viewportRef, visibleRows } = useAssetLibraryVirtualGrid(items);
 
   const renderItem = (item: ToolcraftAssetLibraryItem) => {
     const selected = sourceMatches(value, item);
@@ -48,17 +48,19 @@ export function AssetLibrary({
         aria-label={item.alt ?? item.value}
         className={className}
         key={item.value}
-        onClick={() =>
+        onClick={(event) => {
+          event.stopPropagation();
           onValueChange({
             assetId: item.value,
             kind: "library",
             mediaType: item.kind,
-          })
-        }
+          });
+        }}
+        onPointerDown={(event) => event.stopPropagation()}
         type="button"
       >
         {item.kind === "image" ? (
-          <img alt={item.alt ?? ""} className="h-full w-full object-cover" src={item.src} />
+          <img alt={item.alt ?? ""} className="h-full w-full object-cover" loading="lazy" src={item.src} />
         ) : (
           <video
             className="h-full w-full object-cover"
@@ -66,6 +68,7 @@ export function AssetLibrary({
             muted
             playsInline
             poster={item.poster}
+            preload="metadata"
             src={item.src}
           />
         )}
@@ -85,12 +88,13 @@ export function AssetLibrary({
         <div className="grid grid-cols-3 gap-1.5">
           <button
             className={`rounded-md border px-2 py-1.5 text-xs ${value.kind === "webcam" ? "border-[color:var(--link)] bg-[color:color-mix(in_oklab,var(--link)_12%,transparent)]" : "border-[color:color-mix(in_oklab,var(--border)_18%,transparent)]"}`}
-            onClick={() => onValueChange({ kind: "webcam" })}
+            onClick={(event) => { event.stopPropagation(); onValueChange({ kind: "webcam" }); }}
+            onPointerDown={(event) => event.stopPropagation()}
             type="button"
           >
             Webcam
           </button>
-          <label className="cursor-pointer rounded-md border border-[color:color-mix(in_oklab,var(--border)_18%,transparent)] px-2 py-1.5 text-center text-xs hover:border-[color:var(--border)]">
+          <label className="cursor-pointer rounded-md border border-[color:color-mix(in_oklab,var(--border)_18%,transparent)] px-2 py-1.5 text-center text-xs hover:border-[color:var(--border)]" onPointerDown={(event) => event.stopPropagation()}>
             Image
             <input
               accept="image/*"
@@ -103,7 +107,7 @@ export function AssetLibrary({
               type="file"
             />
           </label>
-          <label className="cursor-pointer rounded-md border border-[color:color-mix(in_oklab,var(--border)_18%,transparent)] px-2 py-1.5 text-center text-xs hover:border-[color:var(--border)]">
+          <label className="cursor-pointer rounded-md border border-[color:color-mix(in_oklab,var(--border)_18%,transparent)] px-2 py-1.5 text-center text-xs hover:border-[color:var(--border)]" onPointerDown={(event) => event.stopPropagation()}>
             Video
             <input
               accept="video/*"
@@ -117,23 +121,32 @@ export function AssetLibrary({
             />
           </label>
         </div>
-        <FileDrop
-          accept={accept}
-          assetKind="file"
-          onClear={onClearUpload}
-          onFileSelect={onUpload}
-          preview={uploadPreview}
-        />
+        <div onPointerDown={(event) => event.stopPropagation()}>
+          <FileDrop
+            accept={accept}
+            assetKind="file"
+            onClear={onClearUpload}
+            onFileSelect={onUpload}
+            preview={uploadPreview}
+          />
+        </div>
       </div>
       <div className="border-t border-[color:color-mix(in_oklab,var(--border)_12%,transparent)] pt-3">
         <div className="mb-2 text-[11px] font-medium uppercase tracking-[0.12em] text-[color:var(--muted-foreground)]">
           Library
         </div>
-        {images.length > 0 ? (
-          <div className="grid grid-cols-3 gap-1.5">{images.map(renderItem)}</div>
-        ) : null}
-        {videos.length > 0 ? (
-          <div className="mt-2 grid grid-cols-3 gap-1.5">{videos.map(renderItem)}</div>
+        {items.length > 0 ? (
+          <div className="max-h-60 overflow-y-auto overscroll-contain" ref={viewportRef}>
+            {topSpacerHeight > 0 ? <div aria-hidden style={{ height: `${topSpacerHeight}px` }} /> : null}
+            <div className="flex flex-col gap-1.5">
+              {visibleRows.map((row, rowOffset) => (
+                <div className="grid grid-cols-3 gap-1.5" key={row[0]?.value ?? rowOffset} ref={rowOffset === 0 ? rowRef : undefined}>
+                  {row.map(renderItem)}
+                </div>
+              ))}
+            </div>
+            {bottomSpacerHeight > 0 ? <div aria-hidden style={{ height: `${bottomSpacerHeight}px` }} /> : null}
+          </div>
         ) : null}
       </div>
     </div>

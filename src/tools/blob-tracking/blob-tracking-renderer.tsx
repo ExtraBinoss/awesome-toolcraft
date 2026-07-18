@@ -15,6 +15,15 @@ export type BlobTrackingSource = { kind: "webcam" } | { kind: "media"; src: stri
 
 type GlProgram = { program: WebGLProgram; position: number };
 type GlTarget = { framebuffer: WebGLFramebuffer; texture: WebGLTexture; width: number; height: number };
+type BlobProgramSet = {
+  blur: GlProgram;
+  edge: GlProgram;
+  field: GlProgram;
+  final: GlProgram;
+  mask: GlProgram;
+};
+
+const programCache = new WeakMap<HTMLCanvasElement, BlobProgramSet>();
 
 function compile(gl: WebGL2RenderingContext, type: number, source: string): WebGLShader {
   const shader = gl.createShader(type); if (!shader) throw new Error("Blob Tracking shader creation failed.");
@@ -28,6 +37,20 @@ function createProgram(gl: WebGL2RenderingContext, fragment: string): GlProgram 
   gl.attachShader(program, compile(gl, gl.VERTEX_SHADER, BLOB_TRACK_VERTEX)); gl.attachShader(program, compile(gl, gl.FRAGMENT_SHADER, fragment)); gl.linkProgram(program);
   if (!gl.getProgramParameter(program, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(program) ?? "Blob Tracking program linking failed.");
   return { program, position: gl.getAttribLocation(program, "a_position") };
+}
+
+function getProgramSet(canvas: HTMLCanvasElement, gl: WebGL2RenderingContext): BlobProgramSet {
+  const cached = programCache.get(canvas);
+  if (cached) return cached;
+  const programs = {
+    blur: createProgram(gl, BLOB_TRACK_BLUR_FRAGMENT),
+    edge: createProgram(gl, BLOB_TRACK_EDGE_FRAGMENT),
+    field: createProgram(gl, BLOB_TRACK_FIELD_FRAGMENT),
+    final: createProgram(gl, BLOB_TRACK_FINAL_FRAGMENT),
+    mask: createProgram(gl, BLOB_TRACK_MASK_FRAGMENT),
+  };
+  programCache.set(canvas, programs);
+  return programs;
 }
 
 function createTarget(gl: WebGL2RenderingContext, width: number, height: number): GlTarget {
@@ -69,7 +92,6 @@ export function BlobTrackingRenderer({ library }: { library: readonly ToolcraftA
   const sourceValue = state.values["blob.source"];
   const source = React.useMemo(() => sourceFromState(state, library), [library, sourceValue, state.mediaAssets]);
   const valuesRef = React.useRef(state.values); valuesRef.current = state.values;
-  const sourceRef = React.useRef(source); sourceRef.current = source;
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const overlayRef = React.useRef<HTMLCanvasElement>(null);
   const compositeRef = React.useRef<HTMLCanvasElement>(null);
@@ -84,10 +106,12 @@ export function BlobTrackingRenderer({ library }: { library: readonly ToolcraftA
     if (!gl || !overlayContext || !compositeContext) { setStatus("WebGL2 is unavailable in this browser."); return undefined; }
     const sourceTexture = gl.createTexture(); if (!sourceTexture) { setStatus("Unable to create the media texture."); return undefined; }
     const overlayTexture = gl.createTexture(); if (!overlayTexture) { setStatus("Unable to create the overlay texture."); return undefined; }
-    const maskProgram = createProgram(gl, BLOB_TRACK_MASK_FRAGMENT), blurProgram = createProgram(gl, BLOB_TRACK_BLUR_FRAGMENT), fieldProgram = createProgram(gl, BLOB_TRACK_FIELD_FRAGMENT), edgeProgram = createProgram(gl, BLOB_TRACK_EDGE_FRAGMENT), finalProgram = createProgram(gl, BLOB_TRACK_FINAL_FRAGMENT);
+    const programs = getProgramSet(canvas, gl);
+    const { mask: maskProgram, blur: blurProgram, field: fieldProgram, edge: edgeProgram, final: finalProgram } = programs;
     const buffer = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buffer); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
     let mask: GlTarget | undefined, blurH: GlTarget | undefined, blurV: GlTarget | undefined, field: GlTarget | undefined, edge: GlTarget | undefined;
     const tracker = new BlobTrackCpuTracker(320, 180); const pixels = new Uint8Array(320 * 180 * 4); let frameIndex = 0;
+    const renderSizeRef = { current: { width: Math.max(1, state.canvas.size.width), height: Math.max(1, state.canvas.size.height) } };
     const media = source.kind === "media" && source.mediaType === "image" ? new Image() : document.createElement("video");
     media.crossOrigin = "anonymous"; if (media instanceof HTMLVideoElement) { media.muted = true; media.loop = true; media.playsInline = true; }
     let ready = false;
@@ -107,7 +131,7 @@ export function BlobTrackingRenderer({ library }: { library: readonly ToolcraftA
     const bindPosition = (handle: GlProgram) => { gl.bindBuffer(gl.ARRAY_BUFFER, buffer); gl.enableVertexAttribArray(handle.position); gl.vertexAttribPointer(handle.position, 2, gl.FLOAT, false, 0, 0); };
     const draw = (now: number) => {
       if (stopped || !ready) return;
-      const rect = canvas.getBoundingClientRect(), width = Math.max(1, Math.round(rect.width || state.canvas.size.width)), height = Math.max(1, Math.round(rect.height || state.canvas.size.height));
+      const { width, height } = renderSizeRef.current;
       const scale = Math.max(.25, Math.min(1, numberValue(valuesRef.current, "blob.resolutionScale", 1))); const detectWidth = Math.max(32, Math.round(320 * scale)), detectHeight = Math.max(18, Math.round(180 * scale));
       if (canvas.width !== width || canvas.height !== height) { canvas.width = width; canvas.height = height; overlay.width = width; overlay.height = height; composite.width = width; composite.height = height; }
       if (!mask || mask.width !== detectWidth || mask.height !== detectHeight) { deleteTarget(gl, mask); deleteTarget(gl, blurH); deleteTarget(gl, blurV); deleteTarget(gl, field); deleteTarget(gl, edge); mask = createTarget(gl, detectWidth, detectHeight); blurH = createTarget(gl, detectWidth, detectHeight); blurV = createTarget(gl, detectWidth, detectHeight); field = createTarget(gl, detectWidth, detectHeight); edge = createTarget(gl, detectWidth, detectHeight); tracker.resize(detectWidth, detectHeight); pixels.fill(0); }
@@ -131,14 +155,21 @@ export function BlobTrackingRenderer({ library }: { library: readonly ToolcraftA
       try {
         await new Promise<void>((resolve) => window.setTimeout(resolve, 0));
         if (stopped) return;
-        if (sourceRef.current.kind === "webcam") { if (!navigator.mediaDevices?.getUserMedia) throw new Error("Webcam access is unavailable."); stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: "user" } }); (media as HTMLVideoElement).srcObject = stream; await (media as HTMLVideoElement).play(); }
-        else { media.src = sourceRef.current.src; await new Promise<void>((resolve, reject) => { media.addEventListener("loadeddata", () => resolve(), { once: true }); media.addEventListener("error", () => reject(new Error("Media could not be loaded.")), { once: true }); }); if (media instanceof HTMLVideoElement) await media.play().catch(() => undefined); }
+        if (source.kind === "webcam") { if (!navigator.mediaDevices?.getUserMedia) throw new Error("Webcam access is unavailable."); stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: "user" } }); (media as HTMLVideoElement).srcObject = stream; await (media as HTMLVideoElement).play(); }
+        else { media.src = source.src; await new Promise<void>((resolve, reject) => { const readyEvent = media instanceof HTMLImageElement ? "load" : "loadeddata"; media.addEventListener(readyEvent, () => resolve(), { once: true }); media.addEventListener("error", () => reject(new Error("Media could not be loaded.")), { once: true }); }); if (media instanceof HTMLVideoElement) await media.play().catch(() => undefined); }
         ready = true; setStatus(""); draw(performance.now());
-      } catch (error) { if (sourceRef.current.kind === "webcam") dispatch({ history: "skip", target: "blob.source", type: "controls.setValue", value: { assetId: "jellyfish", kind: "library", mediaType: "video" } }); setStatus(error instanceof Error ? error.message : "Media could not be loaded."); }
+      } catch (error) { if (source.kind === "webcam") dispatch({ history: "skip", target: "blob.source", type: "controls.setValue", value: { assetId: "jellyfish", kind: "library", mediaType: "video" } }); setStatus(error instanceof Error ? error.message : "Media could not be loaded."); }
     };
     void start();
-    const resizeObserver = new ResizeObserver(() => { if (ready) draw(performance.now()); }); resizeObserver.observe(canvas);
-    return () => { stopped = true; cancelAnimationFrame(animation); resizeObserver.disconnect(); stream?.getTracks().forEach((track) => track.stop()); gl.deleteTexture(sourceTexture); gl.deleteTexture(overlayTexture); [mask, blurH, blurV, field, edge].forEach((target) => deleteTarget(gl, target)); [maskProgram, blurProgram, fieldProgram, edgeProgram, finalProgram].forEach((handle) => gl.deleteProgram(handle.program)); gl.deleteBuffer(buffer); };
+    const resizeObserver = new ResizeObserver((entries) => {
+      const rect = entries[0]?.contentRect;
+      if (rect && rect.width > 0 && rect.height > 0) {
+        renderSizeRef.current = { width: Math.max(1, Math.round(rect.width)), height: Math.max(1, Math.round(rect.height)) };
+      }
+      if (ready) draw(performance.now());
+    });
+    resizeObserver.observe(canvas);
+    return () => { stopped = true; cancelAnimationFrame(animation); resizeObserver.disconnect(); stream?.getTracks().forEach((track) => track.stop()); gl.deleteTexture(sourceTexture); gl.deleteTexture(overlayTexture); [mask, blurH, blurV, field, edge].forEach((target) => deleteTarget(gl, target)); gl.deleteBuffer(buffer); };
   }, [source]);
 
   return <div className="absolute inset-0 bg-black" data-toolcraft-product-output>

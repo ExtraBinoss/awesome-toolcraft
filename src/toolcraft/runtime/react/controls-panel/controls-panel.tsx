@@ -42,6 +42,7 @@ import {
   writeControlsPanelCollapsedSections,
 } from "./layout/controls-panel-collapse-storage";
 import { useToolcraft } from "../app-shell/use-toolcraft";
+import { ControlsPanelVirtualContent } from "./controls-panel-virtual-content";
 
 export type {
   ToolcraftPanelActionContext,
@@ -205,6 +206,11 @@ export function ControlsPanel({
       }
       key={controlsResetKey}
       onCollapsedChange={(collapsed) => onPanelStateChange?.({ collapsed })}
+      contentRenderer={(children, viewportElement) => (
+        <ControlsPanelVirtualContent viewportElement={viewportElement}>
+          {children}
+        </ControlsPanelVirtualContent>
+      )}
       onResetControls={() => dispatchCommand({ type: "controls.reset" })}
       stickyFooterActive={stickyFooterActive}
       stickyFooterProgress={stickyFooterProgress}
