@@ -90,7 +90,7 @@ export function useCanvasViewportInteractions({
   const offsetRef = React.useRef(offset);
   const zoomRef = React.useRef(zoom);
   const accumulatedOffsetRef = React.useRef(offset);
-  const wheelDebounceTimerRef = React.useRef<NodeJS.Timeout | number | null>(null);
+  const wheelDebounceTimerRef = React.useRef<any>(null);
 
   React.useEffect(() => {
     offsetRef.current = offset;

@@ -59,7 +59,8 @@ export function SliderControl({
   const [currentValue, setCurrentValue] = React.useState(value);
   const liveHistoryGroupRef = React.useRef<string | null>(null);
   const pendingValueRef = React.useRef<number | null>(null);
-  const rafIdRef = React.useRef<number | null>(null);
+  const timeoutIdRef = React.useRef<any>(null);
+  const lastDispatchTimeRef = React.useRef<number>(0);
 
   React.useEffect(() => {
     setCurrentValue(value);
@@ -67,8 +68,8 @@ export function SliderControl({
 
   React.useEffect(() => {
     return () => {
-      if (rafIdRef.current !== null) {
-        cancelAnimationFrame(rafIdRef.current);
+      if (timeoutIdRef.current !== null) {
+        clearTimeout(timeoutIdRef.current as number);
       }
     };
   }, []);
@@ -88,9 +89,9 @@ export function SliderControl({
   }
 
   function finishLiveHistoryGroup(): void {
-    if (rafIdRef.current !== null) {
-      cancelAnimationFrame(rafIdRef.current);
-      rafIdRef.current = null;
+    if (timeoutIdRef.current !== null) {
+      clearTimeout(timeoutIdRef.current as number);
+      timeoutIdRef.current = null;
     }
     if (pendingValueRef.current !== null) {
       onValueChange?.(pendingValueRef.current, getLiveHistoryMeta());
@@ -106,21 +107,36 @@ export function SliderControl({
 
     if (meta?.history === "merge") {
       pendingValueRef.current = clampedValue;
-      if (rafIdRef.current === null) {
-        rafIdRef.current = requestAnimationFrame(() => {
-          rafIdRef.current = null;
+      const now = performance.now();
+      const timeSinceLastDispatch = now - lastDispatchTimeRef.current;
+      const throttleDelay = 50; // Update global state at most once every 50ms (20 FPS)
+
+      if (timeSinceLastDispatch >= throttleDelay) {
+        if (timeoutIdRef.current !== null) {
+          clearTimeout(timeoutIdRef.current as number);
+          timeoutIdRef.current = null;
+        }
+        lastDispatchTimeRef.current = now;
+        onValueChange?.(clampedValue, meta);
+        pendingValueRef.current = null;
+      } else if (timeoutIdRef.current === null) {
+        const remainingTime = throttleDelay - timeSinceLastDispatch;
+        timeoutIdRef.current = setTimeout(() => {
+          timeoutIdRef.current = null;
+          lastDispatchTimeRef.current = performance.now();
           if (pendingValueRef.current !== null) {
             onValueChange?.(pendingValueRef.current, meta);
             pendingValueRef.current = null;
           }
-        });
+        }, remainingTime);
       }
     } else {
-      if (rafIdRef.current !== null) {
-        cancelAnimationFrame(rafIdRef.current);
-        rafIdRef.current = null;
+      if (timeoutIdRef.current !== null) {
+        clearTimeout(timeoutIdRef.current as number);
+        timeoutIdRef.current = null;
       }
       pendingValueRef.current = null;
+      lastDispatchTimeRef.current = performance.now();
       onValueChange?.(clampedValue, meta);
     }
   }
