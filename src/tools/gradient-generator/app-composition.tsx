@@ -23,6 +23,7 @@ export const appComposition: ToolcraftAppComposition = {
       dispatch({ type: "controls.setValue", target: "gradient.seed", value: Math.floor(Math.random() * 100) + 1, label: "Randomize gradient" });
       dispatch({ type: "controls.setValue", target: "gradient.warp", value: 28 + Math.floor(Math.random() * 67), label: "Randomize distortion" });
       dispatch({ type: "controls.setValue", target: "gradient.scale", value: 18 + Math.floor(Math.random() * 68), label: "Randomize flow scale" });
+      dispatch({ type: "controls.setValue", target: "gradient.density", value: 18 + Math.floor(Math.random() * 76), label: "Randomize density" });
       dispatch({ type: "controls.setValue", target: "gradient.detail", value: 15 + Math.floor(Math.random() * 76), label: "Randomize detail" });
       dispatch({ type: "controls.setValue", target: "gradient.softness", value: 45 + Math.floor(Math.random() * 51), label: "Randomize softness" });
       dispatch({ type: "controls.setValue", target: "gradient.negativeSpace", value: 52 + Math.floor(Math.random() * 29), label: "Randomize negative space" });

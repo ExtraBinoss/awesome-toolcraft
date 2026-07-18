@@ -36,9 +36,17 @@ export const appSchema = defineToolcraft({
           controls: {
             warp: { type: "slider", target: "gradient.warp", label: "Distortion", defaultValue: 42, min: 0, max: 100, step: 1, unit: "%", sliderValueKind: "continuous", ...responsiveness("Distortion bends every gradient geometry with a fluid noise field.") },
             scale: { type: "slider", target: "gradient.scale", label: "Flow scale", defaultValue: 46, min: 5, max: 100, step: 1, unit: "%", sliderValueKind: "continuous", ...responsiveness("Flow scale controls the size of organic structures.") },
+            density: { type: "slider", target: "gradient.density", label: "Density", defaultValue: 52, min: 5, max: 100, step: 1, unit: "%", sliderValueKind: "continuous", ...responsiveness("Density controls the size and frequency of the simplex noise regions.") },
             detail: { type: "slider", target: "gradient.detail", label: "Detail", defaultValue: 38, min: 0, max: 100, step: 1, unit: "%", sliderValueKind: "continuous", ...responsiveness("Detail adds nested procedural movement without changing the palette.") },
             softness: { type: "slider", target: "gradient.softness", label: "Softness", defaultValue: 72, min: 5, max: 100, step: 1, unit: "%", sliderValueKind: "continuous", ...responsiveness("Softness blends color bands into broad, fluid transitions.") },
             negativeSpace: { type: "slider", target: "gradient.negativeSpace", label: "Negative space", defaultValue: 80, min: 0, max: 80, step: 1, unit: "%", sliderValueKind: "continuous", ...responsiveness("Negative space carves dark or transparent pockets into the field.") },
+          },
+        },
+        {
+          title: "Motion",
+          controls: {
+            animate: { type: "switch", target: "motion.animate", label: "Animate", defaultValue: true, ...responsiveness("Animation moves the simplex field through its third noise dimension.") },
+            speed: { type: "slider", target: "motion.speed", label: "Speed", defaultValue: 32, min: 0, max: 100, step: 1, unit: "%", sliderValueKind: "continuous", ...responsiveness("Speed controls how quickly the organic regions flow.") },
           },
         },
         {

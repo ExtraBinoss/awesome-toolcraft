@@ -47,27 +47,45 @@ function compile(gl: WebGL2RenderingContext, type: number, source: string): WebG
   if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(shader) ?? "Gradient shader failed.");
   return shader;
 }
-function drawGradient(canvas: HTMLCanvasElement, state: ToolcraftState, includeBackground: boolean): void {
+type GradientRendererHandle = { gl: WebGL2RenderingContext; program: WebGLProgram };
+const rendererCache = new WeakMap<HTMLCanvasElement, GradientRendererHandle>();
+
+function getRenderer(canvas: HTMLCanvasElement): GradientRendererHandle {
+  const cached = rendererCache.get(canvas);
+  if (cached) return cached;
   const gl = canvas.getContext("webgl2", { alpha: true, antialias: false, premultipliedAlpha: false, preserveDrawingBuffer: true });
   if (!gl) throw new Error("WebGL 2 is required to render procedural gradients.");
   const program = gl.createProgram();
   if (!program) throw new Error("Unable to create gradient program.");
   gl.attachShader(program, compile(gl, gl.VERTEX_SHADER, vertexShader));
   gl.attachShader(program, compile(gl, gl.FRAGMENT_SHADER, fragmentShader));
-  gl.linkProgram(program); gl.useProgram(program);
+  gl.linkProgram(program);
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(program) ?? "Gradient program failed.");
+  gl.useProgram(program);
   const buffer = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
   const position = gl.getAttribLocation(program, "position");
   gl.enableVertexAttribArray(position); gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
+  const handle = { gl, program };
+  rendererCache.set(canvas, handle);
+  return handle;
+}
+
+function drawGradient(canvas: HTMLCanvasElement, state: ToolcraftState, time: number, includeBackground: boolean): void {
+  const { gl, program } = getRenderer(canvas);
+  gl.useProgram(program);
   const uniform1f = (name: string, value: number) => gl.uniform1f(gl.getUniformLocation(program, name), value);
   const gradient = gradientValue(state);
   const types = { linear: 0, radial: 1, angular: 2, diamond: 3 } as const;
   gl.uniform2f(gl.getUniformLocation(program, "resolution"), canvas.width, canvas.height);
   gl.uniform1i(gl.getUniformLocation(program, "gradientType"), types[gradient.gradientType] ?? 0);
   gl.uniform1i(gl.getUniformLocation(program, "includeBackground"), includeBackground ? 1 : 0);
-  uniform1f("seed", numberValue(state, "gradient.seed", 37)); uniform1f("angle", gradient.angle);
-  uniform1f("spread", numberValue(state, "gradient.spread", 68) / 100); uniform1f("warp", numberValue(state, "gradient.warp", 42) / 100);
-  uniform1f("flowScale", numberValue(state, "gradient.scale", 46) / 100); uniform1f("detail", numberValue(state, "gradient.detail", 38) / 100);
+  uniform1f("time", time); uniform1f("seed", numberValue(state, "gradient.seed", 37) * 0.071); uniform1f("angle", gradient.angle * Math.PI / 180);
+  uniform1f("spread", numberValue(state, "gradient.spread", 68) / 100);
+  uniform1f("scale", 0.55 + numberValue(state, "gradient.scale", 46) / 100 * 1.65);
+  uniform1f("density", 0.55 + numberValue(state, "gradient.density", 52) / 100 * 2.25);
+  uniform1f("distortion", 0.15 + numberValue(state, "gradient.warp", 42) / 100 * 1.85);
+  uniform1f("detail", numberValue(state, "gradient.detail", 38) / 100);
   uniform1f("softness", numberValue(state, "gradient.softness", 72) / 100); uniform1f("negativeSpace", numberValue(state, "gradient.negativeSpace", 80) / 100);
   uniform1f("contrast", numberValue(state, "tone.contrast", 108) / 100); uniform1f("brightness", numberValue(state, "tone.brightness", 102) / 100);
   uniform1f("saturation", numberValue(state, "tone.saturation", 118) / 100); uniform1f("grain", numberValue(state, "texture.grain", 3) / 100);
@@ -86,25 +104,33 @@ export function GradientRenderer() {
   const { state } = useToolcraft();
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const includeBackground = shouldIncludeToolcraftPreviewBackground({ state });
-  React.useLayoutEffect(() => {
+  React.useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const render = () => {
+    let frame = 0;
+    let last = performance.now();
+    let visibleTime = 0;
+    const render = (now = performance.now()) => {
       const rect = canvas.getBoundingClientRect();
       const scale = Math.min(2, window.devicePixelRatio || 1);
       canvas.width = Math.max(1, Math.round(rect.width * scale)); canvas.height = Math.max(1, Math.round(rect.height * scale));
-      drawGradient(canvas, state, includeBackground);
+      if (state.values["motion.animate"] !== false) {
+        visibleTime += (now - last) / 1000 * (numberValue(state, "motion.speed", 32) / 32);
+      }
+      last = now;
+      drawGradient(canvas, state, visibleTime, includeBackground);
+      if (state.values["motion.animate"] !== false) frame = requestAnimationFrame(render);
     };
     render();
-    const observer = new ResizeObserver(render); observer.observe(canvas);
-    return () => observer.disconnect();
+    const observer = new ResizeObserver(() => render()); observer.observe(canvas);
+    return () => { observer.disconnect(); cancelAnimationFrame(frame); };
   }, [state, includeBackground]);
   return <div className={styles.output} data-toolcraft-product-output><canvas ref={canvasRef} className={styles.field} /></div>;
 }
 
 export function renderGradientToCanvas(context: CanvasRenderingContext2D, state: ToolcraftState, includeBackground: boolean): void {
   const output = document.createElement("canvas"); output.width = context.canvas.width; output.height = context.canvas.height;
-  drawGradient(output, state, includeBackground);
+  drawGradient(output, state, 0, includeBackground);
   // The Toolcraft export helper scales its 2D context for CSS-oriented renderers.
   // This shader already renders at the final pixel resolution, so draw it 1:1.
   context.setTransform(1, 0, 0, 1, 0, 0);
