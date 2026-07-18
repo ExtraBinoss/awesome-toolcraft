@@ -1,4 +1,7 @@
-import { defineToolcraft } from "@/toolcraft/runtime";
+import { defineToolcraft } from "@/toolcraft/runtime/schema/define-toolcraft";
+import { logToolLoad } from "@/tool-load-debug";
+
+logToolLoad("module:evaluated gradient schema:start");
 
 const responsiveness = (reason: string) => ({ performanceRole: "responsiveness" as const, performanceReason: reason });
 
@@ -95,3 +98,5 @@ export const appSchema = defineToolcraft({
   settingsTransfer: { enabled: true, appId: "gradient-generator", fileName: "gradient-generator-settings" },
   toolbar: { back: { href: "/", label: "Back to tools" }, history: true, radar: true, theme: true, zoom: true },
 });
+
+logToolLoad("module:evaluated gradient schema:end");

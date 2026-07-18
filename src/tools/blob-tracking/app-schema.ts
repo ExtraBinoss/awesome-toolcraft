@@ -1,4 +1,4 @@
-import { defineToolcraft } from "@/toolcraft/runtime";
+import { defineToolcraft } from "@/toolcraft/runtime/schema/define-toolcraft";
 
 const slider = (target: string, label: string, defaultValue: number, min: number, max: number, step = 1) => ({ type: "slider", target, label, defaultValue, min, max, step, sliderValueKind: step < 1 ? "continuous" : "discrete" } as const);
 

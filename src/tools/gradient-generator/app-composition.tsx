@@ -1,7 +1,10 @@
-import type { ToolcraftAppComposition } from "@/toolcraft/runtime/react";
+import type { ToolcraftAppComposition } from "@/toolcraft/runtime/react/app-shell/toolcraft-app";
 
 import { appSchema } from "./app-schema";
 import { exportGradient, GradientRenderer } from "./gradient-renderer";
+import { logToolLoad } from "@/tool-load-debug";
+
+logToolLoad("module:evaluated gradient composition:start");
 
 function hslToHex(hue: number, saturation: number, lightness: number): string {
   const s = saturation / 100;
@@ -71,3 +74,5 @@ export const appComposition: ToolcraftAppComposition = {
     }
   },
 };
+
+logToolLoad("module:evaluated gradient composition:end");

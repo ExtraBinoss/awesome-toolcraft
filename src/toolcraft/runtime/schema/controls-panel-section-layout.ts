@@ -1,4 +1,3 @@
-import { TOOLCRAFT_COMPONENT_CONTRACTS } from "../contracts/component-contracts";
 import { createNormalizedControlsRecord } from "./control-schema-normalization";
 import {
   addAutoLayoutGroupsToSection,
@@ -9,20 +8,12 @@ import type {
   ToolcraftControlSchema,
   ToolcraftControlSectionSchema,
 } from "./types";
+import { TOOLCRAFT_CONTROL_DEFAULT_SECTION_LAYOUT } from "./runtime-component-metadata";
 
 function getControlDefaultSectionLayout(
   control: ToolcraftControlSchema,
 ): "grouped" | "standalone" {
-  const contract = (
-    TOOLCRAFT_COMPONENT_CONTRACTS as Record<
-      string,
-      { defaultSectionLayout?: "grouped" | "standalone"; kind?: string } | undefined
-    >
-  )[control.type];
-
-  return contract?.kind === "control" && contract.defaultSectionLayout
-    ? contract.defaultSectionLayout
-    : "grouped";
+  return TOOLCRAFT_CONTROL_DEFAULT_SECTION_LAYOUT[control.type] ?? "grouped";
 }
 
 function isControlGatedBySameSectionControl(

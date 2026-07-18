@@ -1,7 +1,7 @@
 import {
   TOOLCRAFT_BUILT_IN_CONTROL_TYPES,
   type ToolcraftBuiltInControlType,
-} from "../../../contracts/component-contracts";
+} from "../../../schema/runtime-component-metadata";
 
 export type ToolcraftControlRendererKind =
   | "action"

@@ -1,18 +1,14 @@
 import * as React from "react";
-import {
-  Checkbox,
-  CollectionActions,
-  Color,
-  ColorOpacity,
-  FontPicker,
-  RangeInput,
-  Segmented,
-  Select,
-  Slider,
-  Switch,
-  TextInput,
-  type ControlChangeMeta,
-} from "@/toolcraft/ui";
+import { CollectionActionsControl as CollectionActions } from "@/toolcraft/ui/components/controls/collection-actions";
+import { CheckboxControl as Checkbox, SwitchControl as Switch } from "@/toolcraft/ui/components/controls/boolean";
+import { ColorControl as Color, ColorOpacityControl as ColorOpacity } from "@/toolcraft/ui/components/controls/color";
+import { FontPickerControl as FontPicker } from "@/toolcraft/ui/components/controls/font-picker";
+import { RangeInputControl as RangeInput } from "@/toolcraft/ui/components/controls/range-input";
+import { SegmentedControl as Segmented } from "@/toolcraft/ui/components/controls/segmented";
+import { SelectControl as Select } from "@/toolcraft/ui/components/controls/select";
+import { SliderControl as Slider } from "@/toolcraft/ui/components/controls/slider";
+import { TextInputControl as TextInput } from "@/toolcraft/ui/components/controls/text-input";
+import type { ControlChangeMeta } from "@/toolcraft/ui/components/controls/control-types";
 
 import type { ToolcraftControlSchema } from "../../../schema/types";
 import {
@@ -283,4 +279,10 @@ export function renderCollectionActionsControl({
       </div>
     </div>
   );
+}
+
+export function CollectionActionsControlRenderer(
+  props: CollectionActionsControlRenderArgs,
+): React.ReactNode {
+  return renderCollectionActionsControl(props);
 }

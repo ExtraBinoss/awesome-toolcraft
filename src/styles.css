@@ -12,7 +12,14 @@
 * { box-sizing: border-box; }
 body { margin: 0; min-width: 320px; min-height: 100vh; background: #0e0e10; }
 #root { min-height: 100%; }
-.route-loading { min-height: 100vh; display: grid; place-items: center; color: var(--brand-yellow); background: #101011; }
+.route-loading { min-height: 100vh; display: grid; place-items: center; color: #f5f5f5; background: #101011; }
+.route-loading-card { width: min(420px, calc(100% - 40px)); padding: 28px; border: 1px solid #2b2b2e; border-radius: 16px; background: #18181a; box-shadow: 0 24px 80px rgb(0 0 0 / 32%); }
+.route-loading-kicker { color: var(--brand-yellow); font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+.route-loading h1 { margin: 10px 0 18px; font-size: 24px; letter-spacing: -.035em; }
+.route-loading p { margin: 12px 0 0; color: #929197; font-size: 13px; }
+.route-loading-progress { height: 6px; overflow: hidden; border-radius: 999px; background: #2a2a2d; }
+.route-loading-progress span { display: block; width: 42%; height: 100%; border-radius: inherit; background: var(--brand-yellow); animation: route-loading-progress 1.25s ease-in-out infinite; }
+@keyframes route-loading-progress { 0% { transform: translateX(-115%); } 55%, 100% { transform: translateX(245%); } }
 a { color: inherit; text-decoration: none; }
 button, input { font: inherit; }
 

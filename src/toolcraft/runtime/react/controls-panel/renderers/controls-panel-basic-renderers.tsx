@@ -1,18 +1,15 @@
 import * as React from "react";
-import {
-  AnchorGrid,
-  Checkbox,
-  CodeTextarea,
-  RangeInput,
-  RangeSlider,
-  Segmented,
-  Select,
-  Slider,
-  Switch,
-  TextInput,
-  Vector,
-  type ControlChangeMeta,
-} from "@/toolcraft/ui";
+import { AnchorGridControl as AnchorGrid } from "@/toolcraft/ui/components/controls/anchor-grid";
+import { CheckboxControl as Checkbox, SwitchControl as Switch } from "@/toolcraft/ui/components/controls/boolean";
+import { CodeTextareaControl as CodeTextarea } from "@/toolcraft/ui/components/controls/code-textarea";
+import { RangeInputControl as RangeInput } from "@/toolcraft/ui/components/controls/range-input";
+import { RangeSliderControl as RangeSlider } from "@/toolcraft/ui/components/controls/range-slider";
+import { SegmentedControl as Segmented } from "@/toolcraft/ui/components/controls/segmented";
+import { SelectControl as Select } from "@/toolcraft/ui/components/controls/select";
+import { SliderControl as Slider } from "@/toolcraft/ui/components/controls/slider";
+import { TextInputControl as TextInput } from "@/toolcraft/ui/components/controls/text-input";
+import { VectorControl as Vector } from "@/toolcraft/ui/components/controls/vector";
+import type { ControlChangeMeta } from "@/toolcraft/ui/components/controls/control-types";
 
 import { toolcraftCanvasAspectRatioPresets } from "../../../schema/canvas-aspect-ratio-presets";
 import type { ToolcraftControlSchema } from "../../../schema/types";

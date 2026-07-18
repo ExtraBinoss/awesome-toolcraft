@@ -1,10 +1,8 @@
 "use client";
 
 import * as React from "react";
-import {
-  PortalLayerContainerProvider,
-  TooltipProvider,
-} from "@/toolcraft/ui/components/primitives";
+import { PortalLayerContainerProvider } from "@/toolcraft/ui/components/primitives/portal-layer-context";
+import { TooltipProvider } from "@/toolcraft/ui/components/primitives/tooltip";
 
 export const TOOLCRAFT_THEME_PREFERENCE_STORAGE_KEY = "appearance.theme.v1" as const;
 export const TOOLCRAFT_DEFAULT_THEME_PREFERENCE = "dark" as const;

@@ -3,9 +3,10 @@ import * as React from "react";
 import {
   createToolcraftPngExportCanvas,
   shouldIncludeToolcraftPreviewBackground,
-  type ToolcraftState,
-} from "@/toolcraft/runtime";
-import { useToolcraft } from "@/toolcraft/runtime/react";
+} from "@/toolcraft/runtime/export/export";
+import { useToolcraft } from "@/toolcraft/runtime/react/app-shell/use-toolcraft";
+import type { ToolcraftState } from "@/toolcraft/runtime/state/types";
+import { logToolLoad, logToolLoadDuration } from "@/tool-load-debug";
 
 import fragmentShader from "./fragment.glsl?raw";
 import styles from "./gradient-renderer.module.css";
@@ -53,6 +54,8 @@ const rendererCache = new WeakMap<HTMLCanvasElement, GradientRendererHandle>();
 function getRenderer(canvas: HTMLCanvasElement): GradientRendererHandle {
   const cached = rendererCache.get(canvas);
   if (cached) return cached;
+  const startedAt = performance.now();
+  logToolLoad("renderer:webgl initialization:start");
   const gl = canvas.getContext("webgl2", { alpha: true, antialias: false, premultipliedAlpha: false, preserveDrawingBuffer: true });
   if (!gl) throw new Error("WebGL 2 is required to render procedural gradients.");
   const program = gl.createProgram();
@@ -68,6 +71,7 @@ function getRenderer(canvas: HTMLCanvasElement): GradientRendererHandle {
   gl.enableVertexAttribArray(position); gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
   const handle = { gl, program };
   rendererCache.set(canvas, handle);
+  logToolLoadDuration("renderer:webgl initialization:end", startedAt);
   return handle;
 }
 
@@ -125,6 +129,7 @@ const InnerGradientRenderer = React.memo(function InnerGradientRenderer({
   const renderStateRef = React.useRef(renderState);
   const includeBackgroundRef = React.useRef(includeBackground);
   const visibleTimeRef = React.useRef(0);
+  const firstFrameLoggedRef = React.useRef(false);
 
   React.useEffect(() => {
     renderStateRef.current = renderState;
@@ -161,6 +166,10 @@ const InnerGradientRenderer = React.memo(function InnerGradientRenderer({
       }
       last = now;
       drawGradient(canvas, currentState, visibleTimeRef.current, includeBackgroundRef.current);
+      if (!firstFrameLoggedRef.current) {
+        firstFrameLoggedRef.current = true;
+        logToolLoad("renderer:first frame drawn");
+      }
       if (currentState.values["motion.animate"] !== false) {
         frame = requestAnimationFrame(render);
       }

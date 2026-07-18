@@ -1,4 +1,3 @@
-import { TOOLCRAFT_COMPONENT_CONTRACTS } from "../contracts/component-contracts";
 import type {
   ResolvedToolcraftAppSchema,
   ResolvedToolcraftPanelsSchema,
@@ -9,6 +8,7 @@ import type {
   ToolcraftAssemblyPanelContract,
   ToolcraftToolbarSchema,
 } from "./types";
+import { TOOLCRAFT_RUNTIME_PANEL_METADATA } from "./runtime-component-metadata";
 
 type PanelContract = {
   capabilities?: readonly string[];
@@ -114,7 +114,7 @@ export function createToolcraftAssemblyContract({
           "controls.resetTargets",
           "controls.setValue",
         ],
-        contract: TOOLCRAFT_COMPONENT_CONTRACTS.controlsPanel,
+        contract: TOOLCRAFT_RUNTIME_PANEL_METADATA.controlsPanel,
         enabled: true,
       })
     : undefined;
@@ -143,7 +143,7 @@ export function createToolcraftAssemblyContract({
           "layers.toggleCollapsed",
           "layers.toggleVisibility",
         ],
-        contract: TOOLCRAFT_COMPONENT_CONTRACTS.layersPanel,
+        contract: TOOLCRAFT_RUNTIME_PANEL_METADATA.layersPanel,
         enabled: true,
       })
     : undefined;
@@ -182,7 +182,7 @@ export function createToolcraftAssemblyContract({
               ] as const)
             : []),
         ],
-        contract: TOOLCRAFT_COMPONENT_CONTRACTS.timelinePanel,
+        contract: TOOLCRAFT_RUNTIME_PANEL_METADATA.timelinePanel,
         enabled: true,
       })
     : undefined;
@@ -218,7 +218,7 @@ export function createToolcraftAssemblyContract({
   const toolbarPanel = createPanelAssemblyContract({
     capabilities: toolbarCapabilities,
     commands: toolbarCommands,
-    contract: TOOLCRAFT_COMPONENT_CONTRACTS.toolbar,
+    contract: TOOLCRAFT_RUNTIME_PANEL_METADATA.toolbar,
     enabled: toolbarEnabled,
   });
 

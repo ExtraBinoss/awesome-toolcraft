@@ -1,5 +1,5 @@
 import * as React from "react";
-import { FileDrop, type FileDropPreview } from "@/toolcraft/ui";
+import { FileDropControl as FileDrop, type FileDropPreview } from "@/toolcraft/ui/components/controls/file-drop";
 
 import type { ToolcraftCanvasSize, ToolcraftControlSchema } from "../../../schema/types";
 import type { ToolcraftCommand, ToolcraftMediaAsset } from "../../../state/types";
@@ -170,4 +170,10 @@ export function renderFileDropControl({
       previews={previews}
     />
   );
+}
+
+export function FileDropControlRenderer(
+  props: FileDropControlRenderArgs,
+): React.ReactNode {
+  return renderFileDropControl(props);
 }

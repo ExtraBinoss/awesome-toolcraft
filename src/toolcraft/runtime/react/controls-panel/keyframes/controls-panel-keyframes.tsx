@@ -2,13 +2,13 @@
 
 import * as React from "react";
 import { DiamondIcon } from "@phosphor-icons/react";
+import { ControlFieldLabelActionProvider } from "@/toolcraft/ui/components/control-layout";
+import { Button } from "@/toolcraft/ui/components/primitives/button";
 import {
-  Button,
-  ControlFieldLabelActionProvider,
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@/toolcraft/ui";
+} from "@/toolcraft/ui/components/primitives/tooltip";
 
 import { getToolcraftControlKeyframeCapability } from "../../../schema/keyframe-capability";
 import type { ToolcraftControlSchema } from "../../../schema/types";

@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { FileDrop, type FileDropPreview } from "@/toolcraft/ui";
+import { FileDropControl as FileDrop, type FileDropPreview } from "@/toolcraft/ui/components/controls/file-drop";
 import type {
   ToolcraftAssetLibraryItem,
   ToolcraftAssetLibrarySource,

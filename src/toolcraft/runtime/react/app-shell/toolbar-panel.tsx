@@ -2,13 +2,13 @@
 
 import * as React from "react";
 import { TargetIcon } from "@phosphor-icons/react";
+import { Button } from "@/toolcraft/ui/components/primitives/button";
 import {
-  Button,
-  PanelSurface,
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@/toolcraft/ui";
+} from "@/toolcraft/ui/components/primitives/tooltip";
+import { PanelSurface } from "@/toolcraft/ui/components/panel/panel-surface";
 import { ArrowLeft, Moon, Redo2, Sun, Undo2, ZoomIn, ZoomOut } from "lucide-react";
 
 import type { ToolcraftPanelState } from "../../state/types";

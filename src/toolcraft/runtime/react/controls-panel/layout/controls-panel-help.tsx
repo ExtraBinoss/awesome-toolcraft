@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ControlFieldLabelHelpProvider } from "@/toolcraft/ui";
+import { ControlFieldLabelHelpProvider } from "@/toolcraft/ui/components/control-layout";
 
 import type { ToolcraftControlSchema } from "../../../schema/types";
 

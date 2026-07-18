@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { PanelActions } from "@/toolcraft/ui";
+import { PanelActions } from "@/toolcraft/ui/components/panel/panel-actions";
 
 import type { ToolcraftCommand, ToolcraftState } from "../../../state/types";
 import {

@@ -1,8 +1,5 @@
-import type {
-  CurveInterpolation,
-  VectorPadCoordinateMode,
-  VectorPadVariant,
-} from "@/toolcraft/ui";
+import type { CurveInterpolation } from "@/toolcraft/ui/components/controls/curves/curve-geometry";
+import type { VectorPadCoordinateMode, VectorPadVariant } from "@/toolcraft/ui/components/controls/vector/vector-control-types";
 
 import {
   asString,

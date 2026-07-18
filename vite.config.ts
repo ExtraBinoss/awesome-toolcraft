@@ -9,4 +9,7 @@ export default defineConfig({
     alias: { "@": path.resolve(__dirname, "src") },
   },
   server: { port: 5000 },
+  optimizeDeps: {
+    include: ["@phosphor-icons/react", "lucide-react"],
+  },
 });

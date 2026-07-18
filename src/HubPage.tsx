@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 
 import { tools } from "./tools";
+import { preloadToolPage } from "./tool-loading";
 
 export function HubPage() {
   const [query, setQuery] = useState("");
@@ -46,7 +47,13 @@ export function HubPage() {
           <div className="tool-grid">
             {results.map((tool) => (
               <article className="tool-card" key={tool.slug}>
-                <a className="card-link" href={tool.href} aria-label={`Open ${tool.name}`}>
+                <a
+                  className="card-link"
+                  href={tool.href}
+                  aria-label={`Open ${tool.name}`}
+                  onFocus={() => preloadToolPage(tool.href)}
+                  onPointerEnter={() => preloadToolPage(tool.href)}
+                >
                   <div className="card-media">
                     <img
                       src={tool.image}

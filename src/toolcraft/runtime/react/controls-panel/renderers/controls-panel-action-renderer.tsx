@@ -1,11 +1,11 @@
 "use client";
 
 import * as React from "react";
+import { ActionsControl as Actions } from "@/toolcraft/ui/components/controls/actions";
 import {
-  Actions,
   PanelActions,
   type PanelActionObjectOption,
-} from "@/toolcraft/ui";
+} from "@/toolcraft/ui/components/panel/panel-actions";
 
 import type {
   ToolcraftActionSchema,

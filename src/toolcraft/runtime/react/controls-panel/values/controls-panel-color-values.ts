@@ -1,9 +1,6 @@
-import type {
-  ChannelMixerValues,
-  ColorOpacityValue,
-  GradientStop,
-  GradientType,
-} from "@/toolcraft/ui";
+import type { ChannelMixerValues } from "@/toolcraft/ui/components/controls/channel-mixer";
+import type { ColorOpacityValue } from "@/toolcraft/ui/components/controls/color/color-control-types";
+import type { GradientStop, GradientType } from "@/toolcraft/ui/components/controls/control-types";
 
 import {
   asNumber,

@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useToolcraft } from "@/toolcraft/runtime/react";
+import { useToolcraft } from "@/toolcraft/runtime/react/app-shell/use-toolcraft";
 import type { ToolcraftAssetLibraryItem } from "@/toolcraft/runtime/schema/types";
 import type { ToolcraftMediaAsset, ToolcraftState } from "@/toolcraft/runtime/state/types";
 import { BlobTrackCpuTracker, type BlobTrackTrack } from "./BlobTrack.cpu";

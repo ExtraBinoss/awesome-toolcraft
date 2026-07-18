@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ControlInlineGroup } from "@/toolcraft/ui";
+import { ControlInlineGroup } from "@/toolcraft/ui/components/control-layout";
 
 import type {
   ToolcraftControlLayoutGroupSchema,

@@ -1,10 +1,8 @@
 "use client";
 
 import * as React from "react";
-import {
-  Panel,
-  type ControlChangeMeta,
-} from "@/toolcraft/ui";
+import { Panel } from "@/toolcraft/ui/components/panel/panel";
+import type { ControlChangeMeta } from "@/toolcraft/ui/components/controls/control-types";
 
 import type {
   ToolcraftControlSectionSchema,

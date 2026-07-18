@@ -2,14 +2,15 @@
 
 import * as React from "react";
 import { ArrowCounterClockwiseIcon } from "@phosphor-icons/react";
+import { ControlFieldLabelActionProvider } from "@/toolcraft/ui/components/control-layout";
+import { Button } from "@/toolcraft/ui/components/primitives/button";
+import { PanelSection } from "@/toolcraft/ui/components/panel/panel-section";
 import {
-  Button,
-  PanelSection,
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-  type ControlChangeMeta,
-} from "@/toolcraft/ui";
+} from "@/toolcraft/ui/components/primitives/tooltip";
+import type { ControlChangeMeta } from "@/toolcraft/ui/components/controls/control-types";
 
 import type {
   ToolcraftControlSectionSchema,
@@ -23,13 +24,23 @@ import type { ToolcraftControlRendererMap } from "../control-renderers";
 import type { ActionControlRunAction } from "../renderers/controls-panel-action-renderer";
 import { renderActionControl } from "../renderers/controls-panel-action-renderer";
 import { renderBasicControl } from "../renderers/controls-panel-basic-renderers";
-import { renderCollectionActionsControl } from "../renderers/controls-panel-collection-renderer";
 import {
   renderCompoundColorGroup,
   renderCompoundControl,
 } from "../renderers/controls-panel-compound-renderers";
 import { withControlLabelHelp } from "./controls-panel-help";
 import type { ControlsPanelKeyframeActions } from "../keyframes/controls-panel-keyframes";
+
+const LazyCollectionActionsControl = React.lazy(() =>
+  import("../renderers/controls-panel-collection-renderer").then((module) => ({
+    default: module.CollectionActionsControlRenderer,
+  })),
+);
+const LazyFileDropControl = React.lazy(() =>
+  import("../renderers/controls-panel-media-renderer").then((module) => ({
+    default: module.FileDropControlRenderer,
+  })),
+);
 import {
   type ControlEntry,
   getControlName,
@@ -322,21 +333,29 @@ export function renderControlsPanelSection({
                 });
 
               case "collection":
-                return renderCollectionActionsControl({
-                  control,
-                  name,
-                  setControlValue,
-                  value,
-                });
+                return (
+                  <React.Suspense fallback={null}>
+                    <LazyCollectionActionsControl
+                      control={control}
+                      name={name}
+                      setControlValue={setControlValue}
+                      value={value}
+                    />
+                  </React.Suspense>
+                );
 
               case "media":
-                return renderFileDropControl({
-                  canvasSize: state.canvas.size,
-                  control,
-                  dispatchCommand,
-                  id,
-                  mediaAssets: state.schema.panels.layers ? [] : state.mediaAssets,
-                });
+                return (
+                  <React.Suspense fallback={null}>
+                    <LazyFileDropControl
+                      canvasSize={state.canvas.size}
+                      control={control}
+                      dispatchCommand={dispatchCommand}
+                      id={id}
+                      mediaAssets={state.schema.panels.layers ? [] : state.mediaAssets}
+                    />
+                  </React.Suspense>
+                );
 
               case "settings":
                 return renderSettingsTransferControl({

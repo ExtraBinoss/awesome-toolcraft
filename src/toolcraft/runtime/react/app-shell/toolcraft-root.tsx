@@ -18,6 +18,7 @@ import type {
 } from "../../state/types";
 import { readToolcraftLocalStorageValue } from "./storage-key-migration";
 import { ToolcraftThemeProvider } from "./theme-runtime";
+import { logToolLoadDuration } from "@/tool-load-debug";
 
 export type ToolcraftContextValue = {
   dispatch: React.Dispatch<ToolcraftCommand>;
@@ -126,10 +127,15 @@ export function ToolcraftRoot({
     toolcraftReducer,
     { initialState, schema },
     ({ initialState, schema }) =>
-      createToolcraftState(
-        schema,
-        mergeToolcraftInitialState(readPersistedInitialState(schema), initialState),
-      ),
+      (() => {
+        const startedAt = performance.now();
+        const nextState = createToolcraftState(
+          schema,
+          mergeToolcraftInitialState(readPersistedInitialState(schema), initialState),
+        );
+        logToolLoadDuration("runtime:state initialized", startedAt);
+        return nextState;
+      })(),
   );
   const latestStateRef = React.useRef(state);
   const value = React.useMemo(() => ({ dispatch, state }), [dispatch, state]);

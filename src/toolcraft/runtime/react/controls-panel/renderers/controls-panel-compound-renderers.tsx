@@ -2,20 +2,22 @@
 
 import * as React from "react";
 import {
-  ChannelMixer,
-  Color,
-  ColorOpacity,
-  Curves,
-  FontPicker,
-  Gradient,
-  ImagePicker,
-  Palette,
+  ChannelMixerControl as ChannelMixer,
   type ChannelMixerValues,
+} from "@/toolcraft/ui/components/controls/channel-mixer";
+import {
+  ColorControl as Color,
+  ColorOpacityControl as ColorOpacity,
   type ColorControlInput,
   type ColorControlInputPair,
-  type ControlChangeMeta,
-  type ImagePickerItem,
-} from "@/toolcraft/ui";
+} from "@/toolcraft/ui/components/controls/color";
+import { CurvesControl as Curves } from "@/toolcraft/ui/components/controls/curves";
+import { FontPickerControl as FontPicker } from "@/toolcraft/ui/components/controls/font-picker";
+import { GradientControl as Gradient } from "@/toolcraft/ui/components/controls/gradient";
+import { ImagePickerControl as ImagePicker } from "@/toolcraft/ui/components/controls/image-picker";
+import { PaletteControl as Palette } from "@/toolcraft/ui/components/controls/color";
+import type { ControlChangeMeta } from "@/toolcraft/ui/components/controls/control-types";
+import type { ImagePickerItem } from "@/toolcraft/ui/components/controls/image-picker";
 
 import type { ToolcraftControlSchema } from "../../../schema/types";
 import {
