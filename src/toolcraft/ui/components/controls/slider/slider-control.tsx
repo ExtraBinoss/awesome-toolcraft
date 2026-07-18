@@ -58,10 +58,20 @@ export function SliderControl({
 }: SliderControlProps): React.JSX.Element {
   const [currentValue, setCurrentValue] = React.useState(value);
   const liveHistoryGroupRef = React.useRef<string | null>(null);
+  const pendingValueRef = React.useRef<number | null>(null);
+  const rafIdRef = React.useRef<number | null>(null);
 
   React.useEffect(() => {
     setCurrentValue(value);
   }, [value]);
+
+  React.useEffect(() => {
+    return () => {
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current);
+      }
+    };
+  }, []);
 
   const displayValueLabel =
     valueLabel && currentValue === value
@@ -78,6 +88,14 @@ export function SliderControl({
   }
 
   function finishLiveHistoryGroup(): void {
+    if (rafIdRef.current !== null) {
+      cancelAnimationFrame(rafIdRef.current);
+      rafIdRef.current = null;
+    }
+    if (pendingValueRef.current !== null) {
+      onValueChange?.(pendingValueRef.current, getLiveHistoryMeta());
+      pendingValueRef.current = null;
+    }
     liveHistoryGroupRef.current = null;
   }
 
@@ -85,9 +103,24 @@ export function SliderControl({
     const clampedValue = clampSliderValue(nextValue, min, max);
 
     setCurrentValue(clampedValue);
+
     if (meta?.history === "merge") {
-      React.startTransition(() => onValueChange?.(clampedValue, meta));
+      pendingValueRef.current = clampedValue;
+      if (rafIdRef.current === null) {
+        rafIdRef.current = requestAnimationFrame(() => {
+          rafIdRef.current = null;
+          if (pendingValueRef.current !== null) {
+            onValueChange?.(pendingValueRef.current, meta);
+            pendingValueRef.current = null;
+          }
+        });
+      }
     } else {
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current);
+        rafIdRef.current = null;
+      }
+      pendingValueRef.current = null;
       onValueChange?.(clampedValue, meta);
     }
   }
