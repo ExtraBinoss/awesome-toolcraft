@@ -21,5 +21,82 @@ function draw(canvas:HTMLCanvasElement,state:ToolcraftState,time:number,include:
   gl.uniform1i(gl.getUniformLocation(program,"ribbonCount"),num(state,"aurora.ribbons",5));gl.uniform1i(gl.getUniformLocation(program,"includeBackground"),include?1:0);const bg=rgb(String(state.values["appearance.background"]??"#03040A"));gl.uniform3f(gl.getUniformLocation(program,"backgroundColor"),...bg);
   const paletteValue=palette(state),modes={linear:0,radial:1,angular:2,diamond:3};f("paletteAngle",(paletteValue.angle??90)/360);gl.uniform1i(gl.getUniformLocation(program,"paletteMode"),modes[paletteValue.gradientType??"linear"]);const stops=[...paletteValue.stops].sort((x,y)=>pos(x)-pos(y)).slice(0,8),data=new Float32Array(32);stops.forEach((s,i)=>data.set([...rgb(s.color),pos(s)],i*4));gl.uniform1i(gl.getUniformLocation(program,"stopCount"),stops.length);gl.uniform4fv(gl.getUniformLocation(program,"stops[0]"),data);gl.viewport(0,0,canvas.width,canvas.height);gl.drawArrays(gl.TRIANGLES,0,3);
 }
-export function AuroraRenderer(){const {state}=useToolcraft();const ref=React.useRef<HTMLCanvasElement>(null);const include=shouldIncludeToolcraftPreviewBackground({state});React.useEffect(()=>{const canvas=ref.current;if(!canvas)return;let frame=0,last=performance.now();const render=(now:number)=>{const rect=canvas.getBoundingClientRect(),dpr=Math.min(2,devicePixelRatio||1),w=Math.max(1,Math.round(rect.width*dpr)),h=Math.max(1,Math.round(rect.height*dpr));if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;}if(state.values["motion.animate"]!==false)visibleTime+=(now-last)/1000*(num(state,"motion.speed",32)/32);last=now;draw(canvas,state,visibleTime,include);frame=requestAnimationFrame(render);};frame=requestAnimationFrame(render);return()=>cancelAnimationFrame(frame);},[state,include]);return <div className={styles.output} data-toolcraft-product-output><canvas className={styles.canvas} ref={ref}/></div>;}
+export function AuroraRenderer(){
+  const {state}=useToolcraft();
+  const include=shouldIncludeToolcraftPreviewBackground({state});
+
+  return (
+    <InnerAuroraRenderer
+      values={state.values}
+      includeBackground={include}
+    />
+  );
+}
+
+const InnerAuroraRenderer = React.memo(function InnerAuroraRenderer({
+  values,
+  includeBackground,
+}: {
+  values: Record<string, unknown>;
+  includeBackground: boolean;
+}) {
+  const ref=React.useRef<HTMLCanvasElement>(null);
+  const state = React.useMemo(() => ({ values } as ToolcraftState), [values]);
+
+  const stateRef = React.useRef(state);
+  const includeRef = React.useRef(includeBackground);
+
+  React.useEffect(() => {
+    stateRef.current = state;
+    includeRef.current = includeBackground;
+  }, [state, includeBackground]);
+
+  React.useEffect(() => {
+    const canvas = ref.current;
+    if (canvas && values["motion.animate"] === false) {
+      draw(canvas, state, visibleTime, includeBackground);
+    }
+  }, [state, includeBackground, values]);
+
+  React.useEffect(()=>{
+    const canvas=ref.current;
+    if(!canvas)return;
+    let frame=0,last=performance.now();
+
+    const updateSize = (rect: DOMRectReadOnly | Omit<DOMRect, "toJSON">) => {
+      const dpr=Math.min(2,devicePixelRatio||1);
+      const w=Math.max(1,Math.round(rect.width*dpr));
+      const h=Math.max(1,Math.round(rect.height*dpr));
+      if(canvas.width!==w||canvas.height!==h){
+        canvas.width=w;
+        canvas.height=h;
+      }
+    };
+
+    const render=(now:number)=>{
+      const currentState = stateRef.current;
+      if(currentState.values["motion.animate"]!==false)visibleTime+=(now-last)/1000*(num(currentState,"motion.speed",32)/32);
+      last=now;
+      draw(canvas,currentState,visibleTime,includeRef.current);
+      frame=requestAnimationFrame(render);
+    };
+
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (entry) {
+        updateSize(entry.contentRect);
+        cancelAnimationFrame(frame);
+        frame=requestAnimationFrame(render);
+      }
+    });
+    observer.observe(canvas);
+
+    return()=>{
+      observer.disconnect();
+      cancelAnimationFrame(frame);
+    };
+  },[]);
+
+  return <div className={styles.output} data-toolcraft-product-output><canvas className={styles.canvas} ref={ref}/></div>;
+});
 export async function exportAurora(state:ToolcraftState){const include=state.values["export.includeBackground"]!==false,resolution=String(state.values["export.image.resolution"]??"4k"),format=String(state.values["export.image.format"]??"png");const canvas=createToolcraftPngExportCanvas({background:String(state.values["appearance.background"]??"#03040A"),includeBackground:include,resolution,state,render:({context})=>{const output=document.createElement("canvas");output.width=context.canvas.width;output.height=context.canvas.height;draw(output,state,visibleTime,include);context.setTransform(1,0,0,1,0,0);context.clearRect(0,0,context.canvas.width,context.canvas.height);context.drawImage(output,0,0);}});const mime=format==="jpg"?"image/jpeg":"image/png",blob=await new Promise<Blob>((resolve,reject)=>canvas.toBlob(v=>v?resolve(v):reject(Error("Export failed")),mime,.96));const url=URL.createObjectURL(blob),link=document.createElement("a");link.href=url;link.download=`aurora-generator.${format==="jpg"?"jpg":"png"}`;link.click();URL.revokeObjectURL(url);}

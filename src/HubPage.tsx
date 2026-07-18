@@ -18,7 +18,7 @@ export function HubPage() {
     <div className="app-shell">
       <header className="topbar">
         <a className="brand" href="/" aria-label="Toolcraft Hub home">
-          <span className="brand-mark" aria-hidden="true">◆</span>
+          <img className="brand-mark" src="/toolcraft-hub.png" alt="" />
           <span>Toolcraft <strong>Hub</strong></span>
         </a>
           <span className="tool-count">{tools.length} tool{tools.length !== 1 ? "s" : ""}</span>

@@ -102,17 +102,49 @@ function drawGradient(canvas: HTMLCanvasElement, state: ToolcraftState, time: nu
 
 export function GradientRenderer() {
   const { state } = useToolcraft();
-  const renderState = React.useDeferredValue(state);
-  const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const includeBackground = shouldIncludeToolcraftPreviewBackground({ state });
+
+  return (
+    <InnerGradientRenderer
+      values={state.values}
+      includeBackground={includeBackground}
+    />
+  );
+}
+
+const InnerGradientRenderer = React.memo(function InnerGradientRenderer({
+  values,
+  includeBackground,
+}: {
+  values: Record<string, unknown>;
+  includeBackground: boolean;
+}) {
+  const canvasRef = React.useRef<HTMLCanvasElement>(null);
+  const renderState = React.useMemo(() => ({ values } as ToolcraftState), [values]);
+
+  const renderStateRef = React.useRef(renderState);
+  const includeBackgroundRef = React.useRef(includeBackground);
+  const visibleTimeRef = React.useRef(0);
+
+  React.useEffect(() => {
+    renderStateRef.current = renderState;
+    includeBackgroundRef.current = includeBackground;
+  }, [renderState, includeBackground]);
+
+  React.useEffect(() => {
+    const canvas = canvasRef.current;
+    if (canvas && values["motion.animate"] === false) {
+      drawGradient(canvas, renderState, visibleTimeRef.current, includeBackground);
+    }
+  }, [renderState, includeBackground, values]);
+
   React.useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     let frame = 0;
     let last = performance.now();
-    let visibleTime = 0;
-    const render = (now = performance.now()) => {
-      const rect = canvas.getBoundingClientRect();
+
+    const updateSize = (rect: DOMRectReadOnly | Omit<DOMRect, "toJSON">) => {
       const scale = Math.min(1.5, window.devicePixelRatio || 1);
       const width = Math.max(1, Math.round(rect.width * scale));
       const height = Math.max(1, Math.round(rect.height * scale));
@@ -120,19 +152,38 @@ export function GradientRenderer() {
         canvas.width = width;
         canvas.height = height;
       }
-      if (renderState.values["motion.animate"] !== false) {
-        visibleTime += (now - last) / 1000 * (numberValue(renderState, "motion.speed", 32) / 32);
+    };
+
+    const render = (now = performance.now()) => {
+      const currentState = renderStateRef.current;
+      if (currentState.values["motion.animate"] !== false) {
+        visibleTimeRef.current += (now - last) / 1000 * (numberValue(currentState, "motion.speed", 32) / 32);
       }
       last = now;
-      drawGradient(canvas, renderState, visibleTime, includeBackground);
-      if (renderState.values["motion.animate"] !== false) frame = requestAnimationFrame(render);
+      drawGradient(canvas, currentState, visibleTimeRef.current, includeBackgroundRef.current);
+      if (currentState.values["motion.animate"] !== false) {
+        frame = requestAnimationFrame(render);
+      }
     };
-    render();
-    const observer = new ResizeObserver(() => render()); observer.observe(canvas);
-    return () => { observer.disconnect(); cancelAnimationFrame(frame); };
-  }, [renderState, includeBackground]);
+
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (entry) {
+        updateSize(entry.contentRect);
+        cancelAnimationFrame(frame);
+        render();
+      }
+    });
+    observer.observe(canvas);
+
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(frame);
+    };
+  }, []);
+
   return <div className={styles.output} data-toolcraft-product-output><canvas ref={canvasRef} className={styles.field} /></div>;
-}
+});
 
 export function renderGradientToCanvas(context: CanvasRenderingContext2D, state: ToolcraftState, includeBackground: boolean): void {
   const output = document.createElement("canvas"); output.width = context.canvas.width; output.height = context.canvas.height;
