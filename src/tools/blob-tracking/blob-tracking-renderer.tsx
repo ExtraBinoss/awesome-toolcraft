@@ -113,7 +113,10 @@ export function BlobTrackingRenderer({ library }: { library: readonly ToolcraftA
     const tracker = new BlobTrackCpuTracker(320, 180); const pixels = new Uint8Array(320 * 180 * 4); let frameIndex = 0;
     const renderSizeRef = { current: { width: Math.max(1, state.canvas.size.width), height: Math.max(1, state.canvas.size.height) } };
     const media = source.kind === "media" && source.mediaType === "image" ? new Image() : document.createElement("video");
-    media.crossOrigin = "anonymous"; if (media instanceof HTMLVideoElement) { media.muted = true; media.loop = true; media.playsInline = true; }
+    if (source.kind === "media" && source.src && source.src.startsWith("http") && !source.src.startsWith(window.location.origin)) {
+      media.crossOrigin = "anonymous";
+    }
+    if (media instanceof HTMLVideoElement) { media.muted = true; media.loop = true; media.playsInline = true; }
     let ready = false;
     let sourceTextureUploaded = false;
     const uniformCache = new WeakMap<WebGLProgram, Map<string, WebGLUniformLocation | null>>();
@@ -158,7 +161,11 @@ export function BlobTrackingRenderer({ library }: { library: readonly ToolcraftA
         if (source.kind === "webcam") { if (!navigator.mediaDevices?.getUserMedia) throw new Error("Webcam access is unavailable."); stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: "user" } }); (media as HTMLVideoElement).srcObject = stream; await (media as HTMLVideoElement).play(); }
         else { media.src = source.src; await new Promise<void>((resolve, reject) => { const readyEvent = media instanceof HTMLImageElement ? "load" : "loadeddata"; media.addEventListener(readyEvent, () => resolve(), { once: true }); media.addEventListener("error", () => reject(new Error("Media could not be loaded.")), { once: true }); }); if (media instanceof HTMLVideoElement) await media.play().catch(() => undefined); }
         ready = true; setStatus(""); draw(performance.now());
-      } catch (error) { if (source.kind === "webcam") dispatch({ history: "skip", target: "blob.source", type: "controls.setValue", value: { assetId: "jellyfish", kind: "library", mediaType: "video" } }); setStatus(error instanceof Error ? error.message : "Media could not be loaded."); }
+      } catch (error) {
+        console.error("[BlobTrackingRenderer] start failed:", error);
+        if (source.kind === "webcam") dispatch({ history: "skip", target: "blob.source", type: "controls.setValue", value: { assetId: "jellyfish", kind: "library", mediaType: "video" } });
+        setStatus(error instanceof Error ? error.message : "Media could not be loaded.");
+      }
     };
     void start();
     const resizeObserver = new ResizeObserver((entries) => {
