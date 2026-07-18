@@ -273,6 +273,19 @@ export type ToolcraftImagePickerItemSchema = {
   value: string;
 };
 
+export type ToolcraftAssetLibraryItem = {
+  alt?: string;
+  kind: "image" | "video";
+  poster?: string;
+  src: string;
+  value: string;
+};
+
+export type ToolcraftAssetLibrarySource =
+  | { kind: "webcam" }
+  | { assetId: string; kind: "upload"; mediaType: "image" | "video" }
+  | { assetId: string; kind: "library"; mediaType: "image" | "video" };
+
 export type ToolcraftControlOrderRole =
   | "action"
   | "advanced"

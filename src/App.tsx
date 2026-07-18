@@ -7,15 +7,8 @@ const GradientGeneratorPage = lazy(() =>
     default: module.GradientGeneratorPage,
   })),
 );
-const AuroraGeneratorPage = lazy(() =>
-  import("./tools/aurora-generator/AuroraGeneratorPage").then((module) => ({
-    default: module.AuroraGeneratorPage,
-  })),
-);
-const SvgPatternGeneratorPage = lazy(() =>
-  import("./tools/svg-pattern-generator/SvgPatternGeneratorPage").then((module) => ({
-    default: module.SvgPatternGeneratorPage,
-  })),
+const BlobTrackingPage = lazy(() =>
+  import("./tools/blob-tracking/BlobTrackingPage").then((module) => ({ default: module.BlobTrackingPage })),
 );
 
 export function App() {
@@ -28,17 +21,10 @@ export function App() {
       </Suspense>
     );
   }
-  if (path === "/tools/aurora-generator") {
+  if (path === "/tools/blob-tracking") {
     return (
-      <Suspense fallback={<div className="route-loading">Loading Aurora Generator…</div>}>
-        <AuroraGeneratorPage />
-      </Suspense>
-    );
-  }
-  if (path === "/tools/svg-pattern-generator") {
-    return (
-      <Suspense fallback={<div className="route-loading">Loading Pattern Generator…</div>}>
-        <SvgPatternGeneratorPage />
+      <Suspense fallback={<div className="route-loading">Loading Blob Tracking…</div>}>
+        <BlobTrackingPage />
       </Suspense>
     );
   }

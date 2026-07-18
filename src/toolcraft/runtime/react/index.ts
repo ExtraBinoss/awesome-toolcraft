@@ -4,6 +4,7 @@ export * from "./app-shell/toolcraft-root";
 export * from "./app-shell/toolcraft-app";
 export * from "./canvas/canvas-shell";
 export * from "./controls-panel/control-renderers";
+export * from "./controls-panel/asset-library";
 export * from "./controls-panel/controls-panel";
 export * from "./layers/layers-panel";
 export * from "./panel-host/panel-host";

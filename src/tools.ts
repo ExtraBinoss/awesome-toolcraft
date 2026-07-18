@@ -10,6 +10,14 @@ export type ToolEntry = {
 // Add future tools here. Images must use AVIF or WebP.
 export const tools: ToolEntry[] = [
   {
+    slug: "blob-tracking",
+    name: "Blob Tracking",
+    category: "Interactive",
+    status: "Available",
+    image: "/baseAssets/images/Clione.jpg",
+    href: "/tools/blob-tracking",
+  },
+  {
     slug: "gradient-generator",
     name: "Gradient Generator",
     category: "Design",
