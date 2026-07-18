@@ -14,6 +14,11 @@ const BlobTrackingPage = lazy(() =>
     default: module.BlobTrackingPage!,
   })),
 );
+const SuminagashiPage = lazy(() =>
+  toolPageLoaders["/tools/suminagashi"]().then((module) => ({
+    default: module.SuminagashiPage!,
+  })),
+);
 
 function RouteLoading({ toolName }: { toolName: string }) {
   useEffect(() => {
@@ -57,6 +62,13 @@ export function App() {
     return (
       <Suspense fallback={<RouteLoading toolName="Blob Tracking" />}>
         <BlobTrackingPage />
+      </Suspense>
+    );
+  }
+  if (path === "/tools/suminagashi") {
+    return (
+      <Suspense fallback={<RouteLoading toolName="Suminagashi" />}>
+        <SuminagashiPage />
       </Suspense>
     );
   }

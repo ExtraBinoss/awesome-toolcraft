@@ -5,6 +5,7 @@ import { logToolLoad, logToolLoadDuration } from "./tool-load-debug";
 type ToolPageModule = {
   BlobTrackingPage?: ComponentType;
   GradientGeneratorPage?: ComponentType;
+  SuminagashiPage?: ComponentType;
 };
 type ToolPageLoader = () => Promise<ToolPageModule>;
 
@@ -30,6 +31,9 @@ export const toolPageLoaders: Record<string, ToolPageLoader> = {
   ),
   "/tools/blob-tracking": trackedLoader("blob-tracking", () =>
     import("./tools/blob-tracking/BlobTrackingPage"),
+  ),
+  "/tools/suminagashi": trackedLoader("suminagashi", () =>
+    import("./tools/suminagashi/SuminagashiPage"),
   ),
 };
 
