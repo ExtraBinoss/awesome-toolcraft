@@ -38,6 +38,8 @@ export function useColorModel({
   const [draftHexValue, setDraftHexValue] = useState(normalizedHex.toUpperCase());
   const latestHsvRef = useRef(optimisticColor);
   const lastEmittedHexRef = useRef(normalizedHex);
+  const rafIdRef = useRef<number | null>(null);
+  const pendingHexRef = useRef<string | null>(null);
 
   const applyOptimisticColor = useCallback(
     (nextColor: HsvColor, options?: { updateDraft?: boolean }) => {
@@ -65,11 +67,58 @@ export function useColorModel({
   const emitChange = useCallback(
     (nextHex: string) => {
       if (nextHex === lastEmittedHexRef.current) return;
-      lastEmittedHexRef.current = nextHex;
-      onChange(nextHex);
+
+      const isDragging = isSurfaceDragging || hueDragStartHexRef.current !== null;
+
+      if (isDragging) {
+        pendingHexRef.current = nextHex;
+        if (rafIdRef.current === null) {
+          rafIdRef.current = requestAnimationFrame(() => {
+            rafIdRef.current = null;
+            if (pendingHexRef.current !== null) {
+              const hexToEmit = pendingHexRef.current;
+              lastEmittedHexRef.current = hexToEmit;
+              onChange(hexToEmit);
+              pendingHexRef.current = null;
+            }
+          });
+        }
+      } else {
+        if (rafIdRef.current !== null) {
+          cancelAnimationFrame(rafIdRef.current);
+          rafIdRef.current = null;
+        }
+        pendingHexRef.current = null;
+        lastEmittedHexRef.current = nextHex;
+        onChange(nextHex);
+      }
     },
-    [onChange],
+    [onChange, isSurfaceDragging, hueDragStartHexRef]
   );
+
+  useEffect(() => {
+    const isDragging = isSurfaceDragging || hueDragStartHexRef.current !== null;
+    if (!isDragging) {
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current);
+        rafIdRef.current = null;
+      }
+      if (pendingHexRef.current !== null) {
+        const hexToEmit = pendingHexRef.current;
+        lastEmittedHexRef.current = hexToEmit;
+        onChange(hexToEmit);
+        pendingHexRef.current = null;
+      }
+    }
+  }, [isSurfaceDragging, hueDragStartHexRef, onChange]);
+
+  useEffect(() => {
+    return () => {
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     latestHsvRef.current = optimisticColor;
