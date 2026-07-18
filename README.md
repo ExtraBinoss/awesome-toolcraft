@@ -4,6 +4,8 @@ Awesome Toolcraft is a web-based hub for exploring a collection of ready-to-use 
 
 The project is intentionally focused on experimentation: each tool is a self-contained application with its own controls, renderer, and export workflow. The hub makes these tools easier to discover and use without requiring a separate setup for every experiment.
 
+I have also implemented several Performance improvements to the library (concerning UI), which could be copied into the real repository.
+
 ## Foundation and attribution
 
 The source code behind Awesome Toolcraft is based on [Toolcraft](https://github.com/pixel-point/toolcraft), an open-source starter kit and UI library created by [Pixel Point](https://github.com/pixel-point). Toolcraft provides the foundation for the application runtime, canvas, controls, panels, state management, and export workflows used in this project.
