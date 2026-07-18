@@ -86,24 +86,8 @@ function useAfterFirstPaint(): boolean {
   const [ready, setReady] = React.useState(false);
 
   React.useEffect(() => {
-    let timeoutId: number | undefined;
-    let idleId: number | undefined;
-    const idleWindow = window as Window & {
-      cancelIdleCallback?: (id: number) => void;
-      requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
-    };
-    const activate = () => setReady(true);
-
-    if (idleWindow.requestIdleCallback) {
-      idleId = idleWindow.requestIdleCallback(activate, { timeout: 1500 });
-    } else {
-      timeoutId = window.setTimeout(activate, 500);
-    }
-
-    return () => {
-      if (timeoutId !== undefined) window.clearTimeout(timeoutId);
-      if (idleId !== undefined) idleWindow.cancelIdleCallback?.(idleId);
-    };
+    const handle = requestAnimationFrame(() => setReady(true));
+    return () => cancelAnimationFrame(handle);
   }, []);
 
   return ready;
