@@ -87,6 +87,19 @@ export function useCanvasViewportInteractions({
   const dragRef = React.useRef<CanvasDragState | null>(null);
   const viewportRef = React.useRef<HTMLDivElement | null>(null);
 
+  const offsetRef = React.useRef(offset);
+  const zoomRef = React.useRef(zoom);
+  const accumulatedOffsetRef = React.useRef(offset);
+  const wheelDebounceTimerRef = React.useRef<NodeJS.Timeout | number | null>(null);
+
+  React.useEffect(() => {
+    offsetRef.current = offset;
+    zoomRef.current = zoom;
+    if (!dragRef.current && !wheelDebounceTimerRef.current) {
+      accumulatedOffsetRef.current = offset;
+    }
+  }, [offset, zoom]);
+
   React.useEffect(() => {
     const viewportElement = viewportRef.current;
 
@@ -116,20 +129,45 @@ export function useCanvasViewportInteractions({
       event.preventDefault();
       event.stopPropagation();
 
+      const currentZoom = zoomRef.current;
+
       if (!event.ctrlKey) {
-        dispatch({
-          offset: {
-            x: offset.x - event.deltaX,
-            y: offset.y - event.deltaY,
-          },
-          type: "canvas.setOffset",
-        });
+        if (wheelDebounceTimerRef.current) {
+          clearTimeout(wheelDebounceTimerRef.current as number);
+        }
+
+        accumulatedOffsetRef.current = {
+          x: accumulatedOffsetRef.current.x - event.deltaX,
+          y: accumulatedOffsetRef.current.y - event.deltaY,
+        };
+
+        const nextX = accumulatedOffsetRef.current.x;
+        const nextY = accumulatedOffsetRef.current.y;
+
+        const worldEl = viewportElement.querySelector<HTMLElement>('[data-toolcraft-canvas-world]');
+        if (worldEl) {
+          const scale = currentZoom / 100;
+          worldEl.style.transform = `translate(-50%, -50%) translate(${nextX}px, ${nextY}px) scale(${scale})`;
+        }
+
+        wheelDebounceTimerRef.current = setTimeout(() => {
+          wheelDebounceTimerRef.current = null;
+          dispatch({
+            offset: { x: nextX, y: nextY },
+            type: "canvas.setOffset",
+          });
+        }, 150);
         return;
       }
 
-      const nextZoom = getNextWheelZoom(zoom, event);
+      if (wheelDebounceTimerRef.current) {
+        clearTimeout(wheelDebounceTimerRef.current as number);
+        wheelDebounceTimerRef.current = null;
+      }
 
-      if (nextZoom === zoom) {
+      const nextZoom = getNextWheelZoom(currentZoom, event);
+
+      if (nextZoom === currentZoom) {
         return;
       }
 
@@ -137,9 +175,9 @@ export function useCanvasViewportInteractions({
         offset: getZoomedCanvasOffset({
           clientX: event.clientX,
           clientY: event.clientY,
-          currentZoom: zoom,
+          currentZoom,
           nextZoom,
-          offset,
+          offset: accumulatedOffsetRef.current,
           viewportElement,
         }),
         type: "canvas.setViewport",
@@ -155,8 +193,11 @@ export function useCanvasViewportInteractions({
         handleWheel,
         listenerOptions,
       );
+      if (wheelDebounceTimerRef.current) {
+        clearTimeout(wheelDebounceTimerRef.current as number);
+      }
     };
-  }, [dispatch, offset, zoom]);
+  }, [dispatch]);
 
   const handlePointerDown: React.PointerEventHandler<HTMLDivElement> = React.useCallback(
     (event) => {
@@ -171,14 +212,14 @@ export function useCanvasViewportInteractions({
       }
 
       dragRef.current = {
-        originX: offset.x,
-        originY: offset.y,
+        originX: offsetRef.current.x,
+        originY: offsetRef.current.y,
         pointerId: event.pointerId,
         startX: event.clientX,
         startY: event.clientY,
       };
     },
-    [draggable, offset],
+    [draggable],
   );
 
   const handlePointerMove: React.PointerEventHandler<HTMLDivElement> = React.useCallback(
@@ -189,20 +230,22 @@ export function useCanvasViewportInteractions({
         return;
       }
 
-      dispatch({
-        offset: {
-          x: drag.originX + event.clientX - drag.startX,
-          y: drag.originY + event.clientY - drag.startY,
-        },
-        type: "canvas.setOffset",
-      });
+      const nextX = drag.originX + event.clientX - drag.startX;
+      const nextY = drag.originY + event.clientY - drag.startY;
+
+      const worldEl = event.currentTarget.querySelector<HTMLElement>('[data-toolcraft-canvas-world]');
+      if (worldEl) {
+        const scale = zoomRef.current / 100;
+        worldEl.style.transform = `translate(-50%, -50%) translate(${nextX}px, ${nextY}px) scale(${scale})`;
+      }
     },
-    [dispatch],
+    [],
   );
 
   const handlePointerUp: React.PointerEventHandler<HTMLDivElement> = React.useCallback(
     (event) => {
-      if (dragRef.current?.pointerId !== event.pointerId) {
+      const drag = dragRef.current;
+      if (!drag || drag.pointerId !== event.pointerId) {
         return;
       }
 
@@ -214,8 +257,18 @@ export function useCanvasViewportInteractions({
       }
 
       dragRef.current = null;
+
+      const finalX = drag.originX + event.clientX - drag.startX;
+      const finalY = drag.originY + event.clientY - drag.startY;
+
+      if (finalX !== drag.originX || finalY !== drag.originY) {
+        dispatch({
+          offset: { x: finalX, y: finalY },
+          type: "canvas.setOffset",
+        });
+      }
     },
-    [],
+    [dispatch],
   );
 
   return {

@@ -85,7 +85,11 @@ export function SliderControl({
     const clampedValue = clampSliderValue(nextValue, min, max);
 
     setCurrentValue(clampedValue);
-    onValueChange?.(clampedValue, meta);
+    if (meta?.history === "merge") {
+      React.startTransition(() => onValueChange?.(clampedValue, meta));
+    } else {
+      onValueChange?.(clampedValue, meta);
+    }
   }
 
   function stepEditableValue(direction: -1 | 1, currentDraft: string): string | undefined {

@@ -102,6 +102,7 @@ function drawGradient(canvas: HTMLCanvasElement, state: ToolcraftState, time: nu
 
 export function GradientRenderer() {
   const { state } = useToolcraft();
+  const renderState = React.useDeferredValue(state);
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const includeBackground = shouldIncludeToolcraftPreviewBackground({ state });
   React.useEffect(() => {
@@ -112,19 +113,24 @@ export function GradientRenderer() {
     let visibleTime = 0;
     const render = (now = performance.now()) => {
       const rect = canvas.getBoundingClientRect();
-      const scale = Math.min(2, window.devicePixelRatio || 1);
-      canvas.width = Math.max(1, Math.round(rect.width * scale)); canvas.height = Math.max(1, Math.round(rect.height * scale));
-      if (state.values["motion.animate"] !== false) {
-        visibleTime += (now - last) / 1000 * (numberValue(state, "motion.speed", 32) / 32);
+      const scale = Math.min(1.5, window.devicePixelRatio || 1);
+      const width = Math.max(1, Math.round(rect.width * scale));
+      const height = Math.max(1, Math.round(rect.height * scale));
+      if (canvas.width !== width || canvas.height !== height) {
+        canvas.width = width;
+        canvas.height = height;
+      }
+      if (renderState.values["motion.animate"] !== false) {
+        visibleTime += (now - last) / 1000 * (numberValue(renderState, "motion.speed", 32) / 32);
       }
       last = now;
-      drawGradient(canvas, state, visibleTime, includeBackground);
-      if (state.values["motion.animate"] !== false) frame = requestAnimationFrame(render);
+      drawGradient(canvas, renderState, visibleTime, includeBackground);
+      if (renderState.values["motion.animate"] !== false) frame = requestAnimationFrame(render);
     };
     render();
     const observer = new ResizeObserver(() => render()); observer.observe(canvas);
     return () => { observer.disconnect(); cancelAnimationFrame(frame); };
-  }, [state, includeBackground]);
+  }, [renderState, includeBackground]);
   return <div className={styles.output} data-toolcraft-product-output><canvas ref={canvasRef} className={styles.field} /></div>;
 }
 
