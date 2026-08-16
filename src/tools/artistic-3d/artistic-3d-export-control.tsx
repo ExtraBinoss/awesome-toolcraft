@@ -1,8 +1,10 @@
 import * as React from "react";
 
-import { getToolcraftVideoExportSize, ToolcraftCanvasRecorder, downloadToolcraftVideo } from "@/toolcraft/runtime";
-import { useToolcraftStore, type ToolcraftCustomControlRendererProps } from "@/toolcraft/runtime/react";
-import { Button } from "@/toolcraft/ui";
+import { getToolcraftVideoExportSize } from "@/toolcraft/runtime/export/export";
+import { downloadToolcraftVideo, ToolcraftCanvasRecorder } from "@/toolcraft/runtime/export/video";
+import { useToolcraftStore } from "@/toolcraft/runtime/react/app-shell/use-toolcraft";
+import type { ToolcraftCustomControlRendererProps } from "@/toolcraft/runtime/react/controls-panel/control-renderers";
+import { Button } from "@/toolcraft/ui/components/primitives/button";
 
 import { Artistic3DRenderer } from "./artistic-3d-renderer";
 

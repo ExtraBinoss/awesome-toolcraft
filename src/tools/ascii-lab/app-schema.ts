@@ -58,6 +58,16 @@ export const appSchema = defineToolcraft({
       sections: [
         {
           controls: {
+            sourceMode: {
+              defaultValue: "image",
+              label: "Source type",
+              options: [
+                { label: "Image", value: "image" },
+                { label: "Text", value: "text" },
+              ],
+              target: "ascii.sourceMode",
+              type: "segmented",
+            },
             source: {
               accept: ".png,.jpg,.jpeg,.webp,.avif,.gif,.glb,.gltf,.obj,.stl",
               assetKind: "file",
@@ -66,6 +76,16 @@ export const appSchema = defineToolcraft({
               label: false,
               target: "ascii.source",
               type: "fileDrop",
+              visibleWhen: { target: "ascii.sourceMode", equals: "image" },
+            },
+            text: {
+              defaultValue: "TOOLCRAFT",
+              description: "Rendered as a high-resolution mask, then rebuilt from the active ASCII character set.",
+              label: "Banner text",
+              target: "ascii.text",
+              textValueKind: "multiline",
+              type: "code",
+              visibleWhen: { target: "ascii.sourceMode", equals: "text" },
             },
           },
           title: "Source",
@@ -82,6 +102,7 @@ export const appSchema = defineToolcraft({
               ],
               target: "ascii.mode",
               type: "select",
+              visibleWhen: { target: "ascii.sourceMode", equals: "image" },
               ...responsive("Mapping changes the scalar field used to choose characters."),
             },
             fit: {
@@ -93,6 +114,7 @@ export const appSchema = defineToolcraft({
               ],
               target: "ascii.fit",
               type: "select",
+              visibleWhen: { target: "ascii.sourceMode", equals: "image" },
             },
             charset: {
               defaultValue: " .,:;irsXA253hMHGS#9B&@",
@@ -115,6 +137,130 @@ export const appSchema = defineToolcraft({
             },
           },
           title: "ASCII language",
+        },
+        {
+          controls: {
+            textFont: {
+              defaultValue: "sans",
+              label: "Typeface",
+              options: [
+                { label: "Grotesk", value: "sans" },
+                { label: "Editorial", value: "serif" },
+                { label: "Terminal", value: "mono" },
+              ],
+              target: "ascii.textFont",
+              type: "select",
+            },
+            textWeight: {
+              defaultValue: "900",
+              label: "Weight",
+              options: [
+                { label: "Regular", value: "400" },
+                { label: "Bold", value: "700" },
+                { label: "Black", value: "900" },
+              ],
+              target: "ascii.textWeight",
+              type: "select",
+            },
+            textSize: {
+              ...slider("ascii.textSize", "Scale", 42, 12, 90, 1, "%"),
+              ...responsive("Text scale controls the source silhouette before ASCII sampling."),
+            },
+            textTracking: {
+              ...slider("ascii.textTracking", "Tracking", 0, -8, 32, 1, "px"),
+              ...responsive("Tracking changes spacing between source glyphs."),
+            },
+            textLineHeight: {
+              ...slider("ascii.textLineHeight", "Line height", 0.92, 0.65, 1.5, 0.01),
+              ...responsive("Line height controls spacing between banner lines."),
+            },
+            textAlign: {
+              defaultValue: "center",
+              label: "Alignment",
+              options: [
+                { label: "Left", value: "left" },
+                { label: "Center", value: "center" },
+                { label: "Right", value: "right" },
+              ],
+              target: "ascii.textAlign",
+              type: "segmented",
+            },
+            textStyle: {
+              defaultValue: "solid",
+              label: "Letter style",
+              options: [
+                { label: "Solid", value: "solid" },
+                { label: "Outline", value: "outline" },
+                { label: "Double", value: "double" },
+              ],
+              target: "ascii.textStyle",
+              type: "select",
+            },
+            textGlow: {
+              ...slider("ascii.textGlow", "Source glow", 8, 0, 40, 1, "%"),
+              ...responsive("Glow softens the source mask before it becomes ASCII."),
+            },
+            textColorMode: {
+              defaultValue: "gradient",
+              label: "Text ink",
+              options: [
+                { label: "Solid", value: "solid" },
+                { label: "Gradient", value: "gradient" },
+              ],
+              target: "ascii.textColorMode",
+              type: "segmented",
+            },
+            textColor: {
+              defaultValue: "#D8FF65",
+              label: "Primary",
+              target: "ascii.textColor",
+              type: "color",
+            },
+            textAccent: {
+              defaultValue: "#FF2896",
+              label: "Accent",
+              target: "ascii.textAccent",
+              type: "color",
+              visibleWhen: { target: "ascii.textColorMode", equals: "gradient" },
+            },
+          },
+          layoutGroups: [
+            { columns: 2, controls: ["textFont", "textWeight"], layout: "inline" },
+            { columns: 2, controls: ["textSize", "textTracking"], layout: "inline" },
+            { columns: 2, controls: ["textColor", "textAccent"], layout: "inline" },
+          ],
+          title: "Text design",
+          visibleWhen: { target: "ascii.sourceMode", equals: "text" },
+        },
+        {
+          controls: {
+            textAnimation: {
+              defaultValue: "wave",
+              label: "Animation",
+              options: [
+                { label: "None", value: "none" },
+                { label: "Wave", value: "wave" },
+                { label: "Pulse", value: "pulse" },
+                { label: "Glitch", value: "glitch" },
+                { label: "Drift", value: "drift" },
+              ],
+              target: "ascii.textAnimation",
+              type: "select",
+            },
+            textAnimationAmount: {
+              ...slider("ascii.textAnimationAmount", "Amplitude", 28, 0, 100, 1, "%"),
+              ...responsive("Amplitude controls source deformation before ASCII sampling."),
+              visibleWhen: { target: "ascii.textAnimation", notEquals: "none" },
+            },
+            textAnimationSpeed: {
+              ...slider("ascii.textAnimationSpeed", "Speed", 35, 0, 100, 1, "%"),
+              ...responsive("Speed controls the typography animation rate."),
+              visibleWhen: { target: "ascii.textAnimation", notEquals: "none" },
+            },
+          },
+          layoutGroups: [{ columns: 2, controls: ["textAnimationAmount", "textAnimationSpeed"], layout: "inline" }],
+          title: "Text animation",
+          visibleWhen: { target: "ascii.sourceMode", equals: "text" },
         },
         {
           controls: {
@@ -156,6 +302,7 @@ export const appSchema = defineToolcraft({
               ],
               target: "ascii.colorMode",
               type: "select",
+              visibleWhen: { target: "ascii.sourceMode", equals: "image" },
             },
             foreground: {
               defaultValue: "#D8FF65",
@@ -173,6 +320,7 @@ export const appSchema = defineToolcraft({
             inkMix: {
               ...slider("ascii.inkMix", "Ink intensity", 92, 0, 100, 1, "%"),
               ...responsive("Ink intensity controls the blend between source and generated color."),
+              visibleWhen: { target: "ascii.sourceMode", equals: "image" },
             },
           },
           layoutGroups: [{ columns: 2, controls: ["foreground", "background"], layout: "inline" }],
@@ -214,7 +362,7 @@ export const appSchema = defineToolcraft({
             },
           },
           title: "Depth field",
-          visibleWhen: { target: "ascii.mode", notEquals: "tone" },
+          visibleWhen: { target: "ascii.sourceMode", equals: "image" },
         },
         {
           controls: {

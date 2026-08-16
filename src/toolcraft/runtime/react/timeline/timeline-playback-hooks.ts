@@ -96,7 +96,6 @@ export function useTimelineClock({
 
     let frame = 0;
     let previousTimestamp = window.performance.now();
-    let lastLoggedSecond = -1;
     if (debug) {
       console.info('[Toolcraft timeline] RAF started', {
         durationSeconds,
@@ -110,16 +109,6 @@ export function useTimelineClock({
 
       previousTimestamp = timestamp;
       const nextValue = store.getPlayhead() + elapsedSeconds;
-      const currentLoggedSecond = Math.floor(nextValue);
-
-      if (debug && currentLoggedSecond !== lastLoggedSecond) {
-        lastLoggedSecond = currentLoggedSecond;
-        console.info('[Toolcraft timeline] RAF tick', {
-          elapsedSeconds,
-          nextValue,
-          timestamp,
-        });
-      }
 
       if (nextValue < durationSeconds) {
         store.setPlayhead(nextValue, timestamp);

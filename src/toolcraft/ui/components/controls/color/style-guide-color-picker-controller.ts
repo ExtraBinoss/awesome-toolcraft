@@ -238,12 +238,15 @@ export function useColorPickerController({
   const surfaceModelRef = useRef<ColorSurfaceModel>(colorSurfaceModel);
   const [surfacePositionOverride, setSurfacePositionOverrideState] =
     useState<SurfacePositionOverride | null>(null);
+  const pendingSurfacePositionRef = useRef<SurfacePositionOverride | null>(null);
+  const surfacePositionRafRef = useRef<number | null>(null);
   const refs = useColorPickerRefs();
   const interaction = useInteractionState(onInteractionStateChange);
   const model = useColorModel({
     value,
     isSurfaceDragging,
     hueDragStartHexRef: refs.hueDragStartHexRef,
+    surfaceDragStartHexRef: refs.surfaceDragStartHexRef,
     isHexInputFocusedRef: refs.isHexInputFocusedRef,
     pendingSurfaceCommitHexRef: refs.pendingSurfaceCommitHexRef,
     pendingSurfaceBaseHexRef: refs.pendingSurfaceBaseHexRef,
@@ -252,11 +255,25 @@ export function useColorPickerController({
   const preview = useSurfacePreview(model.emitChange);
   useEffect(() => {
     surfaceModelRef.current = colorSurfaceModel;
+    pendingSurfacePositionRef.current = null;
     setSurfacePositionOverrideState(null);
   }, [colorSurfaceModel]);
+  useEffect(() => () => {
+    if (surfacePositionRafRef.current !== null) {
+      cancelAnimationFrame(surfacePositionRafRef.current);
+    }
+  }, []);
   const setSurfacePositionOverride = useCallback(
     (position: ColorSurfacePosition, hex: string, surfaceModel: ColorSurfaceModel) => {
-      setSurfacePositionOverrideState({ colorModel: surfaceModel, hex, position });
+      pendingSurfacePositionRef.current = { colorModel: surfaceModel, hex, position };
+      if (surfacePositionRafRef.current !== null) return;
+
+      surfacePositionRafRef.current = requestAnimationFrame(() => {
+        surfacePositionRafRef.current = null;
+        const pendingPosition = pendingSurfacePositionRef.current;
+        pendingSurfacePositionRef.current = null;
+        if (pendingPosition) setSurfacePositionOverrideState(pendingPosition);
+      });
     },
     [],
   );

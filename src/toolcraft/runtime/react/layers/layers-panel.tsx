@@ -6,17 +6,19 @@ import {
   PlusIcon,
   StackPlusIcon,
 } from "@phosphor-icons/react";
+import { PanelIconButton } from "@/toolcraft/ui/components/panel/panel-icon-button";
+import { stopPanelHeaderButtonPointerDown } from "@/toolcraft/ui/components/panel/panel-events";
 import {
-  Button,
   PanelContentSurface,
-  PanelIconButton,
   PanelSurface,
+} from "@/toolcraft/ui/components/panel/panel-surface";
+import { Button } from "@/toolcraft/ui/components/primitives/button";
+import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-  PrimitiveArrowIcon,
-  stopPanelHeaderButtonPointerDown,
-} from "@/toolcraft/ui";
+} from "@/toolcraft/ui/components/primitives/popover";
+import { PrimitiveArrowIcon } from "@/toolcraft/ui/components/primitives/primitive-arrow-icon";
 
 import type { ToolcraftPanelState } from "../../state/types";
 import {

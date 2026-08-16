@@ -5,10 +5,11 @@ import * as React from "react";
 import {
   useToolcraftSelector,
   useToolcraftStore,
+  useToolcraftValue,
 } from "@/toolcraft/runtime/react/app-shell/use-toolcraft";
 import type { ToolcraftMediaAsset } from "@/toolcraft/runtime/state/types";
 
-import { AsciiImageCanvas } from "./ascii-lab-image-canvas";
+import { AsciiImageCanvas, AsciiTextCanvas } from "./ascii-lab-image-canvas";
 
 const AsciiLabThreeRenderer = React.lazy(() =>
   import("./ascii-lab-renderer").then((module) => ({
@@ -34,14 +35,35 @@ function isModelAsset(asset: ToolcraftMediaAsset | undefined): boolean {
   return Boolean(asset && /\.(glb|gltf|obj|stl)$/i.test(asset.fileName));
 }
 
-function stringValue(values: Record<string, unknown>, target: string, fallback: string): string {
-  const value = values[target];
-  return typeof value === "string" ? value : fallback;
+function colorHexValue(value: unknown, fallback: string): string {
+  if (typeof value === "string") return value;
+  if (value && typeof value === "object" && "hex" in value) {
+    const hex = (value as { hex?: unknown }).hex;
+    if (typeof hex === "string") return hex;
+  }
+  return fallback;
 }
 
-function numberValue(values: Record<string, unknown>, target: string, fallback: number): number {
-  const value = values[target];
-  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+function PaperAmbientLayer(): React.JSX.Element {
+  const isPlaying = useToolcraftSelector(
+    React.useCallback((state) => state.timeline.isPlaying, []),
+  );
+  const foregroundValue = useToolcraftValue("ascii.foreground");
+  const backgroundValue = useToolcraftValue("scene.background");
+  const motionValue = useToolcraftValue("ascii.motion");
+  const foreground = colorHexValue(foregroundValue, "#D8FF65");
+  const background = colorHexValue(backgroundValue, "#020307");
+  const speed = isPlaying && typeof motionValue === "number" ? motionValue / 100 : 0;
+
+  return (
+    <React.Suspense fallback={null}>
+      <AsciiLabPaperAmbient
+        background={background}
+        foreground={foreground}
+        speed={speed}
+      />
+    </React.Suspense>
+  );
 }
 
 export function AsciiLabRuntimeRenderer(): React.JSX.Element {
@@ -49,22 +71,12 @@ export function AsciiLabRuntimeRenderer(): React.JSX.Element {
   const mediaAssets = useToolcraftSelector(
     React.useCallback((state) => state.mediaAssets, []),
   );
-  const isPlaying = useToolcraftSelector(
-    React.useCallback((state) => state.timeline.isPlaying, []),
-  );
-  const valuesRevision = useToolcraftSelector(
-    React.useCallback((state) => state.values, []),
-  );
-  const keyframeGroups = useToolcraftSelector(
-    React.useCallback((state) => state.timeline.keyframeGroups, []),
-  );
-  const values = React.useMemo(
-    () => store.getEvaluatedValues(),
-    [keyframeGroups, store, valuesRevision],
-  );
   const source = sourceAsset(mediaAssets);
+  const sourceModeValue = useToolcraftValue("ascii.sourceMode");
+  const paperAmbientValue = useToolcraftValue("paper.ambient");
+  const sourceMode = typeof sourceModeValue === "string" ? sourceModeValue : "image";
 
-  if (isModelAsset(source)) {
+  if (sourceMode === "image" && isModelAsset(source)) {
     return (
       <React.Suspense
         fallback={
@@ -78,37 +90,27 @@ export function AsciiLabRuntimeRenderer(): React.JSX.Element {
     );
   }
 
-  const paperAmbient = values["paper.ambient"] === true;
-  const foreground = stringValue(values, "ascii.foreground", "#D8FF65");
-  const background = stringValue(values, "scene.background", "#020307");
-  const paperSpeed = isPlaying ? numberValue(values, "ascii.motion", 18) / 100 : 0;
+  const paperAmbient = paperAmbientValue === true;
 
   return (
     <div className="absolute inset-0 overflow-hidden" data-toolcraft-ascii-lab-output="true" data-toolcraft-product-output>
       {paperAmbient ? (
-        <React.Suspense fallback={null}>
-          <AsciiLabPaperAmbient
-            background={background}
-            foreground={foreground}
-            speed={paperSpeed}
-          />
-        </React.Suspense>
+        <PaperAmbientLayer />
       ) : null}
-      {source ? (
+      {sourceMode === "text" ? (
+        <AsciiTextCanvas
+          store={store}
+        />
+      ) : source ? (
         <AsciiImageCanvas
           asset={source}
-          keyframeGroupsRevision={keyframeGroups}
           store={store}
-          valuesRevision={valuesRevision}
         />
       ) : (
         <div className="absolute inset-0 grid place-items-center bg-[#020307] text-xs text-white/60">
           Drop an image or 3D model to start.
         </div>
       )}
-      <div className="pointer-events-none absolute top-3 left-3 rounded-md bg-black/60 px-2 py-1 font-mono text-[10px] tracking-wide text-white/70">
-        ASCII IMAGE FIELD
-      </div>
     </div>
   );
 }

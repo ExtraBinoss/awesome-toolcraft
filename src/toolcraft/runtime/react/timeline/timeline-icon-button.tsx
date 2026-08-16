@@ -1,7 +1,12 @@
 'use client';
 
 import * as React from 'react';
-import { Button, Tooltip, TooltipContent, TooltipTrigger } from '@/toolcraft/ui';
+import { Button } from '@/toolcraft/ui/components/primitives/button';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/toolcraft/ui/components/primitives/tooltip';
 
 export function TimelineIconButton({
   active = false,

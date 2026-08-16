@@ -5,29 +5,13 @@ import * as React from "react";
 import { ScrollFade } from "../primitives/scroll-fade";
 import { cn } from "../../lib/utils";
 
+export { PanelSurface } from "./panel-base-surface";
+
 const panelDividerClassName =
   "border-t border-[color:color-mix(in_oklab,var(--border)_8%,transparent)]";
 const panelContentScrollFadeHeight = 44;
 const panelContentViewportClassName =
   "flex min-h-0 flex-col overflow-x-hidden overflow-y-auto overscroll-contain";
-
-export const PanelSurface = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(function PanelSurface({ children, className, ...props }, ref) {
-  return (
-    <div
-      {...props}
-      ref={ref}
-      className={cn(
-        "floating-popup-surface toolcraft-panel-surface isolate border text-[color:var(--popover-foreground)] supports-backdrop-filter:backdrop-blur-2xl supports-backdrop-filter:backdrop-saturate-150",
-        className,
-      )}
-    >
-      {children}
-    </div>
-  );
-});
 
 export const PanelContentSurface = React.forwardRef<
   HTMLDivElement,

@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { ArrowCounterClockwiseIcon } from "@phosphor-icons/react";
-import { ControlFieldLabelActionProvider } from "@/toolcraft/ui/components/control-layout";
 import { Button } from "@/toolcraft/ui/components/primitives/button";
 import { PanelSection } from "@/toolcraft/ui/components/panel/panel-section";
 import {
@@ -23,11 +22,6 @@ import type {
 import type { ToolcraftDispatch } from "../../../state/store";
 import type { ToolcraftControlRendererMap } from "../control-renderers";
 import type { ActionControlRunAction } from "../renderers/controls-panel-action-renderer";
-import { renderBasicControl } from "../renderers/controls-panel-basic-renderers";
-import {
-  renderCompoundColorGroup,
-  renderCompoundControl,
-} from "../renderers/controls-panel-compound-renderers";
 import { withControlLabelHelp } from "./controls-panel-help";
 import type { ControlsPanelKeyframeActions } from "../keyframes/controls-panel-keyframes";
 
@@ -49,6 +43,16 @@ const LazySettingsTransferControl = React.lazy(() =>
 const LazyFileDropControl = React.lazy(() =>
   import("../renderers/controls-panel-media-renderer").then((module) => ({
     default: module.FileDropControlRenderer,
+  })),
+);
+const LazyBasicControlRenderer = React.lazy(() =>
+  import("../renderers/controls-panel-basic-renderers").then((module) => ({
+    default: module.BasicControlRenderer,
+  })),
+);
+const LazyCompoundRenderer = React.lazy(() =>
+  import("../renderers/controls-panel-compound-renderers").then((module) => ({
+    default: module.CompoundRenderer,
   })),
 );
 import {
@@ -77,6 +81,23 @@ export type ControlsPanelSetControlValue = (
   label?: string,
   meta?: ControlChangeMeta,
 ) => void;
+
+function ControlRendererLoading({
+  size = "field",
+}: {
+  size?: "compact" | "field" | "large";
+}): React.JSX.Element {
+  return (
+    <div
+      aria-label="Loading control"
+      className="toolcraft-control-inline-loading"
+      data-size={size}
+      role="status"
+    >
+      <span aria-hidden="true" />
+    </div>
+  );
+}
 
 export type ControlsPanelSectionProps = {
   collapsedSectionByKey: Record<string, boolean>;
@@ -262,17 +283,24 @@ export function renderControlsPanelSection({
               ids,
               node: withControlTargetBoundary({
                 controlIds: ids,
-                node: renderCompoundColorGroup({
-                  entries: group.entries,
-                  getControlName,
-                  getControlValue,
-                  headerKeyframeTarget,
-                  maybeUpsertControlKeyframe,
-                  sectionHasOnlyColorFields,
-                  setControlValue,
-                  shouldShowColorFieldLabel,
-                  withKeyframeLabelAction,
-                }),
+                node: (
+                  <React.Suspense fallback={<ControlRendererLoading size="large" />}>
+                    <LazyCompoundRenderer
+                      kind="colorGroup"
+                      args={{
+                        entries: group.entries,
+                        getControlName,
+                        getControlValue,
+                        headerKeyframeTarget,
+                        maybeUpsertControlKeyframe,
+                        sectionHasOnlyColorFields,
+                        setControlValue,
+                        shouldShowColorFieldLabel,
+                        withKeyframeLabelAction,
+                      }}
+                    />
+                  </React.Suspense>
+                ),
                 targets: group.entries.map(([, control]) => control.target),
               }),
             };
@@ -308,7 +336,7 @@ export function renderControlsPanelSection({
             switch (getToolcraftControlRendererKind(control.type)) {
               case "action":
                 return (
-                  <React.Suspense fallback={null}>
+                  <React.Suspense fallback={<ControlRendererLoading />}>
                     <LazyActionControl
                       control={control}
                       id={id}
@@ -319,34 +347,45 @@ export function renderControlsPanelSection({
                 );
 
               case "basic":
-                return renderBasicControl({
-                  commit,
-                  control,
-                  id,
-                  name,
-                  usesHeaderKeyframeAction,
-                  value,
-                  vectorPadShape,
-                  withKeyframeLabelAction,
-                });
+                return (
+                  <React.Suspense fallback={<ControlRendererLoading size="compact" />}>
+                    <LazyBasicControlRenderer
+                      commit={commit}
+                      control={control}
+                      id={id}
+                      name={name}
+                      usesHeaderKeyframeAction={usesHeaderKeyframeAction}
+                      value={value}
+                      vectorPadShape={vectorPadShape}
+                      withKeyframeLabelAction={withKeyframeLabelAction}
+                    />
+                  </React.Suspense>
+                );
 
               case "compound":
-                return renderCompoundControl({
-                  commit,
-                  commitWithLabel,
-                  control,
-                  id,
-                  name,
-                  sectionHasOnlyColorFields,
-                  shouldShowColorFieldLabel,
-                  usesHeaderKeyframeAction,
-                  value,
-                  withKeyframeLabelAction,
-                });
+                return (
+                  <React.Suspense fallback={<ControlRendererLoading />}>
+                    <LazyCompoundRenderer
+                      kind="control"
+                      args={{
+                        commit,
+                        commitWithLabel,
+                        control,
+                        id,
+                        name,
+                        sectionHasOnlyColorFields,
+                        shouldShowColorFieldLabel,
+                        usesHeaderKeyframeAction,
+                        value,
+                        withKeyframeLabelAction,
+                      }}
+                    />
+                  </React.Suspense>
+                );
 
               case "collection":
                 return (
-                  <React.Suspense fallback={null}>
+                  <React.Suspense fallback={<ControlRendererLoading size="large" />}>
                     <LazyCollectionActionsControl
                       control={control}
                       name={name}
@@ -358,7 +397,7 @@ export function renderControlsPanelSection({
 
               case "media":
                 return (
-                  <React.Suspense fallback={null}>
+                  <React.Suspense fallback={<ControlRendererLoading size="large" />}>
                     <LazyFileDropControl
                       canvasSize={state.canvas.size}
                       control={control}
@@ -371,7 +410,7 @@ export function renderControlsPanelSection({
 
               case "settings":
                 return (
-                  <React.Suspense fallback={null}>
+                  <React.Suspense fallback={<ControlRendererLoading />}>
                     <LazySettingsTransferControl key={id} />
                   </React.Suspense>
                 );
@@ -386,15 +425,17 @@ export function renderControlsPanelSection({
                 return withKeyframeLabelAction({
                   children: (
                     <React.Fragment key={id}>
-                      <CustomControl
-                        control={control}
-                        controlId={id}
-                        dispatch={dispatch}
-                        keyframeAction={getKeyframeLabelAction(control, name, value)}
-                        name={name}
-                        setValue={commit}
-                        value={value}
-                      />
+                      <React.Suspense fallback={<ControlRendererLoading />}>
+                        <CustomControl
+                          control={control}
+                          controlId={id}
+                          dispatch={dispatch}
+                          keyframeAction={getKeyframeLabelAction(control, name, value)}
+                          name={name}
+                          setValue={commit}
+                          value={value}
+                        />
+                      </React.Suspense>
                     </React.Fragment>
                   ),
                   control,

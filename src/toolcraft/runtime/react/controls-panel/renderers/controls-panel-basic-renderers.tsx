@@ -189,7 +189,7 @@ function CanvasAspectRatioControl({
   );
 }
 
-export function renderBasicControl({
+function renderBasicControl({
   commit,
   control,
   id,
@@ -436,4 +436,10 @@ export function renderBasicControl({
     default:
       return null;
   }
+}
+
+export function BasicControlRenderer(
+  props: BasicControlRenderArgs,
+): React.JSX.Element {
+  return <>{renderBasicControl(props)}</>;
 }

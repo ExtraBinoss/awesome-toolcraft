@@ -49,10 +49,15 @@ export function ColorValueControl({
     getHexDraftValue(color, showHash),
   );
   const [previewColor, setPreviewColor] = React.useState(color);
+  const draftColorRef = React.useRef(draftColor);
+  const previewColorRef = React.useRef(previewColor);
   const liveHistoryGroupRef = React.useRef<string | null>(null);
 
   React.useEffect(() => {
-    setDraftColor(getHexDraftValue(color, showHash));
+    const nextDraftColor = getHexDraftValue(color, showHash);
+    draftColorRef.current = nextDraftColor;
+    previewColorRef.current = color;
+    setDraftColor(nextDraftColor);
     setPreviewColor(color);
   }, [color, showHash]);
 
@@ -71,26 +76,34 @@ export function ColorValueControl({
 
   function commitColor(nextColor: string, meta?: ControlChangeMeta): void {
     const normalizedColor = nextColor.toUpperCase();
+    previewColorRef.current = normalizedColor;
+    draftColorRef.current = getHexDraftValue(normalizedColor, showHash);
     setPreviewColor(normalizedColor);
-    setDraftColor(getHexDraftValue(normalizedColor, showHash));
+    setDraftColor(draftColorRef.current);
     onColorChange(normalizedColor, meta);
   }
 
   function updateDraft(nextValue: string): void {
     const nextDraft = getSanitizedHexDraft(nextValue, showHash);
 
+    draftColorRef.current = nextDraft;
     setDraftColor(nextDraft);
 
     const committedColor = getCommittedHexColor(nextDraft);
     if (committedColor) {
+      previewColorRef.current = committedColor;
       setPreviewColor(committedColor);
     }
   }
 
   function handleDraftBlur(): void {
-    const committedColor = getCommittedHexColor(draftColor);
+    const committedColor = getCommittedHexColor(draftColorRef.current);
 
     if (committedColor) {
+      console.debug("[Toolcraft color] commit", {
+        color: committedColor,
+        control: label,
+      });
       commitColor(
         committedColor,
         liveHistoryGroupRef.current ? getLiveHistoryMeta() : undefined,
@@ -99,8 +112,10 @@ export function ColorValueControl({
       return;
     }
 
-    setDraftColor(getHexDraftValue(color, showHash));
-    setPreviewColor(color);
+    const fallbackDraft = getHexDraftValue(previewColorRef.current, showHash);
+    draftColorRef.current = fallbackDraft;
+    setDraftColor(fallbackDraft);
+    setPreviewColor(previewColorRef.current);
     finishLiveHistoryGroup();
   }
 
@@ -136,8 +151,10 @@ export function ColorValueControl({
 
             if (event.key === "Escape") {
               event.preventDefault();
-              setDraftColor(getHexDraftValue(color, showHash));
-              setPreviewColor(color);
+              const fallbackDraft = getHexDraftValue(previewColorRef.current, showHash);
+              draftColorRef.current = fallbackDraft;
+              setDraftColor(fallbackDraft);
+              setPreviewColor(previewColorRef.current);
               finishLiveHistoryGroup();
               event.currentTarget.blur();
             }

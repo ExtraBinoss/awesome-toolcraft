@@ -13,11 +13,13 @@ import {
 } from "./style-guide-color-picker-color-utils";
 
 const PENDING_SURFACE_ACK_RGB_DISTANCE_THRESHOLD = 8;
+const COLOR_PREVIEW_INTERVAL_MS = 1_000 / 30;
 
 type ColorModelOptions = {
   value: string;
   isSurfaceDragging: boolean;
   hueDragStartHexRef: MutableRefObject<string | null>;
+  surfaceDragStartHexRef: MutableRefObject<string | null>;
   isHexInputFocusedRef: MutableRefObject<boolean>;
   pendingSurfaceCommitHexRef: MutableRefObject<string | null>;
   pendingSurfaceBaseHexRef: MutableRefObject<string | null>;
@@ -28,6 +30,7 @@ export function useColorModel({
   value,
   isSurfaceDragging,
   hueDragStartHexRef,
+  surfaceDragStartHexRef,
   isHexInputFocusedRef,
   pendingSurfaceCommitHexRef,
   pendingSurfaceBaseHexRef,
@@ -40,16 +43,35 @@ export function useColorModel({
   const lastEmittedHexRef = useRef(normalizedHex);
   const rafIdRef = useRef<number | null>(null);
   const pendingHexRef = useRef<string | null>(null);
+  const lastEmitTimestampRef = useRef(0);
+  const optimisticRafIdRef = useRef<number | null>(null);
+  const pendingOptimisticColorRef = useRef<HsvColor | null>(null);
+  const pendingDraftHexRef = useRef<string | null>(null);
+
+  const scheduleOptimisticState = useCallback((nextColor: HsvColor, updateDraft: boolean) => {
+    pendingOptimisticColorRef.current = nextColor;
+    pendingDraftHexRef.current = updateDraft ? hsvToHex(nextColor).toUpperCase() : null;
+    if (optimisticRafIdRef.current !== null) return;
+
+    optimisticRafIdRef.current = requestAnimationFrame(() => {
+      optimisticRafIdRef.current = null;
+      const pendingColor = pendingOptimisticColorRef.current;
+      const pendingDraft = pendingDraftHexRef.current;
+      pendingOptimisticColorRef.current = null;
+      pendingDraftHexRef.current = null;
+      if (pendingColor) setOptimisticColor(pendingColor);
+      if (pendingDraft) setDraftHexValue(pendingDraft);
+    });
+  }, []);
 
   const applyOptimisticColor = useCallback(
     (nextColor: HsvColor, options?: { updateDraft?: boolean }) => {
       latestHsvRef.current = nextColor;
-      setOptimisticColor(nextColor);
       const nextHex = hsvToHex(nextColor);
-      if (options?.updateDraft !== false) setDraftHexValue(nextHex.toUpperCase());
+      scheduleOptimisticState(nextColor, options?.updateDraft !== false);
       return nextHex;
     },
-    [],
+    [scheduleOptimisticState],
   );
 
   const applyOptimisticHex = useCallback(
@@ -68,20 +90,27 @@ export function useColorModel({
     (nextHex: string) => {
       if (nextHex === lastEmittedHexRef.current) return;
 
-      const isDragging = isSurfaceDragging || hueDragStartHexRef.current !== null;
+      const isDragging =
+        surfaceDragStartHexRef.current !== null || hueDragStartHexRef.current !== null;
 
       if (isDragging) {
         pendingHexRef.current = nextHex;
         if (rafIdRef.current === null) {
-          rafIdRef.current = requestAnimationFrame(() => {
-            rafIdRef.current = null;
-            if (pendingHexRef.current !== null) {
-              const hexToEmit = pendingHexRef.current;
-              lastEmittedHexRef.current = hexToEmit;
-              onChange(hexToEmit);
-              pendingHexRef.current = null;
+          const flushPreview = (timestamp: number) => {
+            if (timestamp - lastEmitTimestampRef.current < COLOR_PREVIEW_INTERVAL_MS) {
+              rafIdRef.current = requestAnimationFrame(flushPreview);
+              return;
             }
-          });
+
+            rafIdRef.current = null;
+            if (pendingHexRef.current === null) return;
+            const hexToEmit = pendingHexRef.current;
+            pendingHexRef.current = null;
+            lastEmitTimestampRef.current = timestamp;
+            lastEmittedHexRef.current = hexToEmit;
+            onChange(hexToEmit);
+          };
+          rafIdRef.current = requestAnimationFrame(flushPreview);
         }
       } else {
         if (rafIdRef.current !== null) {
@@ -89,11 +118,12 @@ export function useColorModel({
           rafIdRef.current = null;
         }
         pendingHexRef.current = null;
+        lastEmitTimestampRef.current = performance.now();
         lastEmittedHexRef.current = nextHex;
         onChange(nextHex);
       }
     },
-    [onChange, isSurfaceDragging, hueDragStartHexRef]
+    [hueDragStartHexRef, onChange, surfaceDragStartHexRef]
   );
 
   useEffect(() => {
@@ -105,6 +135,7 @@ export function useColorModel({
       }
       if (pendingHexRef.current !== null) {
         const hexToEmit = pendingHexRef.current;
+        lastEmitTimestampRef.current = performance.now();
         lastEmittedHexRef.current = hexToEmit;
         onChange(hexToEmit);
         pendingHexRef.current = null;
@@ -117,12 +148,11 @@ export function useColorModel({
       if (rafIdRef.current !== null) {
         cancelAnimationFrame(rafIdRef.current);
       }
+      if (optimisticRafIdRef.current !== null) {
+        cancelAnimationFrame(optimisticRafIdRef.current);
+      }
     };
   }, []);
-
-  useEffect(() => {
-    latestHsvRef.current = optimisticColor;
-  }, [optimisticColor]);
 
   useEffect(() => {
     if (isSurfaceDragging || hueDragStartHexRef.current !== null || isHexInputFocusedRef.current)

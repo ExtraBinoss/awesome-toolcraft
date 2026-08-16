@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useState } from 'react';
-import { ScrollFade } from '@/toolcraft/ui';
+import { ScrollFade } from '@/toolcraft/ui/components/primitives/scroll-fade';
 
 import type { ToolcraftTimelineKeyframeEasing } from '../../state/types';
 import {

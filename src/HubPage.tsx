@@ -5,6 +5,7 @@ import { preloadToolPage } from "./tool-loading";
 
 export function HubPage() {
   const [query, setQuery] = useState("");
+  const [failedImages, setFailedImages] = useState<Record<string, true>>({});
   const results = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase("fr");
     if (!normalized) return tools;
@@ -55,13 +56,21 @@ export function HubPage() {
                   onPointerEnter={() => preloadToolPage(tool.href)}
                 >
                   <div className="card-media">
-                    <img
-                      src={tool.image}
-                      alt=""
-                      loading="lazy"
-                      onError={(event) => { event.currentTarget.style.display = "none"; }}
-                    />
-                    <span className="status">{tool.status}</span>
+                    {failedImages[tool.slug] ? (
+                      <div className="card-media-error" role="alert">
+                        <strong>Preview unavailable</strong>
+                        <span>{tool.image.split("/").at(-1)}</span>
+                      </div>
+                    ) : (
+                      <img
+                        src={tool.image}
+                        alt=""
+                        loading="lazy"
+                        onError={() => {
+                          setFailedImages((current) => ({ ...current, [tool.slug]: true }));
+                        }}
+                      />
+                    )}
                     <span className="open-icon" aria-hidden="true">↗</span>
                   </div>
                   <div className="card-content">

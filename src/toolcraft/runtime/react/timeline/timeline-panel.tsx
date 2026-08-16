@@ -8,7 +8,8 @@ import {
   useState,
   type CSSProperties,
 } from 'react';
-import { PanelSurface } from '@/toolcraft/ui';
+import { PanelSurface } from '@/toolcraft/ui/components/panel/panel-base-surface';
+import { logToolLoad } from '@/tool-load-debug';
 
 import type {
   ToolcraftPanelState,
@@ -26,10 +27,6 @@ import {
   isTimelineInteractiveElement,
 } from './timeline-event-targets';
 import { findTimelineKeyframe } from './timeline-keyframes';
-import {
-  TimelinePanelHeader,
-  TimelinePanelMask,
-} from './timeline-panel-header';
 import {
   timelinePanelExpandedWidthPx,
   useTimelinePanelResponsiveLayout,
@@ -49,6 +46,25 @@ const TimelineExpandedContent = React.lazy(() =>
     default: module.TimelineExpandedContent,
   })),
 );
+const timelinePanelHeaderModule = import('./timeline-panel-header');
+const TimelinePanelHeader = React.lazy(() =>
+  timelinePanelHeaderModule.then((module) => ({ default: module.TimelinePanelHeader })),
+);
+const TimelinePanelMask = React.lazy(() =>
+  timelinePanelHeaderModule.then((module) => ({ default: module.TimelinePanelMask })),
+);
+
+function TimelineHeaderLoading(): React.JSX.Element {
+  return (
+    <div
+      aria-label="Loading timeline controls"
+      className="toolcraft-panel-inline-loading"
+      role="status"
+    >
+      <span aria-hidden="true" />
+    </div>
+  );
+}
 
 type TimelinePanelProps = {
   className?: string;
@@ -66,7 +82,7 @@ function cn(...classNames: Array<string | false | null | undefined>): string {
 
 const timelinePanelCollapsedSize = { height: 36 } as const;
 const timelinePanelCompactWidthPx = 36;
-const timelinePanelCollapsedWidthPx = 256;
+const timelinePanelCollapsedWidthPx = 288;
 const timelinePanelSurfaceBorderHeightPx = 2;
 const timelinePanelHeaderHeightPx = 36;
 const timelineExpandedRulerHeightPx = 36;
@@ -96,6 +112,9 @@ function getTimelinePanelExpandedSize(keyframeGroups: readonly ToolcraftTimeline
 }
 
 export function TimelinePanel(props: TimelinePanelProps): React.JSX.Element | null {
+  React.useEffect(() => {
+    logToolLoad('panel mounted:timeline');
+  }, []);
   const enabled = useToolcraftSelector(
     React.useCallback((state) => Boolean(state.schema.panels.timeline), []),
   );
@@ -422,41 +441,43 @@ function TimelinePanelContent(props: TimelinePanelProps): React.JSX.Element {
           setIsHoverPaused(false);
         }}
       >
-        {!isCompact && !isExpanded ? (
-          <TimelinePanelMask
+        <React.Suspense fallback={<TimelineHeaderLoading />}>
+          {!isCompact && !isExpanded ? (
+            <TimelinePanelMask
+              currentTimeSeconds={currentTimeSeconds}
+              durationSeconds={durationSeconds}
+              isHandleVisible={isHoverPaused || scrubber.isScrubbing}
+            />
+          ) : null}
+          <TimelinePanelHeader
             currentTimeSeconds={currentTimeSeconds}
             durationSeconds={durationSeconds}
-            isHandleVisible={isHoverPaused || scrubber.isScrubbing}
+            onDurationCommit={commitDurationValue}
+            onScrubKeyDown={scrubber.handleScrubKeyDown}
+            onScrubPointerDown={scrubber.handleScrubPointerDown}
+            onScrubPointerMove={scrubber.handleScrubPointerMove}
+            onScrubPointerUp={scrubber.handleScrubPointerUp}
+            onToggleExpanded={() => {
+              defaultExpandedPendingRef.current = false;
+              dispatch({ expanded: !isExpanded, type: 'timeline.setExpanded' });
+            }}
+            onToggleLoop={() => dispatch({ type: 'timeline.toggleLoop' })}
+            onTogglePlayback={() => {
+              setIsHoverPaused(false);
+              dispatch({ type: 'timeline.togglePlayback' });
+            }}
+            stripRef={scrubber.stripRef}
+            status={{
+              canExpand: keyframesEnabled,
+              isExpanded,
+              isLooping,
+              isPlaying: displayedIsPlaying,
+              isScrubbing: scrubber.isScrubbing,
+              playbackReady,
+            }}
+            variant={variant}
           />
-        ) : null}
-        <TimelinePanelHeader
-          currentTimeSeconds={currentTimeSeconds}
-          durationSeconds={durationSeconds}
-          onDurationCommit={commitDurationValue}
-          onScrubKeyDown={scrubber.handleScrubKeyDown}
-          onScrubPointerDown={scrubber.handleScrubPointerDown}
-          onScrubPointerMove={scrubber.handleScrubPointerMove}
-          onScrubPointerUp={scrubber.handleScrubPointerUp}
-          onToggleExpanded={() => {
-            defaultExpandedPendingRef.current = false;
-            dispatch({ expanded: !isExpanded, type: 'timeline.setExpanded' });
-          }}
-          onToggleLoop={() => dispatch({ type: 'timeline.toggleLoop' })}
-          onTogglePlayback={() => {
-            setIsHoverPaused(false);
-            dispatch({ type: 'timeline.togglePlayback' });
-          }}
-          stripRef={scrubber.stripRef}
-          status={{
-            canExpand: keyframesEnabled,
-            isExpanded,
-            isLooping,
-            isPlaying: displayedIsPlaying,
-            isScrubbing: scrubber.isScrubbing,
-            playbackReady,
-          }}
-          variant={variant}
-        />
+        </React.Suspense>
         {isExpanded && keyframesEnabled ? (
           <React.Suspense fallback={null}>
             <TimelineExpandedContent

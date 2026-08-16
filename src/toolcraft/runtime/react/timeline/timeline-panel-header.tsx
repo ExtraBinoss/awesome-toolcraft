@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
-import { PrimitiveArrowIcon } from '@/toolcraft/ui';
+import { PrimitiveArrowIcon } from '@/toolcraft/ui/components/primitives/primitive-arrow-icon';
 import { Pause, Play, Repeat, Repeat1 } from 'lucide-react';
 
 import { clampToolcraftTimelineTime } from '../../state/timeline-values';
@@ -172,7 +172,7 @@ function TimelinePlaybackStrip({
       aria-valuemin={0}
       aria-valuenow={Number(formatTimelineSeconds(currentTimeSeconds))}
       className={cn(
-        'group/timeline-strip absolute right-[-11px] bottom-[-5px] left-[-5px] z-0 h-2 cursor-ew-resize touch-none outline-none',
+        'group/timeline-strip absolute right-[-11px] bottom-[-5px] left-[-5px] z-0 h-2 cursor-ew-resize touch-none outline-none before:absolute before:inset-x-0 before:-inset-y-2 before:content-[""]',
         isScrubbing && 'cursor-grabbing',
       )}
       data-dragging={isScrubbing ? 'true' : undefined}

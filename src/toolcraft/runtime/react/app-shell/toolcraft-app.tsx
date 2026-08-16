@@ -1,29 +1,20 @@
 "use client";
 
 import * as React from "react";
-import { logToolLoad, logToolLoadDuration } from "@/tool-load-debug";
 
 import type { ResolvedToolcraftAppSchema } from "../../schema/types";
 import { CanvasShell } from "../canvas/canvas-shell";
 import { ToolbarPanel } from "./toolbar-panel";
+import { PanelLoading } from "./panel-loading";
+import { loadControlsPanel, loadTimelinePanel } from "./panel-loaders";
 import type { ToolcraftPanelActionHandler } from "../controls-panel/controls-panel";
 import type { ToolcraftControlRendererMap } from "../controls-panel/control-renderers";
 import { ToolcraftRoot } from "./toolcraft-root";
 import { useToolcraftSelector } from "./use-toolcraft";
 
-const controlsImportStartedAt = performance.now();
-logToolLoad("panel import:start controls");
-const controlsPanelModule = import("../controls-panel/controls-panel").then((module) => {
-  logToolLoadDuration("panel import:end controls", controlsImportStartedAt);
-  return module;
-});
-const timelineImportStartedAt = performance.now();
-logToolLoad("panel import:start timeline");
-const timelinePanelModule = import("../timeline/timeline-panel").then((module) => {
-  logToolLoadDuration("panel import:end timeline", timelineImportStartedAt);
-  return module;
-});
-const rendererPrerequisites = timelinePanelModule;
+const controlsPanelModule = loadControlsPanel();
+const timelinePanelModule = loadTimelinePanel();
+const panelModules = Promise.all([controlsPanelModule, timelinePanelModule]);
 const ControlsPanel = React.lazy(() =>
   controlsPanelModule.then((module) => ({ default: module.ControlsPanel })),
 );
@@ -53,18 +44,6 @@ function cn(...classNames: Array<string | false | null | undefined>): string {
   return classNames.filter(Boolean).join(" ");
 }
 
-function PanelLoading({ label }: { label: string }): React.JSX.Element {
-  return (
-    <div
-      aria-label={`Loading ${label}`}
-      className="pointer-events-none absolute right-3 bottom-3 z-30 rounded-md border border-[color:var(--border)] bg-[color:var(--card)] px-2 py-1 text-[10px] text-[color:var(--muted-foreground)]"
-      role="status"
-    >
-      Loading {label}…
-    </div>
-  );
-}
-
 function ToolcraftAppContent({
   canvasContent,
   className,
@@ -91,20 +70,34 @@ function ToolcraftAppContent({
   );
   React.useEffect(() => {
     let active = true;
+    let firstFrame = 0;
+    let secondFrame = 0;
 
-    void rendererPrerequisites.then(() => {
-      if (active) {
-        setRendererReady(true);
+    const revealRenderer = (): void => {
+      if (!active) {
+        return;
       }
-    }).catch((error: unknown) => {
-      if (active) {
-        setRendererReady(true);
-      }
-      console.error("[Toolcraft load] renderer prerequisite import failed", error);
+
+      // Give React and the browser a paint opportunity for the shared panels
+      // before mounting a tool's potentially expensive canvas renderer.
+      firstFrame = window.requestAnimationFrame(() => {
+        secondFrame = window.requestAnimationFrame(() => {
+          if (active) {
+            setRendererReady(true);
+          }
+        });
+      });
+    };
+
+    void panelModules.then(revealRenderer).catch((error: unknown) => {
+      revealRenderer();
+      console.error("[Toolcraft load] panel prerequisite import failed", error);
     });
 
     return () => {
       active = false;
+      window.cancelAnimationFrame(firstFrame);
+      window.cancelAnimationFrame(secondFrame);
     };
   }, []);
 
@@ -126,12 +119,12 @@ function ToolcraftAppContent({
         </CanvasShell>
       ) : null}
       {surfaces.panels.layers?.enabled ? (
-        <React.Suspense fallback={<PanelLoading label="layers" />}>
+        <React.Suspense fallback={<PanelLoading panelType="layers" />}>
           <LayersPanel panelPlacement="floating" />
         </React.Suspense>
       ) : null}
       {surfaces.panels.controls?.enabled ? (
-        <React.Suspense fallback={<PanelLoading label="controls" />}>
+        <React.Suspense fallback={<PanelLoading panelType="controls" />}>
           <ControlsPanel
             controlRenderers={controlRenderers}
             onPanelAction={onPanelAction}
@@ -145,7 +138,14 @@ function ToolcraftAppContent({
           data-toolcraft-timeline-panel-variant={timelinePanelVariant}
           hidden={timelinePanelHidden}
         >
-          <React.Suspense fallback={<PanelLoading label="timeline" />}>
+          <React.Suspense
+            fallback={(
+              <PanelLoading
+                panelType="timeline"
+                timelineVariant={timelinePanelVariant}
+              />
+            )}
+          >
             <TimelinePanel panelPlacement="floating" variant={timelinePanelVariant} />
           </React.Suspense>
         </div>

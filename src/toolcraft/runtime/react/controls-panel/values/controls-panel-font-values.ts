@@ -1,4 +1,4 @@
-import type { FontPickerValue } from "@/toolcraft/ui";
+import type { FontPickerValue } from "@/toolcraft/ui/components/controls/font-picker/font-picker-value";
 
 import {
   asNumber,

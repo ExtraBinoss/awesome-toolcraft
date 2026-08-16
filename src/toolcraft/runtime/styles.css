@@ -123,3 +123,184 @@
 [data-toolcraft-generated-output] {
   color-scheme: normal;
 }
+
+.toolcraft-panel-skeleton {
+  position: absolute;
+  z-index: 45;
+  pointer-events: none;
+  opacity: 0;
+  animation: toolcraft-panel-skeleton-enter 320ms 90ms cubic-bezier(0.22, 1, 0.36, 1)
+    forwards;
+}
+
+.toolcraft-panel-skeleton[data-panel-loading="controls"] {
+  top: 0.625rem;
+  right: 0.625rem;
+  width: 300px;
+  height: calc(100dvh - 1.25rem);
+}
+
+.toolcraft-panel-skeleton[data-panel-loading="layers"] {
+  top: 0.625rem;
+  left: 0.625rem;
+  width: 240px;
+  height: min(360px, calc(100dvh - 1.25rem));
+}
+
+.toolcraft-panel-skeleton[data-panel-loading="timeline"] {
+  top: 0.625rem;
+  left: 50%;
+  width: 288px;
+  max-width: calc(100vw - 1.25rem);
+  height: 36px;
+  transform: translateX(-50%);
+}
+
+.toolcraft-panel-skeleton[data-panel-loading="timeline"][data-timeline-variant="compact"] {
+  width: 36px;
+}
+
+.toolcraft-panel-skeleton-surface {
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid color-mix(in oklab, var(--border) 15%, transparent);
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(145deg, rgb(255 255 255 / 5%), transparent 42%),
+    color-mix(in oklab, var(--popover) 82%, transparent);
+  box-shadow:
+    0 22px 70px rgb(0 0 0 / 24%),
+    inset 0 1px rgb(255 255 255 / 5%);
+  backdrop-filter: blur(24px) saturate(130%);
+}
+
+.toolcraft-panel-skeleton-aurora {
+  position: absolute;
+  z-index: -1;
+  inset: -35%;
+  background:
+    radial-gradient(ellipse 48% 42% at 78% 4%, rgb(255 255 255 / 32%), transparent 70%),
+    radial-gradient(ellipse 46% 58% at 12% 34%, rgb(170 179 193 / 20%), transparent 72%),
+    radial-gradient(ellipse 58% 48% at 56% 92%, rgb(10 12 17 / 72%), transparent 74%),
+    linear-gradient(132deg, rgb(85 89 97 / 22%), rgb(12 14 19 / 64%));
+  filter: blur(28px);
+  transform: scale(1.12) translate3d(-2%, 1%, 0);
+  animation: toolcraft-panel-skeleton-aurora 2.8s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+[data-toolcraft-panel-reveal] {
+  animation: toolcraft-panel-reveal 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: opacity, filter;
+}
+
+.toolcraft-panel-reveal-glow {
+  position: absolute;
+  z-index: 80;
+  inset: -1px;
+  pointer-events: none;
+  border: 1px solid rgb(255 255 255 / 18%);
+  border-radius: var(--radius-lg);
+  background: radial-gradient(ellipse 70% 55% at 75% 0%, rgb(255 255 255 / 10%), transparent 72%);
+  box-shadow: 0 0 40px rgb(255 255 255 / 7%);
+}
+
+.toolcraft-panel-inline-loading {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 34px;
+  overflow: hidden;
+  border-radius: inherit;
+}
+
+.toolcraft-panel-inline-loading span {
+  position: absolute;
+  inset: -120%;
+  background:
+    radial-gradient(ellipse 42% 55% at 76% 12%, rgb(255 255 255 / 28%), transparent 72%),
+    radial-gradient(ellipse 48% 62% at 14% 76%, rgb(150 158 172 / 20%), transparent 74%),
+    linear-gradient(132deg, rgb(72 77 86 / 18%), rgb(10 12 17 / 56%));
+  filter: blur(18px);
+  animation: toolcraft-panel-skeleton-aurora 2.8s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+.toolcraft-control-inline-loading {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  height: 36px;
+  overflow: hidden;
+  border: 1px solid color-mix(in oklab, var(--border) 10%, transparent);
+  border-radius: var(--radius-md);
+  background: color-mix(in oklab, var(--popover) 76%, transparent);
+}
+
+.toolcraft-control-inline-loading[data-size="compact"] {
+  height: 28px;
+}
+
+.toolcraft-control-inline-loading[data-size="large"] {
+  height: 72px;
+}
+
+.toolcraft-control-inline-loading span {
+  position: absolute;
+  inset: -100%;
+  background:
+    radial-gradient(ellipse 38% 52% at 78% 12%, rgb(255 255 255 / 26%), transparent 72%),
+    radial-gradient(ellipse 46% 58% at 12% 78%, rgb(146 154 168 / 18%), transparent 74%),
+    linear-gradient(132deg, rgb(66 71 80 / 16%), rgb(9 11 16 / 54%));
+  filter: blur(16px);
+  animation: toolcraft-panel-skeleton-aurora 2.8s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+@keyframes toolcraft-panel-skeleton-enter {
+  from {
+    opacity: 0;
+    filter: blur(10px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+@keyframes toolcraft-panel-skeleton-aurora {
+  from {
+    transform: scale(1.14) translate3d(-7%, 5%, 0) rotate(-2deg);
+  }
+  to {
+    transform: scale(1.24) translate3d(8%, -6%, 0) rotate(3deg);
+  }
+}
+
+@keyframes toolcraft-panel-reveal {
+  from {
+    opacity: 0;
+    filter: blur(12px) brightness(1.16);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0) brightness(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toolcraft-panel-skeleton,
+  .toolcraft-panel-skeleton-aurora,
+  .toolcraft-panel-inline-loading span,
+  .toolcraft-control-inline-loading span,
+  [data-toolcraft-panel-reveal] {
+    animation: none;
+  }
+
+  .toolcraft-panel-skeleton {
+    opacity: 1;
+  }
+}

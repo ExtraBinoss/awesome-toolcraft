@@ -7,14 +7,14 @@ export type ToolEntry = {
   href: string;
 };
 
-// Add future tools here. Images must use AVIF or WebP.
+// Add future tools here. Paths are served from public/tool-images.
 export const tools: ToolEntry[] = [
   {
     slug: "ascii-lab",
     name: "ASCII Lab",
     category: "ASCII / Image / 3D",
     status: "Available",
-    image: "/tool-images/suminagashi.avif",
+    image: "/tool-images/ascii-lab.png",
     href: "/tools/ascii-lab",
   },
   {
@@ -22,7 +22,7 @@ export const tools: ToolEntry[] = [
     name: "Dither / Heatmap",
     category: "Image / Video",
     status: "Available",
-    image: "/tool-images/suminagashi.avif",
+    image: "/tool-images/dither-heatmap.png",
     href: "/tools/dither-heatmap",
   },
   {
@@ -30,7 +30,7 @@ export const tools: ToolEntry[] = [
     name: "Artistic 3D",
     category: "3D / Shaders",
     status: "Available",
-    image: "/tool-images/gradient-generator.jpg",
+    image: "/tool-images/artistic-3d.png",
     href: "/tools/artistic-3d",
   },
   {

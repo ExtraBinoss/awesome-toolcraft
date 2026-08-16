@@ -121,7 +121,7 @@ export type CompoundColorGroupRenderArgs = {
   withKeyframeLabelAction: CompoundControlKeyframeWrap;
 };
 
-export function renderCompoundColorGroup({
+function renderCompoundColorGroup({
   entries,
   getControlName,
   getControlValue,
@@ -200,7 +200,7 @@ export function renderCompoundColorGroup({
   );
 }
 
-export function renderCompoundControl({
+function renderCompoundControl({
   commit,
   commitWithLabel,
   control,
@@ -404,4 +404,14 @@ export function renderCompoundControl({
     default:
       return null;
   }
+}
+
+export function CompoundRenderer(
+  props:
+    | { args: CompoundColorGroupRenderArgs; kind: "colorGroup" }
+    | { args: CompoundControlRenderArgs; kind: "control" },
+): React.JSX.Element {
+  return props.kind === "colorGroup"
+    ? <>{renderCompoundColorGroup(props.args)}</>
+    : <>{renderCompoundControl(props.args)}</>;
 }

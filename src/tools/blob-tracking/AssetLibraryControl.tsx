@@ -1,8 +1,16 @@
 "use client";
 
 import * as React from "react";
-import { AssetLibrary, useToolcraftDispatch, useToolcraftSelector, useToolcraftStore, useToolcraftValues, type ToolcraftCustomControlRendererProps } from "@/toolcraft/runtime/react";
-import { createToolcraftPngExportCanvas, getToolcraftVideoExportSize, ToolcraftCanvasRecorder, downloadToolcraftVideo } from "@/toolcraft/runtime";
+import { createToolcraftPngExportCanvas, getToolcraftVideoExportSize } from "@/toolcraft/runtime/export/export";
+import { downloadToolcraftVideo, ToolcraftCanvasRecorder } from "@/toolcraft/runtime/export/video";
+import {
+  useToolcraftDispatch,
+  useToolcraftSelector,
+  useToolcraftStore,
+  useToolcraftValues,
+} from "@/toolcraft/runtime/react/app-shell/use-toolcraft";
+import { AssetLibrary } from "@/toolcraft/runtime/react/controls-panel/asset-library";
+import type { ToolcraftCustomControlRendererProps } from "@/toolcraft/runtime/react/controls-panel/control-renderers";
 import type { ToolcraftAssetLibrarySource } from "@/toolcraft/runtime/schema/types";
 import { readImportedFile } from "@/toolcraft/runtime/react/canvas/media-file";
 import type { ToolcraftMediaAsset } from "@/toolcraft/runtime/state/types";

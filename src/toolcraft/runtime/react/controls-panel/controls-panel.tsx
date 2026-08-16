@@ -12,6 +12,7 @@ import type {
 import type {
   ToolcraftCommand,
   ToolcraftPanelState,
+  ToolcraftState,
 } from "../../state/types";
 import {
   getToolcraftTargetValue,
@@ -68,6 +69,62 @@ function cn(...classNames: Array<string | false | null | undefined>): string {
   return classNames.filter(Boolean).join(" ");
 }
 
+function selectState(state: ToolcraftState): ToolcraftState {
+  return state;
+}
+
+function getControlsResetKey(state: ToolcraftState): number {
+  return state.history.undo.at(-1)?.label === "Reset controls"
+    ? state.history.undo.length
+    : 0;
+}
+
+function controlsPanelStructureMatches(left: ToolcraftState, right: ToolcraftState): boolean {
+  return (
+    left.schema === right.schema &&
+    left.canvas === right.canvas &&
+    left.mediaAssets === right.mediaAssets &&
+    left.timeline.expanded === right.timeline.expanded &&
+    left.timeline.keyframeGroups === right.timeline.keyframeGroups &&
+    left.timeline.selectedKeyframeId === right.timeline.selectedKeyframeId &&
+    getControlsResetKey(left) === getControlsResetKey(right)
+  );
+}
+
+function recordsMatch(
+  left: Record<string, unknown>,
+  right: Record<string, unknown>,
+): boolean {
+  const keys = Object.keys(left);
+  return keys.length === Object.keys(right).length && keys.every(
+    (key) => Object.is(left[key], right[key]),
+  );
+}
+
+function useTargetValues(targets: readonly string[]): Record<string, unknown> {
+  const targetsKey = JSON.stringify(targets);
+  const selector = React.useMemo(
+    () => (state: ToolcraftState) => Object.fromEntries(
+      targets.map((target) => [target, state.values[target]]),
+    ),
+    // The serialized target list intentionally defines selector identity.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [targetsKey],
+  );
+  return useToolcraftSelector(selector, recordsMatch);
+}
+
+function ControlsPanelSectionValueSubscription({
+  render,
+  targets,
+}: {
+  render: () => React.JSX.Element;
+  targets: readonly string[];
+}): React.JSX.Element {
+  useTargetValues(targets);
+  return render();
+}
+
 export function ControlsPanel({
   className,
   controlRenderers,
@@ -82,7 +139,23 @@ export function ControlsPanel({
   }, []);
   const dispatch = useToolcraftDispatch();
   const store = useToolcraftStore();
-  const state = useToolcraftSelector(React.useCallback((snapshot) => snapshot, []));
+  const structuralState = useToolcraftSelector(selectState, controlsPanelStructureMatches);
+  const conditionTargets = React.useMemo(() => {
+    const targets = new Set<string>();
+    for (const section of structuralState.schema.panels.controls?.sections ?? []) {
+      if (section.visibleWhen) targets.add(section.visibleWhen.target);
+      for (const control of Object.values(section.controls)) {
+        if (control.visibleWhen) targets.add(control.visibleWhen.target);
+        if (control.disabledWhen) targets.add(control.disabledWhen.target);
+      }
+    }
+    return [...targets];
+  }, [structuralState.schema]);
+  const conditionValues = useTargetValues(conditionTargets);
+  const state = React.useMemo<ToolcraftState>(() => ({
+    ...structuralState,
+    values: { ...structuralState.values, ...conditionValues },
+  }), [conditionValues, structuralState]);
   const {
     runAction,
     stickyFooterActive,
@@ -115,9 +188,7 @@ export function ControlsPanel({
 
   const resolvedControlsPanel = controlsPanel;
   const placement = panelPlacement ?? (framed ? "frame" : "surface");
-  const lastHistoryPatch = state.history.undo.at(-1);
-  const controlsResetKey =
-    lastHistoryPatch?.label === "Reset controls" ? state.history.undo.length : 0;
+  const controlsResetKey = getControlsResetKey(state);
 
   function dispatchCommand(command: ToolcraftCommand): void {
     dispatch(command);
@@ -140,7 +211,7 @@ export function ControlsPanel({
   }
 
   function getControlValue(control: ToolcraftControlSchema): unknown {
-    return getToolcraftTargetValue(state, control.target) ?? control.defaultValue;
+    return getToolcraftTargetValue(store.getState(), control.target) ?? control.defaultValue;
   }
 
   function isControlDisabled(control: ToolcraftControlSchema): boolean {
@@ -238,26 +309,33 @@ export function ControlsPanel({
       stickyFooterProgress={stickyFooterProgress}
       title={resolvedControlsPanel.title}
     >
-      {visibleSections.map(({ entries, section }, sectionIndex) =>
-        renderControlsPanelSection({
-          collapsedSectionByKey,
-          controlRenderers,
-          dispatch,
-          dispatchCommand,
-          entries,
-          getControlValue,
-          isControlDisabled,
-          keyframeActions,
-          onSectionCollapsedChange: handleSectionCollapsedChange,
-          panelSectionKey: `${section.title ?? "section"}-${sectionIndex}`,
-          runAction,
-          section,
-          sectionIndex,
-          setControlValue,
-          state,
-          vectorPadShape,
-        }),
-      )}
+      {visibleSections.map(({ entries, section }, sectionIndex) => {
+        const panelSectionKey = `${section.title ?? "section"}-${sectionIndex}`;
+        return (
+          <ControlsPanelSectionValueSubscription
+            key={panelSectionKey}
+            targets={entries.map(([, control]) => control.target)}
+            render={() => renderControlsPanelSection({
+              collapsedSectionByKey,
+              controlRenderers,
+              dispatch,
+              dispatchCommand,
+              entries,
+              getControlValue,
+              isControlDisabled,
+              keyframeActions,
+              onSectionCollapsedChange: handleSectionCollapsedChange,
+              panelSectionKey,
+              runAction,
+              section,
+              sectionIndex,
+              setControlValue,
+              state,
+              vectorPadShape,
+            })}
+          />
+        );
+      })}
     </Panel>
   );
 

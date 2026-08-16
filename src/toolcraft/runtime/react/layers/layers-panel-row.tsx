@@ -2,7 +2,8 @@
 
 import * as React from "react";
 import { StackSimpleIcon } from "@phosphor-icons/react";
-import { Button, ScrollFade } from "@/toolcraft/ui";
+import { Button } from "@/toolcraft/ui/components/primitives/button";
+import { ScrollFade } from "@/toolcraft/ui/components/primitives/scroll-fade";
 import { Eye, EyeOff, Trash2 } from "lucide-react";
 
 import type { ToolcraftLayer } from "../../state/types";

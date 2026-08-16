@@ -1,8 +1,10 @@
 import * as React from "react";
 
-import { createToolcraftPngExportCanvas, getToolcraftVideoExportSize, ToolcraftCanvasRecorder, downloadToolcraftVideo } from "@/toolcraft/runtime";
-import { useToolcraftStore, type ToolcraftCustomControlRendererProps } from "@/toolcraft/runtime/react";
-import { Button } from "@/toolcraft/ui";
+import { createToolcraftPngExportCanvas, getToolcraftVideoExportSize } from "@/toolcraft/runtime/export/export";
+import { downloadToolcraftVideo, ToolcraftCanvasRecorder } from "@/toolcraft/runtime/export/video";
+import { useToolcraftStore } from "@/toolcraft/runtime/react/app-shell/use-toolcraft";
+import type { ToolcraftCustomControlRendererProps } from "@/toolcraft/runtime/react/controls-panel/control-renderers";
+import { Button } from "@/toolcraft/ui/components/primitives/button";
 
 function outputCanvas(): HTMLCanvasElement | null {
   return document.querySelector<HTMLCanvasElement>("[data-toolcraft-dither-heatmap-canvas='true']");

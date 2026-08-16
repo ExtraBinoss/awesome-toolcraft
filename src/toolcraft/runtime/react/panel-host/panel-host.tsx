@@ -18,6 +18,12 @@ import type {
 } from "./panel-host-types";
 import { useToolcraftDispatch, useToolcraftSelector } from "../app-shell/use-toolcraft";
 
+const PanelRevealGlow = React.lazy(() =>
+  import("./panel-reveal-glow").then((module) => ({
+    default: module.PanelRevealGlow,
+  })),
+);
+
 function cn(...classNames: Array<string | false | null | undefined>): string {
   return classNames.filter(Boolean).join(" ");
 }
@@ -260,7 +266,11 @@ function PanelHost({
   return (
     <div className={cn("pointer-events-none", config.wrapperClassName, className)} style={style}>
         <div
-          className={cn("pointer-events-auto touch-none data-[dragging=true]:cursor-grabbing", innerClassName)}
+          className={cn(
+            "pointer-events-auto relative touch-none data-[dragging=true]:cursor-grabbing",
+            innerClassName,
+          )}
+          data-toolcraft-panel-reveal=""
           data-dragging="false"
           data-drag-mode={resolvedDragMode}
           data-panel-id={resolvedPanelId}
@@ -276,6 +286,9 @@ function PanelHost({
           style={{ transform: panelTransform(resolvedPosition) }}
         >
           {children}
+          <React.Suspense fallback={null}>
+            <PanelRevealGlow />
+          </React.Suspense>
         </div>
     </div>
   );

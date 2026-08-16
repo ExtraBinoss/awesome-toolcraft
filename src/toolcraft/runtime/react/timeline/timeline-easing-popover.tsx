@@ -1,7 +1,12 @@
 'use client';
 
 import * as React from 'react';
-import { Button, Popover, PopoverContent, PopoverTrigger } from '@/toolcraft/ui';
+import { Button } from '@/toolcraft/ui/components/primitives/button';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/toolcraft/ui/components/primitives/popover';
 
 import type { ToolcraftTimelineKeyframeEasing } from '../../state/types';
 import { getToolcraftTimelineKeyframeEasing } from './timeline-easing-model';

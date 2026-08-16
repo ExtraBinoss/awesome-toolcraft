@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, type MutableRefObject } from "react";
+import { useEffect, useRef, type MutableRefObject } from "react";
 import { hsvToHex, type HsvColor } from "../../../lib/style-guide-color-utils";
 import type { ColorSurfaceModel } from "./style-guide-color-picker-channel-utils";
 import type { InteractionSource } from "./style-guide-color-picker-interaction-state";
@@ -35,10 +35,16 @@ type SurfaceDragOptions = {
 };
 
 export function useSurfaceDrag(options: SurfaceDragOptions) {
+  const optionsRef = useRef(options);
+  useEffect(() => {
+    optionsRef.current = options;
+  }, [options]);
+
   useEffect(() => {
     if (!options.isSurfaceDragging) return;
 
     const updateFromSurface = (clientX: number, clientY: number) => {
+      const options = optionsRef.current;
       const surfaceBounds = options.surfaceBoundsRef.current;
       if (!surfaceBounds || surfaceBounds.width === 0 || surfaceBounds.height === 0) return;
 
@@ -57,6 +63,7 @@ export function useSurfaceDrag(options: SurfaceDragOptions) {
     };
 
     const finishDrag = () => {
+      const options = optionsRef.current;
       const nextHex = hsvToHex(options.latestHsvRef.current);
       const dragStartHex = options.surfaceDragStartHexRef.current;
       options.setIsSurfaceDragging(false);
@@ -89,5 +96,5 @@ export function useSurfaceDrag(options: SurfaceDragOptions) {
       window.removeEventListener("pointerup", finishDrag);
       window.removeEventListener("pointercancel", finishDrag);
     };
-  }, [options]);
+  }, [options.isSurfaceDragging]);
 }
