@@ -379,7 +379,9 @@ function AsciiImageCanvas({
   const valuesRef = React.useRef(values);
   const playheadRef = React.useRef(playheadSeconds);
   const renderRef = React.useRef<((timestamp: number) => void) | null>(null);
-  playheadRef.current = playheadSeconds;
+  React.useEffect(() => {
+    playheadRef.current = playheadSeconds;
+  }, [playheadSeconds]);
   React.useEffect(() => {
     valuesRef.current = values;
     renderRef.current = (timestamp) => {
