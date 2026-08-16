@@ -1,21 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { TargetIcon } from "@phosphor-icons/react";
-import { Button } from "@/toolcraft/ui/components/primitives/button";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/toolcraft/ui/components/primitives/tooltip";
-import { PanelSurface } from "@/toolcraft/ui/components/panel/panel-surface";
-import { ArrowLeft, Moon, Redo2, Sun, Undo2, ZoomIn, ZoomOut } from "lucide-react";
+import { ArrowLeft, LocateFixed, Moon, Redo2, Sun, Undo2, ZoomIn, ZoomOut } from "lucide-react";
 
 import type { ToolcraftPanelState } from "../../state/types";
-import { PanelContainer } from "../panel-host/panel-host";
 import type { PanelPlacement, PanelStateChange } from "../panel-host/panel-host-types";
 import { useToolcraftTheme } from "./theme-runtime";
 import { useToolcraftDispatch, useToolcraftSelector } from "./use-toolcraft";
+import { ToolbarPanelFrame } from "./toolbar-panel-frame";
 
 export type ToolbarPanelProps = {
   className?: string;
@@ -34,7 +26,6 @@ type ToolbarIconButtonProps = {
   onClick?: () => void;
 };
 
-const toolbarIconButtonSize = "icon";
 const desktopToolbarTightButtonGapClassName = "-mr-px";
 
 function cn(...classNames: Array<string | false | null | undefined>): string {
@@ -68,29 +59,21 @@ function ToolbarIconButton({
   };
 
   return (
-    <Tooltip>
-      <TooltipTrigger
-        render={
-          <Button
-            aria-label={label}
-            aria-pressed={active}
-            className={cn(
-              "data-[icon-active=true]:text-[color:var(--foreground)]",
-              className,
-            )}
-            data-icon-active={active}
-            disabled={disabled}
-            onClick={handleClick}
-            size={toolbarIconButtonSize}
-            type="button"
-            variant="ghost"
-          />
-        }
-      >
-        {children}
-      </TooltipTrigger>
-      <TooltipContent side="top">{label}</TooltipContent>
-    </Tooltip>
+    <button
+      aria-label={label}
+      aria-pressed={active}
+      className={cn(
+        "inline-flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-transparent p-0 text-[color:var(--muted-foreground)] transition-colors hover:bg-[color:var(--accent)] hover:text-[color:var(--foreground)] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[color:var(--ring)] disabled:pointer-events-none disabled:opacity-40 [&_svg]:size-4",
+        active && "text-[color:var(--foreground)]",
+        className,
+      )}
+      disabled={disabled}
+      onClick={handleClick}
+      title={label}
+      type="button"
+    >
+      {children}
+    </button>
   );
 }
 
@@ -116,9 +99,9 @@ export function ToolbarPanel({
   const zoomEnabled = toolbar.zoom;
 
   const toolbarSurface = (
-    <PanelSurface
+    <div
       className={cn(
-        "pointer-events-auto flex w-auto items-center justify-start gap-1.5 rounded-lg p-1",
+        "floating-popup-surface toolcraft-panel-surface pointer-events-auto flex w-auto items-center justify-start gap-1.5 rounded-lg border p-1 text-[color:var(--popover-foreground)] supports-backdrop-filter:backdrop-blur-2xl supports-backdrop-filter:backdrop-saturate-150",
         !framed && className,
       )}
       data-toolcraft-inspect-toolbar="true"
@@ -201,20 +184,19 @@ export function ToolbarPanel({
           label="Center canvas"
           onClick={() => dispatch({ type: "canvas.center" })}
         >
-          <TargetIcon />
+          <LocateFixed />
         </ToolbarIconButton>
       ) : null}
-    </PanelSurface>
+    </div>
   );
 
   return (
-    <PanelContainer
+    <ToolbarPanelFrame
       onPanelStateChange={onPanelStateChange}
       panelState={panelState}
-      panelType="toolbar"
       placement={panelPlacement ?? (framed ? "frame" : "surface")}
     >
       {toolbarSurface}
-    </PanelContainer>
+    </ToolbarPanelFrame>
   );
 }

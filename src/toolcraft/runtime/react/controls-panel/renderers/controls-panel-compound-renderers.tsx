@@ -12,7 +12,6 @@ import {
   type ColorControlInputPair,
 } from "@/toolcraft/ui/components/controls/color";
 import { CurvesControl as Curves } from "@/toolcraft/ui/components/controls/curves";
-import { FontPickerControl as FontPicker } from "@/toolcraft/ui/components/controls/font-picker";
 import { GradientControl as Gradient } from "@/toolcraft/ui/components/controls/gradient";
 import { ImagePickerControl as ImagePicker } from "@/toolcraft/ui/components/controls/image-picker";
 import { PaletteControl as Palette } from "@/toolcraft/ui/components/controls/color";
@@ -30,6 +29,12 @@ import {
   defaultChannelMixerValues,
   isRecord,
 } from "../values/controls-panel-values";
+
+const FontPicker = React.lazy(() =>
+  import("@/toolcraft/ui/components/controls/font-picker/font-picker-control").then(
+    (module) => ({ default: module.FontPickerControl }),
+  ),
+);
 
 export type CompoundControlCommit = (
   nextValue: unknown,
@@ -307,14 +312,24 @@ export function renderCompoundControl({
 
       return withKeyframeLabelAction({
         children: (
-          <FontPicker
-            defaultValue={asFontPickerValue(control.defaultValue)}
-            disabled={control.disabled}
-            key={id}
-            name={name}
-            onValueChange={commit}
-            value={fontPickerValue}
-          />
+          <React.Suspense
+            fallback={
+              <div
+                aria-label={`Loading ${name}`}
+                className="h-16 animate-pulse rounded-lg bg-[color:var(--muted)]"
+                role="status"
+              />
+            }
+          >
+            <FontPicker
+              defaultValue={asFontPickerValue(control.defaultValue)}
+              disabled={control.disabled}
+              key={id}
+              name={name}
+              onValueChange={commit}
+              value={fontPickerValue}
+            />
+          </React.Suspense>
         ),
         control,
         disableAction: usesHeaderKeyframeAction,
