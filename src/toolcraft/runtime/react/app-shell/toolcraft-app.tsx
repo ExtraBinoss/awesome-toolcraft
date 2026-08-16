@@ -4,6 +4,7 @@ import * as React from "react";
 
 import type { ResolvedToolcraftAppSchema } from "../../schema/types";
 import { CanvasShell } from "../canvas/canvas-shell";
+import { ToolbarPanel } from "./toolbar-panel";
 import type { ToolcraftPanelActionHandler } from "../controls-panel/controls-panel";
 import type { ToolcraftControlRendererMap } from "../controls-panel/control-renderers";
 import { ToolcraftRoot } from "./toolcraft-root";
@@ -11,7 +12,10 @@ import { useToolcraftSelector } from "./use-toolcraft";
 
 const controlsPanelModule = import("../controls-panel/controls-panel");
 const timelinePanelModule = import("../timeline/timeline-panel");
-const toolbarPanelModule = import("./toolbar-panel");
+const essentialPanelModules = Promise.all([
+  controlsPanelModule,
+  timelinePanelModule,
+]);
 const ControlsPanel = React.lazy(() =>
   controlsPanelModule.then((module) => ({ default: module.ControlsPanel })),
 );
@@ -20,9 +24,6 @@ const LayersPanel = React.lazy(() =>
 );
 const TimelinePanel = React.lazy(() =>
   timelinePanelModule.then((module) => ({ default: module.TimelinePanel })),
-);
-const ToolbarPanel = React.lazy(() =>
-  toolbarPanelModule.then((module) => ({ default: module.ToolbarPanel })),
 );
 
 export type ToolcraftAppComposition = {
@@ -64,6 +65,7 @@ function ToolcraftAppContent({
   renderDefaultCanvasMedia = true,
   style,
 }: Omit<ToolcraftAppProps, "schema">): React.JSX.Element {
+  const [rendererReady, setRendererReady] = React.useState(false);
   const { surfaces, timelinePanelHidden, timelinePanelVariant } = useToolcraftSelector(
     React.useCallback((state) => ({
       surfaces: state.schema.assembly.surfaces,
@@ -79,6 +81,25 @@ function ToolcraftAppContent({
       [],
     ),
   );
+  React.useEffect(() => {
+    let active = true;
+
+    void essentialPanelModules.then(() => {
+      if (active) {
+        setRendererReady(true);
+      }
+    }).catch((error: unknown) => {
+      if (active) {
+        setRendererReady(true);
+      }
+      console.error("[Toolcraft load] essential panel import failed", error);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
   return (
     <div
       className={cn(
@@ -92,8 +113,8 @@ function ToolcraftAppContent({
       }}
     >
       {surfaces.canvas.enabled ? (
-        <CanvasShell renderDefaultMedia={renderDefaultCanvasMedia}>
-          {canvasContent}
+        <CanvasShell renderDefaultMedia={rendererReady && renderDefaultCanvasMedia}>
+          {rendererReady ? canvasContent : null}
         </CanvasShell>
       ) : null}
       {surfaces.panels.layers?.enabled ? (
@@ -122,9 +143,7 @@ function ToolcraftAppContent({
         </div>
       ) : null}
       {surfaces.panels.toolbar.enabled ? (
-        <React.Suspense fallback={<PanelLoading label="toolbar" />}>
-          <ToolbarPanel panelPlacement="floating" />
-        </React.Suspense>
+        <ToolbarPanel panelPlacement="floating" />
       ) : null}
     </div>
   );

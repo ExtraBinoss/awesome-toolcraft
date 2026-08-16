@@ -9,7 +9,6 @@ import {
   type CSSProperties,
 } from 'react';
 import { PanelSurface } from '@/toolcraft/ui';
-import { domMax, LazyMotion, m, useReducedMotion } from 'motion/react';
 
 import type {
   ToolcraftPanelState,
@@ -26,7 +25,6 @@ import {
   isEditableTimelineEventTarget,
   isTimelineInteractiveElement,
 } from './timeline-event-targets';
-import { TimelineExpandedContent } from './timeline-expanded-content';
 import { findTimelineKeyframe } from './timeline-keyframes';
 import {
   TimelinePanelHeader,
@@ -45,6 +43,12 @@ import {
   useToolcraftPlayhead,
   useToolcraftSelector,
 } from '../app-shell/use-toolcraft';
+
+const TimelineExpandedContent = React.lazy(() =>
+  import('./timeline-expanded-content').then((module) => ({
+    default: module.TimelineExpandedContent,
+  })),
+);
 
 type TimelinePanelProps = {
   className?: string;
@@ -70,16 +74,6 @@ const timelineEmptyStateHeightPx = timelineKeyframeRowHeightPx;
 const maxVisibleTimelineKeyframeRows = 8;
 const timelineKeyframeListMaxHeightPx =
   maxVisibleTimelineKeyframeRows * timelineKeyframeRowHeightPx;
-const timelinePanelExpandCollapseTransition = {
-  damping: 34,
-  mass: 0.85,
-  stiffness: 330,
-  type: 'spring',
-} as const;
-const timelinePanelResizeTransition = {
-  duration: 0.16,
-  ease: [0.22, 1, 0.36, 1],
-} as const;
 
 function getTimelinePanelExpandedSize(keyframeGroups: readonly ToolcraftTimelineKeyframeGroup[]): {
   height: number;
@@ -106,11 +100,7 @@ export function TimelinePanel(props: TimelinePanelProps): React.JSX.Element | nu
     React.useCallback((state) => Boolean(state.schema.panels.timeline), []),
   );
 
-  return enabled ? (
-    <LazyMotion features={domMax}>
-      <TimelinePanelContent {...props} />
-    </LazyMotion>
-  ) : null;
+  return enabled ? <TimelinePanelContent {...props} /> : null;
 }
 
 function useTimelinePanelContentState({
@@ -129,7 +119,6 @@ function useTimelinePanelContentState({
   );
   const timeline = useToolcraftSelector(React.useCallback((state) => state.timeline, []));
   const currentTimeSeconds = useToolcraftPlayhead();
-  const prefersReducedMotion = useReducedMotion();
 
   const keyframesEnabled = schema.assembly.capabilities.includes('timeline.keyframes');
   const playbackReady = isTimelineReadyForPlayback(schema, mediaAssets);
@@ -149,19 +138,11 @@ function useTimelinePanelContentState({
   const isExpanded =
     !isCompact && keyframesEnabled && (expanded || defaultExpandedPendingRef.current);
   const expandedPanelSize = getTimelinePanelExpandedSize(keyframeGroups);
-  const previousIsExpandedRef = useRef(isExpanded);
   const timelineRef = useRef({ ...timeline, currentTimeSeconds });
-  const isExpandCollapseTransition = previousIsExpandedRef.current !== isExpanded;
-  const timelinePanelTransition = isExpandCollapseTransition
-    ? timelinePanelExpandCollapseTransition
-    : timelinePanelResizeTransition;
 
   useEffect(() => {
     timelineRef.current = { ...timeline, currentTimeSeconds };
   }, [currentTimeSeconds, timeline]);
-  useEffect(() => {
-    previousIsExpandedRef.current = isExpanded;
-  }, [isExpanded]);
   useEffect(() => {
     if (playbackReady) {
       return;
@@ -372,7 +353,6 @@ function useTimelinePanelContentState({
     onPanelStateChange,
     panelState,
     playbackReady,
-    prefersReducedMotion,
     resolvedPanelPlacement,
     scrubber,
     selectedKeyframeId,
@@ -383,7 +363,6 @@ function useTimelinePanelContentState({
     timelinePanelAnimation,
     timelinePanelLayoutStyle,
     timelinePanelOffsetX,
-    timelinePanelTransition,
     timelinePanelWidth,
     timelineSurfaceRef,
     unconstrainedTimelinePanelWidth,
@@ -397,19 +376,18 @@ function TimelinePanelContent(props: TimelinePanelProps): React.JSX.Element {
     defaultExpandedPendingRef, deleteControlKeyframes, deleteKeyframe, dispatch,
     displayedIsPlaying, durationSeconds, expandedPanelSize, framed, isCompact,
     isExpanded, isHoverPaused, isLooping, keyframeGroups, keyframesEnabled,
-    moveKeyframe, onPanelStateChange, panelState, playbackReady, prefersReducedMotion,
+    moveKeyframe, onPanelStateChange, panelState, playbackReady,
     resolvedPanelPlacement, scrubber, selectedKeyframeId, setIsHoverPaused,
     setIsPlaying, setSelectedKeyframeId, shouldConstrainToContainer,
     timelinePanelAnimation, timelinePanelLayoutStyle, timelinePanelOffsetX,
-    timelinePanelTransition, timelinePanelWidth, timelineSurfaceRef,
+    timelinePanelWidth, timelineSurfaceRef,
     unconstrainedTimelinePanelWidth, variant,
   } = useTimelinePanelContentState(props);
 
   const timelineSurface = (
-    <m.div
-      animate={timelinePanelAnimation}
+    <div
       className={cn(
-        'pointer-events-auto origin-top',
+        'pointer-events-auto origin-top transition-[height,width,max-width,transform] duration-200 ease-out motion-reduce:transition-none',
         shouldConstrainToContainer ? 'w-full' : 'max-w-full',
         !framed && className,
       )}
@@ -423,10 +401,8 @@ function TimelinePanelContent(props: TimelinePanelProps): React.JSX.Element {
       data-scrubbing={scrubber.isScrubbing ? 'true' : 'false'}
       data-slot="timeline-panel"
       data-timeline-panel-variant={variant}
-      initial={false}
       ref={timelineSurfaceRef}
-      style={timelinePanelLayoutStyle}
-      transition={prefersReducedMotion ? { duration: 0 } : timelinePanelTransition}
+      style={{ ...timelinePanelLayoutStyle, ...timelinePanelAnimation }}
     >
       <PanelSurface
         className={cn(
@@ -482,27 +458,29 @@ function TimelinePanelContent(props: TimelinePanelProps): React.JSX.Element {
           variant={variant}
         />
         {isExpanded && keyframesEnabled ? (
-          <TimelineExpandedContent
-            currentTimeSeconds={currentTimeSeconds}
-            durationSeconds={durationSeconds}
-            isScrubbing={scrubber.isScrubbing}
-            keyframeGroups={keyframeGroups}
-            onChangeKeyframeEasing={changeKeyframeEasing}
-            onDeleteControlKeyframes={deleteControlKeyframes}
-            onDeleteKeyframe={deleteKeyframe}
-            onKeyframeDragStart={() => setIsPlaying(false)}
-            onKeyDown={scrubber.handleScrubKeyDown}
-            onMoveKeyframe={moveKeyframe}
-            onPointerDown={scrubber.handleScrubPointerDown}
-            onPointerMove={scrubber.handleScrubPointerMove}
-            onPointerUp={scrubber.handleScrubPointerUp}
-            onSelectedKeyframeChange={setSelectedKeyframeId}
-            selectedKeyframeId={selectedKeyframeId}
-            stripRef={scrubber.stripRef}
-          />
+          <React.Suspense fallback={null}>
+            <TimelineExpandedContent
+              currentTimeSeconds={currentTimeSeconds}
+              durationSeconds={durationSeconds}
+              isScrubbing={scrubber.isScrubbing}
+              keyframeGroups={keyframeGroups}
+              onChangeKeyframeEasing={changeKeyframeEasing}
+              onDeleteControlKeyframes={deleteControlKeyframes}
+              onDeleteKeyframe={deleteKeyframe}
+              onKeyframeDragStart={() => setIsPlaying(false)}
+              onKeyDown={scrubber.handleScrubKeyDown}
+              onMoveKeyframe={moveKeyframe}
+              onPointerDown={scrubber.handleScrubPointerDown}
+              onPointerMove={scrubber.handleScrubPointerMove}
+              onPointerUp={scrubber.handleScrubPointerUp}
+              onSelectedKeyframeChange={setSelectedKeyframeId}
+              selectedKeyframeId={selectedKeyframeId}
+              stripRef={scrubber.stripRef}
+            />
+          </React.Suspense>
         ) : null}
       </PanelSurface>
-    </m.div>
+    </div>
   );
 
   return (

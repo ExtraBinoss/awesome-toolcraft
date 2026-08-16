@@ -3,6 +3,7 @@
 import * as React from "react";
 
 import type { ToolcraftMediaAsset } from "@/toolcraft/runtime/state/types";
+import type { ToolcraftStore } from "@/toolcraft/runtime/state/store";
 
 function numberValue(values: Record<string, unknown>, target: string, fallback: number): number {
   const value = values[target];
@@ -57,8 +58,6 @@ function renderAsciiImage(
   if (canvas.width !== width || canvas.height !== height) {
     canvas.width = width;
     canvas.height = height;
-    buffer.width = width;
-    buffer.height = height;
   }
 
   const context = canvas.getContext("2d");
@@ -70,7 +69,17 @@ function renderAsciiImage(
   const background = parseHexColor(stringValue(values, "ascii.background", "#050609"), [5, 6, 9]);
   context.fillStyle = `rgb(${background.join(",")})`;
   context.fillRect(0, 0, width, height);
-  bufferContext.clearRect(0, 0, width, height);
+  const characters = Array.from(stringValue(values, "ascii.charset", " .,:;irsXA253hMHGS#9B&@"));
+  const charset = characters.length > 0 ? characters : [" "];
+  const cellWidth = Math.max(4, numberValue(values, "ascii.cellSize", 12) * renderScale);
+  const cellHeight = cellWidth * 1.52;
+  const columns = Math.ceil(width / cellWidth);
+  const rows = Math.ceil(height / cellHeight);
+  if (buffer.width !== columns || buffer.height !== rows) {
+    buffer.width = columns;
+    buffer.height = rows;
+  }
+  bufferContext.clearRect(0, 0, columns, rows);
 
   const sourceWidth = image.naturalWidth || image.width || 1;
   const sourceHeight = image.naturalHeight || image.height || 1;
@@ -84,15 +93,15 @@ function renderAsciiImage(
   } else {
     drawWidth = height * sourceAspect;
   }
-  bufferContext.drawImage(image, (width - drawWidth) / 2, (height - drawHeight) / 2, drawWidth, drawHeight);
+  bufferContext.drawImage(
+    image,
+    (width - drawWidth) / (2 * cellWidth),
+    (height - drawHeight) / (2 * cellHeight),
+    drawWidth / cellWidth,
+    drawHeight / cellHeight,
+  );
 
-  const pixels = bufferContext.getImageData(0, 0, width, height).data;
-  const characters = Array.from(stringValue(values, "ascii.charset", " .,:;irsXA253hMHGS#9B&@"));
-  const charset = characters.length > 0 ? characters : [" "];
-  const cellWidth = Math.max(4, numberValue(values, "ascii.cellSize", 12) * renderScale);
-  const cellHeight = cellWidth * 1.52;
-  const columns = Math.ceil(width / cellWidth);
-  const rows = Math.ceil(height / cellHeight);
+  const pixels = bufferContext.getImageData(0, 0, columns, rows).data;
   const contrast = numberValue(values, "ascii.contrast", 1.2);
   const brightness = numberValue(values, "ascii.brightness", 0);
   const depthStrength = numberValue(values, "ascii.depthStrength", 65) / 100;
@@ -111,9 +120,7 @@ function renderAsciiImage(
 
   for (let row = 0; row < rows; row += 1) {
     for (let column = 0; column < columns; column += 1) {
-      const x = Math.min(width - 1, Math.round(column * cellWidth + cellWidth * 0.5));
-      const y = Math.min(height - 1, Math.round(row * cellHeight + cellHeight * 0.5));
-      const pixelIndex = (y * width + x) * 4;
+      const pixelIndex = (row * columns + column) * 4;
       const alpha = pixels[pixelIndex + 3] / 255;
       if (alpha < 0.04) {
         continue;
@@ -181,48 +188,64 @@ function renderAsciiImage(
 
 export function AsciiImageCanvas({
   asset,
-  playheadSeconds,
-  values,
+  keyframeGroupsRevision,
+  store,
+  valuesRevision,
 }: {
   asset: ToolcraftMediaAsset;
-  playheadSeconds: number;
-  values: Record<string, unknown>;
+  keyframeGroupsRevision: readonly unknown[];
+  store: ToolcraftStore;
+  valuesRevision: Record<string, unknown>;
 }): React.JSX.Element {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const [buffer] = React.useState(() => document.createElement("canvas"));
   const imageRef = React.useRef<HTMLImageElement | null>(null);
-  const valuesRef = React.useRef(values);
-  const playheadRef = React.useRef(playheadSeconds);
-  const renderRef = React.useRef<((timestamp: number) => void) | null>(null);
+  const lastRenderedTimestampRef = React.useRef(Number.NEGATIVE_INFINITY);
+  const renderRef = React.useRef<(timeSeconds: number) => void>(() => undefined);
+
   React.useEffect(() => {
-    playheadRef.current = playheadSeconds;
-  }, [playheadSeconds]);
-  React.useEffect(() => {
-    valuesRef.current = values;
-    renderRef.current = (timestamp) => {
+    renderRef.current = (timeSeconds) => {
       const canvas = canvasRef.current;
       const image = imageRef.current;
       if (canvas && image) {
-        renderAsciiImage(canvas, buffer, image, valuesRef.current, timestamp);
+        renderAsciiImage(
+          canvas,
+          buffer,
+          image,
+          store.getEvaluatedValues(),
+          timeSeconds * 1_000,
+        );
       }
     };
-  }, [buffer, values]);
+    renderRef.current(store.getPlayhead());
+  }, [buffer, keyframeGroupsRevision, store, valuesRevision]);
 
   React.useEffect(() => {
     const image = new Image();
     image.addEventListener("load", () => {
       imageRef.current = image;
-      renderRef.current?.(playheadRef.current * 1_000);
+      renderRef.current(store.getPlayhead());
     }, { once: true });
     image.src = asset.dataUrl;
     return () => {
       imageRef.current = null;
     };
-  }, [asset.dataUrl]);
+  }, [asset.dataUrl, store]);
 
   React.useEffect(() => {
-    renderRef.current?.(playheadSeconds * 1_000);
-  }, [playheadSeconds, values]);
+    return store.subscribePlayhead((timeSeconds, timestamp) => {
+      const values = store.getEvaluatedValues();
+      const requestedFps = Number(values["performance.fps"] ?? 30);
+      const frameInterval = 1_000 / Math.max(1, Math.min(60, requestedFps));
+
+      if (timestamp - lastRenderedTimestampRef.current < frameInterval - 0.5) {
+        return;
+      }
+
+      lastRenderedTimestampRef.current = timestamp;
+      renderRef.current(timeSeconds);
+    });
+  }, [store]);
 
   return <canvas className="absolute inset-0 h-full w-full" data-toolcraft-ascii-lab-canvas="true" ref={canvasRef} />;
 }

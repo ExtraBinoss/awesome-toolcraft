@@ -46,6 +46,9 @@ export type ToolcraftStore = {
   getState: () => ToolcraftState;
   jotai: ReturnType<typeof createStore>;
   setPlayhead: (timeSeconds: number, uiTimestamp?: number) => void;
+  subscribePlayhead: (
+    listener: (timeSeconds: number, timestamp: number) => void,
+  ) => () => void;
   subscribe: (listener: () => void) => () => void;
   syncPlayhead: () => void;
 };
@@ -86,6 +89,14 @@ export function createToolcraftStore({
   const valuesAtoms = new Map<string, Atom<Record<string, unknown>>>();
   let lastPlayheadUiPublish = 0;
   let lastLoggedPlayheadSecond = -1;
+  const playheadListeners = new Set<
+    (timeSeconds: number, timestamp: number) => void
+  >();
+  const notifyPlayheadListeners = (timeSeconds: number, timestamp: number): void => {
+    for (const listener of playheadListeners) {
+      listener(timeSeconds, timestamp);
+    }
+  };
 
   const getValueAtom = (target: string): Atom<unknown> => {
     let targetAtom = valueAtoms.get(target);
@@ -139,6 +150,7 @@ export function createToolcraftStore({
       lastPlayheadUiPublish = uiTimestamp;
       jotai.set(playheadAtom, timeSeconds);
     }
+    notifyPlayheadListeners(timeSeconds, uiTimestamp);
   };
   const syncPlayhead = (): void => {
     const timeSeconds = jotai.get(transientPlayheadAtom);
@@ -168,6 +180,7 @@ export function createToolcraftStore({
     if (explicitPlayhead?.type === "timeline.setCurrentTime") {
       jotai.set(transientPlayheadAtom, explicitPlayhead.currentTimeSeconds);
       jotai.set(playheadAtom, explicitPlayhead.currentTimeSeconds);
+      notifyPlayheadListeners(explicitPlayhead.currentTimeSeconds, performance.now());
     } else if (commands.some((command) => command.type !== "timeline.setPlaying")) {
       syncPlayhead();
     }
@@ -225,6 +238,10 @@ export function createToolcraftStore({
     getState: () => jotai.get(committedStateAtom),
     jotai,
     setPlayhead,
+    subscribePlayhead: (listener) => {
+      playheadListeners.add(listener);
+      return () => playheadListeners.delete(listener);
+    },
     subscribe: (listener) => jotai.sub(committedStateAtom, listener),
     syncPlayhead,
   };

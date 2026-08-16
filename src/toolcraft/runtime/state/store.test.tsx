@@ -99,6 +99,23 @@ describe("createToolcraftStore", () => {
     store.dispose();
   });
 
+  it("publishes every transient playhead frame to imperative renderers", () => {
+    const store = createToolcraftStore({ schema: appSchema });
+    const listener = vi.fn();
+    const unsubscribe = store.subscribePlayhead(listener);
+
+    store.setPlayhead(0.25, 250);
+    store.setPlayhead(0.5, 500);
+    store.dispatch({ currentTimeSeconds: 0.75, type: "timeline.setCurrentTime" });
+
+    expect(listener).toHaveBeenNthCalledWith(1, 0.25, 250);
+    expect(listener).toHaveBeenNthCalledWith(2, 0.5, 500);
+    expect(listener).toHaveBeenCalledTimes(3);
+    unsubscribe();
+    store.setPlayhead(1, 1_000);
+    expect(listener).toHaveBeenCalledTimes(3);
+  });
+
   it("supports record, merge, and skip history modes", () => {
     const store = createToolcraftStore({ schema: appSchema });
 

@@ -3,9 +3,8 @@
 import * as React from "react";
 
 import {
-  useToolcraftEvaluatedValues,
-  useToolcraftPlayhead,
   useToolcraftSelector,
+  useToolcraftStore,
 } from "@/toolcraft/runtime/react/app-shell/use-toolcraft";
 import type { ToolcraftMediaAsset } from "@/toolcraft/runtime/state/types";
 
@@ -46,14 +45,23 @@ function numberValue(values: Record<string, unknown>, target: string, fallback: 
 }
 
 export function AsciiLabRuntimeRenderer(): React.JSX.Element {
+  const store = useToolcraftStore();
   const mediaAssets = useToolcraftSelector(
     React.useCallback((state) => state.mediaAssets, []),
   );
   const isPlaying = useToolcraftSelector(
     React.useCallback((state) => state.timeline.isPlaying, []),
   );
-  const values = useToolcraftEvaluatedValues();
-  const playheadSeconds = useToolcraftPlayhead();
+  const valuesRevision = useToolcraftSelector(
+    React.useCallback((state) => state.values, []),
+  );
+  const keyframeGroups = useToolcraftSelector(
+    React.useCallback((state) => state.timeline.keyframeGroups, []),
+  );
+  const values = React.useMemo(
+    () => store.getEvaluatedValues(),
+    [keyframeGroups, store, valuesRevision],
+  );
   const source = sourceAsset(mediaAssets);
 
   if (isModelAsset(source)) {
@@ -89,8 +97,9 @@ export function AsciiLabRuntimeRenderer(): React.JSX.Element {
       {source ? (
         <AsciiImageCanvas
           asset={source}
-          playheadSeconds={playheadSeconds}
-          values={values}
+          keyframeGroupsRevision={keyframeGroups}
+          store={store}
+          valuesRevision={valuesRevision}
         />
       ) : (
         <div className="absolute inset-0 grid place-items-center bg-[#020307] text-xs text-white/60">

@@ -1,23 +1,11 @@
 "use client";
 
 import * as React from "react";
-import {
-  domMax,
-  animate,
-  LazyMotion,
-  m,
-  useDragControls,
-  useMotionValue,
-  type MotionValue,
-  type PanInfo,
-} from "motion/react";
 
 import {
   panelDragHandleSelector,
   panelDragIgnoredTargetSelector,
-  panelDragTransition,
   panelHostConfig,
-  panelSnapAnimation,
 } from "./panel-host-config";
 import { resolvePanelSnapPosition } from "./panel-host-geometry";
 import type {
@@ -78,81 +66,19 @@ function getPanelVisualViewport(): PanelViewport {
   };
 }
 
-function animatePanelMotionValue(value: MotionValue<number>, target: number): void {
-  void animate(value, target, panelSnapAnimation);
-}
+type PanelDragState = {
+  lastClientX: number;
+  lastClientY: number;
+  lastTimestamp: number;
+  originClientX: number;
+  originClientY: number;
+  originX: number;
+  originY: number;
+  velocity: PanelPoint;
+};
 
-function usePanelSnapControls({
-  onPositionChange,
-  onResetPosition,
-  position = { x: 0, y: 0 },
-  snap,
-}: Pick<PanelHostProps, "onPositionChange" | "onResetPosition" | "position" | "snap">) {
-  const panelRef = React.useRef<HTMLDivElement>(null);
-  const x = useMotionValue(position.x);
-  const y = useMotionValue(position.y);
-
-  React.useEffect(() => {
-    animatePanelMotionValue(x, position.x);
-    animatePanelMotionValue(y, position.y);
-  }, [position.x, position.y, x, y]);
-
-  const publishPosition = (nextPosition: PanelPoint): void => {
-    onPositionChange?.(nextPosition);
-  };
-
-  const publishCurrentPosition = (): void => {
-    publishPosition({ x: x.get(), y: y.get() });
-  };
-
-  const handleDragEnd = (info: PanInfo): void => {
-    if (!snap || snap.edges.length === 0) {
-      publishCurrentPosition();
-      return;
-    }
-
-    const panel = panelRef.current;
-
-    if (!panel) {
-      publishCurrentPosition();
-      return;
-    }
-
-    const rect = panel.getBoundingClientRect();
-    const offset = { x: x.get(), y: y.get() };
-    const target = resolvePanelSnapPosition({
-      dimensions: { height: rect.height, width: rect.width },
-      edges: snap.edges,
-      margin: snap.margin,
-      position: { x: rect.left, y: rect.top },
-      velocity: { x: info.velocity.x / 1000, y: info.velocity.y / 1000 },
-      viewport: getPanelVisualViewport(),
-      zone: snap.zone,
-    });
-
-    if (!target) {
-      publishCurrentPosition();
-      return;
-    }
-
-    const nextPosition = {
-      x: target.x - (rect.left - offset.x),
-      y: target.y - (rect.top - offset.y),
-    };
-
-    animatePanelMotionValue(x, nextPosition.x);
-    animatePanelMotionValue(y, nextPosition.y);
-    publishPosition(nextPosition);
-  };
-
-  const resetPosition = (): void => {
-    animatePanelMotionValue(x, 0);
-    animatePanelMotionValue(y, 0);
-    publishPosition({ x: 0, y: 0 });
-    onResetPosition?.();
-  };
-
-  return { handleDragEnd, panelRef, resetPosition, x, y };
+function panelTransform(position: PanelPoint): string {
+  return `translate3d(${position.x}px, ${position.y}px, 0)`;
 }
 
 function PanelHost({
@@ -172,20 +98,49 @@ function PanelHost({
   const resolvedDragMode = dragMode ?? config.dragMode;
   const resolvedSnap = snap ?? { edges: config.snapEdges };
   const resolvedPanelId = panelId ?? config.panelId;
-  const dragControls = useDragControls();
-  const {
-    handleDragEnd: handleSnapDragEnd,
-    panelRef,
-    resetPosition,
-    x,
-    y,
-  } = usePanelSnapControls({
-    onPositionChange,
-    onResetPosition,
-    position,
-    snap: resolvedSnap,
-  });
-  const [isDragging, setIsDragging] = React.useState(false);
+  const resolvedPosition = React.useMemo(
+    () => position ?? { x: 0, y: 0 },
+    [position],
+  );
+  const panelRef = React.useRef<HTMLDivElement>(null);
+  const positionRef = React.useRef(resolvedPosition);
+  const pendingPositionRef = React.useRef(resolvedPosition);
+  const dragRef = React.useRef<PanelDragState | null>(null);
+  const animationFrameRef = React.useRef(0);
+
+  const flushPosition = React.useCallback((): void => {
+    animationFrameRef.current = 0;
+    positionRef.current = pendingPositionRef.current;
+    if (panelRef.current) {
+      panelRef.current.style.transform = panelTransform(positionRef.current);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    positionRef.current = resolvedPosition;
+    pendingPositionRef.current = resolvedPosition;
+    if (panelRef.current) {
+      panelRef.current.style.transform = panelTransform(resolvedPosition);
+    }
+  }, [resolvedPosition]);
+
+  React.useEffect(
+    () => () => window.cancelAnimationFrame(animationFrameRef.current),
+    [],
+  );
+
+  const schedulePosition = (nextPosition: PanelPoint): void => {
+    pendingPositionRef.current = nextPosition;
+    if (animationFrameRef.current === 0) {
+      animationFrameRef.current = window.requestAnimationFrame(flushPosition);
+    }
+  };
+
+  const publishPosition = (nextPosition: PanelPoint): void => {
+    positionRef.current = nextPosition;
+    pendingPositionRef.current = nextPosition;
+    onPositionChange?.(nextPosition);
+  };
 
   const handlePointerDown: React.PointerEventHandler<HTMLElement> = (event) => {
     if (event.button !== 0) {
@@ -205,12 +160,81 @@ function PanelHost({
 
     event.preventDefault();
     event.stopPropagation();
-    dragControls.start(event);
+    event.currentTarget.setPointerCapture(event.pointerId);
+    event.currentTarget.dataset.dragging = "true";
+    dragRef.current = {
+      lastClientX: event.clientX,
+      lastClientY: event.clientY,
+      lastTimestamp: event.timeStamp,
+      originClientX: event.clientX,
+      originClientY: event.clientY,
+      originX: positionRef.current.x,
+      originY: positionRef.current.y,
+      velocity: { x: 0, y: 0 },
+    };
   };
 
-  const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo): void => {
-    setIsDragging(false);
-    handleSnapDragEnd(info);
+  const handlePointerMove: React.PointerEventHandler<HTMLElement> = (event) => {
+    const drag = dragRef.current;
+    if (!drag) {
+      return;
+    }
+
+    const elapsed = Math.max(1, event.timeStamp - drag.lastTimestamp);
+    drag.velocity = {
+      x: (event.clientX - drag.lastClientX) / elapsed,
+      y: (event.clientY - drag.lastClientY) / elapsed,
+    };
+    drag.lastClientX = event.clientX;
+    drag.lastClientY = event.clientY;
+    drag.lastTimestamp = event.timeStamp;
+    schedulePosition({
+      x: drag.originX + event.clientX - drag.originClientX,
+      y: drag.originY + event.clientY - drag.originClientY,
+    });
+  };
+
+  const handlePointerUp: React.PointerEventHandler<HTMLElement> = (event) => {
+    const drag = dragRef.current;
+    if (!drag) {
+      return;
+    }
+
+    dragRef.current = null;
+    event.currentTarget.dataset.dragging = "false";
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    window.cancelAnimationFrame(animationFrameRef.current);
+    flushPosition();
+
+    const panel = panelRef.current;
+    const offset = positionRef.current;
+    const rect = panel?.getBoundingClientRect();
+    const target = rect && resolvedSnap.edges.length > 0
+      ? resolvePanelSnapPosition({
+          dimensions: { height: rect.height, width: rect.width },
+          edges: resolvedSnap.edges,
+          margin: resolvedSnap.margin,
+          position: { x: rect.left, y: rect.top },
+          velocity: drag.velocity,
+          viewport: getPanelVisualViewport(),
+          zone: resolvedSnap.zone,
+        })
+      : null;
+    const nextPosition = target && rect
+      ? {
+          x: target.x - (rect.left - offset.x),
+          y: target.y - (rect.top - offset.y),
+        }
+      : offset;
+
+    if (panel) {
+      panel.style.transition = "transform 300ms cubic-bezier(0.22, 1, 0.36, 1)";
+      panel.style.transform = panelTransform(nextPosition);
+      window.setTimeout(() => panel.style.removeProperty("transition"), 300);
+    }
+    publishPosition(nextPosition);
   };
 
   const handleDoubleClick: React.MouseEventHandler<HTMLElement> = (event) => {
@@ -224,36 +248,35 @@ function PanelHost({
       return;
     }
 
-    resetPosition();
+    const resetPosition = { x: 0, y: 0 };
+    if (panelRef.current) {
+      panelRef.current.style.transition = "transform 300ms cubic-bezier(0.22, 1, 0.36, 1)";
+      panelRef.current.style.transform = panelTransform(resetPosition);
+    }
+    publishPosition(resetPosition);
+    onResetPosition?.();
   };
 
   return (
     <div className={cn("pointer-events-none", config.wrapperClassName, className)} style={style}>
-      <LazyMotion features={domMax}>
-        <m.div
-          className={cn("pointer-events-auto", isDragging && "cursor-grabbing", innerClassName)}
-          data-dragging={isDragging ? "true" : "false"}
+        <div
+          className={cn("pointer-events-auto touch-none data-[dragging=true]:cursor-grabbing", innerClassName)}
+          data-dragging="false"
           data-drag-mode={resolvedDragMode}
           data-panel-id={resolvedPanelId}
           data-panel-type={panelType}
           data-slot="toolcraft-runtime-panel-host"
           data-snap-edges={resolvedSnap?.edges.join(" ")}
-          drag
-          dragControls={dragControls}
-          dragElastic={0}
-          dragListener={false}
-          dragMomentum={false}
-          dragTransition={panelDragTransition}
           onDoubleClick={handleDoubleClick}
-          onDragEnd={handleDragEnd}
-          onDragStart={() => setIsDragging(true)}
+          onPointerCancel={handlePointerUp}
           onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
           ref={panelRef}
-          style={{ x, y }}
+          style={{ transform: panelTransform(resolvedPosition) }}
         >
           {children}
-        </m.div>
-      </LazyMotion>
+        </div>
     </div>
   );
 }
@@ -325,7 +348,7 @@ export function PanelContainer({
 
   if (placement === "floating") {
     return (
-      <PanelHost
+      <ToolcraftPanelHost
         className={panelClassName}
         dragMode={dragMode}
         onPositionChange={(offset) => onPanelStateChange?.({ offset })}
@@ -334,7 +357,7 @@ export function PanelContainer({
         snap={{ edges: config.snapEdges }}
       >
         {children}
-      </PanelHost>
+      </ToolcraftPanelHost>
     );
   }
 
@@ -344,7 +367,7 @@ export function PanelContainer({
       className={cn(config.stageClassName, className)}
       data-panel-type={panelType}
     >
-      <PanelHost
+      <ToolcraftPanelHost
         className={panelClassName}
         dragMode={dragMode}
         onPositionChange={(offset) => onPanelStateChange?.({ offset })}
@@ -353,7 +376,7 @@ export function PanelContainer({
         snap={{ edges: config.snapEdges }}
       >
         {children}
-      </PanelHost>
+      </ToolcraftPanelHost>
     </PanelStage>
   );
 }

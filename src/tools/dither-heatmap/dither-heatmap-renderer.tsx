@@ -172,12 +172,37 @@ export function DitherHeatmapRenderer(): React.JSX.Element {
     let stopped = false;
     let animation = 0;
     let frame = 0;
+    let lastCommittedState: ToolcraftState | null = null;
+    let lastRenderCostMs = 0;
+    let lastRenderTimestamp = Number.NEGATIVE_INFINITY;
     const isVideo = source.mimeType?.startsWith("video/") || /\.(mp4|webm|mov|m4v|ogv)$/i.test(source.fileName);
     const element: SourceElement = isVideo ? document.createElement("video") : new Image();
     if (element instanceof HTMLVideoElement) { element.muted = true; element.loop = true; element.playsInline = true; element.preload = "auto"; }
-    const render = () => {
+    const render = (timestamp: number) => {
       if (stopped) return;
       const committed = stateRef.current;
+      const effectMode = stringValue(committed, "effect.mode", "dither");
+      const patternMode = stringValue(committed, "dither.pattern", "ordered");
+      const requiresTimelineFrames =
+        committed.timeline.keyframeGroups.length > 0 ||
+        effectMode === "heatmap" ||
+        patternMode === "noise" ||
+        element instanceof HTMLVideoElement;
+      const dynamic = committed.timeline.isPlaying && requiresTimelineFrames;
+      const canvasWorld = canvas.closest<HTMLElement>("[data-toolcraft-canvas-world]");
+      const viewportIsMoving = canvasWorld?.style.willChange === "transform";
+      const adaptiveInterval = Math.min(100, Math.max(1_000 / 30, lastRenderCostMs * 1.5));
+      const frameInterval = viewportIsMoving
+        ? Math.max(1_000 / 20, adaptiveInterval)
+        : adaptiveInterval;
+      const stateChanged = committed !== lastCommittedState;
+
+      if (!stateChanged && (!dynamic || timestamp - lastRenderTimestamp < frameInterval)) {
+        animation = requestAnimationFrame(render);
+        return;
+      }
+
+      const renderStartedAt = performance.now();
       const current: ToolcraftState = {
         ...committed,
         timeline: { ...committed.timeline, currentTimeSeconds: store.getPlayhead() },
@@ -194,6 +219,9 @@ export function DitherHeatmapRenderer(): React.JSX.Element {
       drawSource(context, element, current, includeBackground);
       if (stringValue(current, "effect.mode", "dither") === "heatmap") renderHeatmap(context, current, current.timeline.currentTimeSeconds);
       else renderDither(context, current, frame++);
+      lastCommittedState = committed;
+      lastRenderTimestamp = timestamp;
+      lastRenderCostMs = performance.now() - renderStartedAt;
       animation = requestAnimationFrame(render);
     };
     const readyEvent = element instanceof HTMLVideoElement ? "loadeddata" : "load";
@@ -201,7 +229,7 @@ export function DitherHeatmapRenderer(): React.JSX.Element {
       canvas.width = Math.max(1, Math.round(stateRef.current.canvas.size.width));
       canvas.height = Math.max(1, Math.round(stateRef.current.canvas.size.height));
       setStatus("");
-      render();
+      render(performance.now());
     };
     const failed = () => setStatus("Media could not be loaded.");
     element.addEventListener(readyEvent, ready, { once: true });
