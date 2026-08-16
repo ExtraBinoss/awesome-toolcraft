@@ -7,7 +7,7 @@ import { asciiLabRendererModule } from "./ascii-lab-loaders";
 
 const AsciiLabRenderer = React.lazy(() =>
   asciiLabRendererModule.then((module) => ({
-    default: module.AsciiLabRenderer,
+    default: module.AsciiLabRuntimeRenderer,
   })),
 );
 const AsciiLabExportControl = React.lazy(() =>

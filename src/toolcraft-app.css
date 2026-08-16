@@ -3,7 +3,6 @@
 @source "./toolcraft/ui";
 @source "./toolcraft/runtime";
 @import "tw-animate-css";
-@import "@fontsource-variable/inter";
 @import "@/toolcraft/ui/styles.css";
 @import "@/toolcraft/runtime/styles.css";
 
@@ -13,7 +12,9 @@
   --text-2xs--line-height: 0.875rem;
   --text-xs-plus: 0.8125rem;
   --text-xs-plus--line-height: 1.125rem;
-  --font-sans: "Inter Variable", sans-serif;
+  --font-sans:
+    system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
   --font-mono:
     ui-monospace, "SFMono-Regular", "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
   --radius-xs: 0.125rem;
