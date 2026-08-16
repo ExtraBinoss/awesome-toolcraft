@@ -2,7 +2,7 @@
 
 import * as React from "react";
 
-import { ScrollFade } from "../primitives";
+import { ScrollFade } from "../primitives/scroll-fade";
 import { cn } from "../../lib/utils";
 
 const panelDividerClassName =

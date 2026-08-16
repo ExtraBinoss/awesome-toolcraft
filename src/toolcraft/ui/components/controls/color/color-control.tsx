@@ -3,7 +3,7 @@
 import * as React from "react";
 
 import { ControlFieldLabel } from "../../control-layout";
-import { Field } from "../../primitives";
+import { Field } from "../../primitives/field";
 import { cn } from "../../../lib/utils";
 import type { ControlChangeMeta } from "../control-types";
 import { ColorOpacityInput } from "./color-opacity-input";

@@ -2,7 +2,8 @@
 
 import * as React from "react";
 
-import { Button, Tooltip, TooltipContent, TooltipTrigger } from "../primitives";
+import { Button } from "../primitives/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../primitives/tooltip";
 import { cn } from "../../lib/utils";
 
 export type PanelIconButtonProps = {

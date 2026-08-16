@@ -12,11 +12,7 @@ import {
   useToolcraftStore,
 } from "../../app-shell/use-toolcraft";
 
-export type SettingsTransferControlRenderArgs = {
-  id: string;
-};
-
-function SettingsTransferControl(): React.JSX.Element {
+export function SettingsTransferControl(): React.JSX.Element {
   const dispatch = useToolcraftDispatch();
   const store = useToolcraftStore();
 
@@ -45,10 +41,4 @@ function SettingsTransferControl(): React.JSX.Element {
       columns={2}
     />
   );
-}
-
-export function renderSettingsTransferControl({
-  id,
-}: SettingsTransferControlRenderArgs): React.ReactNode {
-  return <SettingsTransferControl key={id} />;
 }

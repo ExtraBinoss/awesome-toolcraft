@@ -14,7 +14,7 @@ import {
   UploadSimpleIcon,
 } from "@phosphor-icons/react";
 
-import { Button } from "../primitives";
+import { Button } from "../primitives/button";
 import { cn } from "../../lib/utils";
 
 export type PanelActionIconName =

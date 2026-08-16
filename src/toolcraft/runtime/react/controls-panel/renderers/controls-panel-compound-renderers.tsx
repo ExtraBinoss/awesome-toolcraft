@@ -1,22 +1,16 @@
 "use client";
 
 import * as React from "react";
-import {
-  ChannelMixerControl as ChannelMixer,
-  type ChannelMixerValues,
-} from "@/toolcraft/ui/components/controls/channel-mixer";
+import type { ChannelMixerValues } from "@/toolcraft/ui/components/controls/channel-mixer/channel-mixer-control";
 import {
   ColorControl as Color,
   ColorOpacityControl as ColorOpacity,
   type ColorControlInput,
   type ColorControlInputPair,
 } from "@/toolcraft/ui/components/controls/color";
-import { CurvesControl as Curves } from "@/toolcraft/ui/components/controls/curves";
-import { GradientControl as Gradient } from "@/toolcraft/ui/components/controls/gradient";
-import { ImagePickerControl as ImagePicker } from "@/toolcraft/ui/components/controls/image-picker";
 import { PaletteControl as Palette } from "@/toolcraft/ui/components/controls/color";
 import type { ControlChangeMeta } from "@/toolcraft/ui/components/controls/control-types";
-import type { ImagePickerItem } from "@/toolcraft/ui/components/controls/image-picker";
+import type { ImagePickerItem } from "@/toolcraft/ui/components/controls/image-picker/image-picker-control";
 
 import type { ToolcraftControlSchema } from "../../../schema/types";
 import {
@@ -35,6 +29,36 @@ const FontPicker = React.lazy(() =>
     (module) => ({ default: module.FontPickerControl }),
   ),
 );
+const ChannelMixer = React.lazy(() =>
+  import("@/toolcraft/ui/components/controls/channel-mixer/channel-mixer-control").then(
+    (module) => ({ default: module.ChannelMixerControl }),
+  ),
+);
+const Curves = React.lazy(() =>
+  import("@/toolcraft/ui/components/controls/curves/curves-control").then(
+    (module) => ({ default: module.CurvesControl }),
+  ),
+);
+const Gradient = React.lazy(() =>
+  import("@/toolcraft/ui/components/controls/gradient/gradient-control").then(
+    (module) => ({ default: module.GradientControl }),
+  ),
+);
+const ImagePicker = React.lazy(() =>
+  import("@/toolcraft/ui/components/controls/image-picker/image-picker-control").then(
+    (module) => ({ default: module.ImagePickerControl }),
+  ),
+);
+
+function lazyControl(children: React.ReactNode): React.JSX.Element {
+  return (
+    <React.Suspense
+      fallback={<div className="h-12 animate-pulse rounded-lg bg-[color:var(--muted)]" />}
+    >
+      {children}
+    </React.Suspense>
+  );
+}
 
 export type CompoundControlCommit = (
   nextValue: unknown,
@@ -193,7 +217,7 @@ export function renderCompoundControl({
       const channelMixerName = name;
 
       return withKeyframeLabelAction({
-        children: (
+        children: lazyControl(
           <ChannelMixer
             key={id}
             name={channelMixerName}
@@ -203,7 +227,7 @@ export function renderCompoundControl({
             values={
               isRecord(value) ? (value as ChannelMixerValues) : defaultChannelMixerValues
             }
-          />
+          />,
         ),
         control,
         disableAction: false,
@@ -267,7 +291,7 @@ export function renderCompoundControl({
       const curvesName = control.label === false ? "Curves" : name;
 
       return withKeyframeLabelAction({
-        children: (
+        children: lazyControl(
           <Curves
             interpolation={asCurveInterpolation(control.interpolation)}
             key={id}
@@ -275,7 +299,7 @@ export function renderCompoundControl({
             onValueChange={commitWithLabel(curvesName)}
             variant={control.variant === "single" ? "single" : "rgb"}
             {...(isRecord(value) ? value : {})}
-          />
+          />,
         ),
         control,
         disableAction: false,
@@ -290,14 +314,14 @@ export function renderCompoundControl({
       const gradientValue = asGradientValue(value);
 
       return withKeyframeLabelAction({
-        children: (
+        children: lazyControl(
           <Gradient
             angle={gradientValue.angle}
             gradientType={gradientValue.gradientType}
             key={id}
             onValueChange={commit}
             stops={gradientValue.stops}
-          />
+          />,
         ),
         control,
         disableAction: usesHeaderKeyframeAction,
@@ -340,14 +364,14 @@ export function renderCompoundControl({
     }
 
     case "imagePicker":
-      return (
+      return lazyControl(
         <ImagePicker
           items={control.items as readonly ImagePickerItem[] | undefined}
           key={id}
           name={name}
           onValueChange={commit}
           value={asString(value, control.items?.[0]?.value ?? "")}
-        />
+        />,
       );
 
     case "palette":

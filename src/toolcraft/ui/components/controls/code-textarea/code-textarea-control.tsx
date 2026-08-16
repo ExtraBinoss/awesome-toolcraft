@@ -3,7 +3,8 @@
 import * as React from "react";
 
 import { ControlFieldLabel } from "../../control-layout";
-import { Field, Textarea } from "../../primitives";
+import { Field } from "../../primitives/field";
+import { Textarea } from "../../primitives/textarea";
 import {
   createControlHistoryGroupId,
   type ControlChangeMeta,

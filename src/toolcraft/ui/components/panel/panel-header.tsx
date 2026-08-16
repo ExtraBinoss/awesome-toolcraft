@@ -3,7 +3,7 @@
 import * as React from "react";
 import { ArrowCounterClockwiseIcon } from "@phosphor-icons/react";
 
-import { PrimitiveArrowIcon } from "../primitives";
+import { PrimitiveArrowIcon } from "../primitives/primitive-arrow-icon";
 import { PanelIconButton } from "./panel-icon-button";
 import { stopPanelHeaderButtonPointerDown } from "./panel-events";
 

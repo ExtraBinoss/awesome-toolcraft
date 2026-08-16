@@ -88,7 +88,6 @@ export function createToolcraftStore({
   const valueAtoms = new Map<string, Atom<unknown>>();
   const valuesAtoms = new Map<string, Atom<Record<string, unknown>>>();
   let lastPlayheadUiPublish = 0;
-  let lastLoggedPlayheadSecond = -1;
   const playheadListeners = new Set<
     (timeSeconds: number, timestamp: number) => void
   >();
@@ -127,19 +126,6 @@ export function createToolcraftStore({
     uiTimestamp = performance.now(),
   ): void => {
     jotai.set(transientPlayheadAtom, timeSeconds);
-    const currentLoggedSecond = Math.floor(timeSeconds);
-
-    if (
-      import.meta.env.DEV &&
-      import.meta.env.MODE !== "test" &&
-      currentLoggedSecond !== lastLoggedPlayheadSecond
-    ) {
-      lastLoggedPlayheadSecond = currentLoggedSecond;
-      console.info("[Toolcraft timeline] Jotai playhead write", {
-        timeSeconds,
-        uiTimestamp,
-      });
-    }
     const elapsed = uiTimestamp - lastPlayheadUiPublish;
 
     // RAF timestamps commonly land a fraction below the theoretical 30 Hz

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { logToolLoad, logToolLoadDuration } from "@/tool-load-debug";
 
 import type { ResolvedToolcraftAppSchema } from "../../schema/types";
 import { CanvasShell } from "../canvas/canvas-shell";
@@ -10,12 +11,19 @@ import type { ToolcraftControlRendererMap } from "../controls-panel/control-rend
 import { ToolcraftRoot } from "./toolcraft-root";
 import { useToolcraftSelector } from "./use-toolcraft";
 
-const controlsPanelModule = import("../controls-panel/controls-panel");
-const timelinePanelModule = import("../timeline/timeline-panel");
-const essentialPanelModules = Promise.all([
-  controlsPanelModule,
-  timelinePanelModule,
-]);
+const controlsImportStartedAt = performance.now();
+logToolLoad("panel import:start controls");
+const controlsPanelModule = import("../controls-panel/controls-panel").then((module) => {
+  logToolLoadDuration("panel import:end controls", controlsImportStartedAt);
+  return module;
+});
+const timelineImportStartedAt = performance.now();
+logToolLoad("panel import:start timeline");
+const timelinePanelModule = import("../timeline/timeline-panel").then((module) => {
+  logToolLoadDuration("panel import:end timeline", timelineImportStartedAt);
+  return module;
+});
+const rendererPrerequisites = timelinePanelModule;
 const ControlsPanel = React.lazy(() =>
   controlsPanelModule.then((module) => ({ default: module.ControlsPanel })),
 );
@@ -84,7 +92,7 @@ function ToolcraftAppContent({
   React.useEffect(() => {
     let active = true;
 
-    void essentialPanelModules.then(() => {
+    void rendererPrerequisites.then(() => {
       if (active) {
         setRendererReady(true);
       }
@@ -92,7 +100,7 @@ function ToolcraftAppContent({
       if (active) {
         setRendererReady(true);
       }
-      console.error("[Toolcraft load] essential panel import failed", error);
+      console.error("[Toolcraft load] renderer prerequisite import failed", error);
     });
 
     return () => {

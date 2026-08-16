@@ -135,3 +135,9 @@ export function renderActionControl({
       return null;
   }
 }
+
+export function ActionControlRenderer(
+  props: ActionControlRenderArgs,
+): React.ReactNode {
+  return renderActionControl(props);
+}

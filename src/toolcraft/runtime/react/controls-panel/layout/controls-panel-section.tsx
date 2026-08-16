@@ -23,7 +23,6 @@ import type {
 import type { ToolcraftDispatch } from "../../../state/store";
 import type { ToolcraftControlRendererMap } from "../control-renderers";
 import type { ActionControlRunAction } from "../renderers/controls-panel-action-renderer";
-import { renderActionControl } from "../renderers/controls-panel-action-renderer";
 import { renderBasicControl } from "../renderers/controls-panel-basic-renderers";
 import {
   renderCompoundColorGroup,
@@ -35,6 +34,16 @@ import type { ControlsPanelKeyframeActions } from "../keyframes/controls-panel-k
 const LazyCollectionActionsControl = React.lazy(() =>
   import("../renderers/controls-panel-collection-renderer").then((module) => ({
     default: module.CollectionActionsControlRenderer,
+  })),
+);
+const LazyActionControl = React.lazy(() =>
+  import("../renderers/controls-panel-action-renderer").then((module) => ({
+    default: module.ActionControlRenderer,
+  })),
+);
+const LazySettingsTransferControl = React.lazy(() =>
+  import("../renderers/controls-panel-settings-transfer-renderer").then((module) => ({
+    default: module.SettingsTransferControl,
   })),
 );
 const LazyFileDropControl = React.lazy(() =>
@@ -54,8 +63,6 @@ import {
   shouldShowColorFieldLabel,
   withCompoundControlSectionDivider,
 } from "./controls-panel-layout";
-import { renderFileDropControl } from "../renderers/controls-panel-media-renderer";
-import { renderSettingsTransferControl } from "../renderers/controls-panel-settings-transfer-renderer";
 import { getToolcraftControlRendererKind } from "../renderers/controls-panel-renderer-registry";
 import {
   getInlineLayoutGroupByControlId,
@@ -300,12 +307,16 @@ export function renderControlsPanelSection({
           const node = (() => {
             switch (getToolcraftControlRendererKind(control.type)) {
               case "action":
-                return renderActionControl({
-                  control,
-                  id,
-                  name,
-                  runAction,
-                });
+                return (
+                  <React.Suspense fallback={null}>
+                    <LazyActionControl
+                      control={control}
+                      id={id}
+                      name={name}
+                      runAction={runAction}
+                    />
+                  </React.Suspense>
+                );
 
               case "basic":
                 return renderBasicControl({
@@ -359,9 +370,11 @@ export function renderControlsPanelSection({
                 );
 
               case "settings":
-                return renderSettingsTransferControl({
-                  id,
-                });
+                return (
+                  <React.Suspense fallback={null}>
+                    <LazySettingsTransferControl key={id} />
+                  </React.Suspense>
+                );
 
               case null: {
                 const CustomControl = controlRenderers?.[control.type];

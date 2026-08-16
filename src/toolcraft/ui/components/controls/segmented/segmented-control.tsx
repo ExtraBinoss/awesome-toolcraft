@@ -3,7 +3,8 @@
 import * as React from "react";
 
 import { ControlFieldLabel } from "../../control-layout";
-import { Field, ToggleGroup, ToggleGroupItem } from "../../primitives";
+import { Field } from "../../primitives/field";
+import { ToggleGroup, ToggleGroupItem } from "../../primitives/toggle-group";
 import type { ControlOption } from "../control-types";
 
 export type SegmentedControlVariant = "default" | "dots";

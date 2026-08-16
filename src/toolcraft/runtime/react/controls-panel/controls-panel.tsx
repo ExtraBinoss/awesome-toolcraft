@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { logToolLoad } from "@/tool-load-debug";
 import { Panel } from "@/toolcraft/ui/components/panel/panel";
 import type { ControlChangeMeta } from "@/toolcraft/ui/components/controls/control-types";
 
@@ -46,6 +47,8 @@ import {
 } from "../app-shell/use-toolcraft";
 import { ControlsPanelVirtualContent } from "./controls-panel-virtual-content";
 
+logToolLoad("panel module:evaluated controls");
+
 export type {
   ToolcraftPanelActionContext,
   ToolcraftPanelActionHandler,
@@ -74,6 +77,9 @@ export function ControlsPanel({
   panelPlacement,
   panelState,
 }: ControlsPanelProps): React.JSX.Element | null {
+  React.useEffect(() => {
+    logToolLoad("panel mounted:controls");
+  }, []);
   const dispatch = useToolcraftDispatch();
   const store = useToolcraftStore();
   const state = useToolcraftSelector(React.useCallback((snapshot) => snapshot, []));

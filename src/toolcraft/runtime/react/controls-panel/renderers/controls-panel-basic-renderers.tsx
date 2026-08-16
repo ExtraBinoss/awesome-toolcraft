@@ -1,14 +1,10 @@
 import * as React from "react";
-import { AnchorGridControl as AnchorGrid } from "@/toolcraft/ui/components/controls/anchor-grid";
 import { CheckboxControl as Checkbox, SwitchControl as Switch } from "@/toolcraft/ui/components/controls/boolean";
 import { CodeTextareaControl as CodeTextarea } from "@/toolcraft/ui/components/controls/code-textarea";
-import { RangeInputControl as RangeInput } from "@/toolcraft/ui/components/controls/range-input";
-import { RangeSliderControl as RangeSlider } from "@/toolcraft/ui/components/controls/range-slider";
 import { SegmentedControl as Segmented } from "@/toolcraft/ui/components/controls/segmented";
 import { SelectControl as Select } from "@/toolcraft/ui/components/controls/select";
 import { SliderControl as Slider } from "@/toolcraft/ui/components/controls/slider";
 import { TextInputControl as TextInput } from "@/toolcraft/ui/components/controls/text-input";
-import { VectorControl as Vector } from "@/toolcraft/ui/components/controls/vector";
 import type { ControlChangeMeta } from "@/toolcraft/ui/components/controls/control-types";
 
 import { toolcraftCanvasAspectRatioPresets } from "../../../schema/canvas-aspect-ratio-presets";
@@ -30,6 +26,31 @@ import {
   parseCanvasAspectRatioOption,
   type CanvasAspectRatioValue,
 } from "../values/controls-panel-values";
+
+const AnchorGrid = React.lazy(() =>
+  import("@/toolcraft/ui/components/controls/anchor-grid/anchor-grid-control").then(
+    (module) => ({ default: module.AnchorGridControl }),
+  ),
+);
+const RangeInput = React.lazy(() =>
+  import("@/toolcraft/ui/components/controls/range-input/range-input-control").then(
+    (module) => ({ default: module.RangeInputControl }),
+  ),
+);
+const RangeSlider = React.lazy(() =>
+  import("@/toolcraft/ui/components/controls/range-slider/range-slider-control").then(
+    (module) => ({ default: module.RangeSliderControl }),
+  ),
+);
+const Vector = React.lazy(() =>
+  import("@/toolcraft/ui/components/controls/vector/vector-control").then(
+    (module) => ({ default: module.VectorControl }),
+  ),
+);
+
+function lazyBasicControl(children: React.ReactNode): React.JSX.Element {
+  return <React.Suspense fallback={null}>{children}</React.Suspense>;
+}
 
 const canvasAspectRatioOptions = [
   ...toolcraftCanvasAspectRatioPresets.map((preset) => ({
@@ -192,7 +213,7 @@ export function renderBasicControl({
 
     case "anchorGrid":
       return withKeyframeLabelAction({
-        children: (
+        children: lazyBasicControl(
           <AnchorGrid
             key={id}
             name={name}
@@ -202,7 +223,7 @@ export function renderBasicControl({
                 typeof AnchorGrid
               >["value"]
             }
-          />
+          />,
         ),
         control,
         disableAction: usesHeaderKeyframeAction,
@@ -245,7 +266,7 @@ export function renderBasicControl({
       const rangeValue = asRangeInputValue(value);
 
       return withKeyframeLabelAction({
-        children: (
+        children: lazyBasicControl(
           <RangeInput
             defaultValue={asRangeInputValue(control.defaultValue)}
             end={rangeValue.end}
@@ -254,7 +275,7 @@ export function renderBasicControl({
             onValueChange={commit}
             showLabel={control.label !== false}
             start={rangeValue.start}
-          />
+          />,
         ),
         control,
         disableAction: usesHeaderKeyframeAction,
@@ -266,7 +287,7 @@ export function renderBasicControl({
 
     case "rangeSlider":
       return withKeyframeLabelAction({
-        children: (
+        children: lazyBasicControl(
           <RangeSlider
             baseValue={asNumberArray(control.defaultValue, [])}
             disabled={control.disabled}
@@ -281,7 +302,7 @@ export function renderBasicControl({
             value={asNumberArray(value, [control.min ?? 0, control.max ?? 100])}
             valueLabel={control.valueLabel}
             variant={control.variant === "discrete" ? "discrete" : "continuous"}
-          />
+          />,
         ),
         control,
         disableAction: usesHeaderKeyframeAction,
@@ -386,7 +407,7 @@ export function renderBasicControl({
       const padVariant = asVectorPadVariant(control.variant);
 
       return withKeyframeLabelAction({
-        children: (
+        children: lazyBasicControl(
           <Vector
             defaultValue={asVectorValue(control.defaultValue)}
             key={id}
@@ -402,7 +423,7 @@ export function renderBasicControl({
             xLabel={control.xLabel}
             y={vectorValue.y}
             yLabel={control.yLabel}
-          />
+          />,
         ),
         control,
         disableAction: usesHeaderKeyframeAction,

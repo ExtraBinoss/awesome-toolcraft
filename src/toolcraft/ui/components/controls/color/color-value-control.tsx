@@ -2,10 +2,8 @@
 
 import * as React from "react";
 
-import {
-  ButtonGroup,
-  Input,
-} from "../../primitives";
+import { ButtonGroup } from "../../primitives/button-group";
+import { Input } from "../../primitives/input";
 import { cn } from "../../../lib/utils";
 import { ColorPickerPopover } from "./color-picker-popover";
 import {

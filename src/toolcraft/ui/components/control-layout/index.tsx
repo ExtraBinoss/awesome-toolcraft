@@ -1,15 +1,11 @@
 import * as React from "react";
 import { QuestionIcon } from "@phosphor-icons/react";
 
-import {
-  Button,
-  FieldLabel,
-  PrimitiveArrowIcon,
-  ScrollFade,
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "../primitives";
+import { Button } from "../primitives/button";
+import { FieldLabel } from "../primitives/field";
+import { PrimitiveArrowIcon } from "../primitives/primitive-arrow-icon";
+import { ScrollFade } from "../primitives/scroll-fade";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../primitives/tooltip";
 import { cn } from "../../lib/utils";
 
 type ControlFieldLabelActionContextValue = {

@@ -3,7 +3,9 @@
 import * as React from "react";
 
 import { ControlFieldLabel } from "../../control-layout";
-import { Checkbox, Field, Switch } from "../../primitives";
+import { Checkbox } from "../../primitives/checkbox";
+import { Field } from "../../primitives/field";
+import { Switch } from "../../primitives/switch";
 
 type BooleanControlBaseProps = {
   checked: boolean;

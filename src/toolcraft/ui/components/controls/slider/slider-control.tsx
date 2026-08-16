@@ -2,12 +2,10 @@
 
 import * as React from "react";
 
-import {
-  EditableSliderValueLabel,
-  Field,
-  getNumericValueLabelWidthReference,
-  Slider,
-} from "../../primitives";
+import { EditableSliderValueLabel } from "../../primitives/editable-slider-value-label";
+import { getNumericValueLabelWidthReference } from "../../primitives/editable-slider-value-label-utils";
+import { Field } from "../../primitives/field";
+import { Slider } from "../../primitives/slider";
 import { ControlFieldLabel } from "../../control-layout";
 import { cn } from "../../../lib/utils";
 import {
