@@ -3,9 +3,10 @@ import * as React from "react";
 import type { ToolcraftAppComposition } from "@/toolcraft/runtime/react/app-shell/toolcraft-app";
 
 import { appSchema } from "./app-schema";
+import { asciiLabRendererModule } from "./ascii-lab-loaders";
 
 const AsciiLabRenderer = React.lazy(() =>
-  import("./ascii-lab-renderer").then((module) => ({
+  asciiLabRendererModule.then((module) => ({
     default: module.AsciiLabRenderer,
   })),
 );

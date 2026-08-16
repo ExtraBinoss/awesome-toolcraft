@@ -44,8 +44,8 @@ function RouteLoading({ toolName }: { toolName: string }) {
   return (
     <main className="route-loading" aria-busy="true" aria-live="polite">
       <div className="route-loading-card">
-        <div className="route-loading-kicker">Toolcraft Hub</div>
-        <h1>Opening {toolName}</h1>
+        <div className="route-loading-kicker">Toolcraft Workspace</div>
+        <h1>{toolName}</h1>
         <div
           className="route-loading-progress"
           role="progressbar"
@@ -56,7 +56,7 @@ function RouteLoading({ toolName }: { toolName: string }) {
         >
           <span />
         </div>
-        <p>Preparing the renderer and controls…</p>
+        <p className="sr-only">Loading workspace</p>
       </div>
     </main>
   );

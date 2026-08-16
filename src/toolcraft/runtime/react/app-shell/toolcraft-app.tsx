@@ -6,17 +6,23 @@ import type { ResolvedToolcraftAppSchema } from "../../schema/types";
 import { CanvasShell } from "../canvas/canvas-shell";
 import type { ToolcraftPanelActionHandler } from "../controls-panel/controls-panel";
 import type { ToolcraftControlRendererMap } from "../controls-panel/control-renderers";
-import { TimelinePanel } from "../timeline/timeline-panel";
-import { ToolbarPanel } from "./toolbar-panel";
 import { ToolcraftRoot } from "./toolcraft-root";
 import { useToolcraftSelector } from "./use-toolcraft";
 
 const controlsPanelModule = import("../controls-panel/controls-panel");
+const timelinePanelModule = import("../timeline/timeline-panel");
+const toolbarPanelModule = import("./toolbar-panel");
 const ControlsPanel = React.lazy(() =>
   controlsPanelModule.then((module) => ({ default: module.ControlsPanel })),
 );
 const LayersPanel = React.lazy(() =>
   import("../layers/layers-panel").then((module) => ({ default: module.LayersPanel })),
+);
+const TimelinePanel = React.lazy(() =>
+  timelinePanelModule.then((module) => ({ default: module.TimelinePanel })),
+);
+const ToolbarPanel = React.lazy(() =>
+  toolbarPanelModule.then((module) => ({ default: module.ToolbarPanel })),
 );
 
 export type ToolcraftAppComposition = {
@@ -110,11 +116,15 @@ function ToolcraftAppContent({
           data-toolcraft-timeline-panel-variant={timelinePanelVariant}
           hidden={timelinePanelHidden}
         >
-          <TimelinePanel panelPlacement="floating" variant={timelinePanelVariant} />
+          <React.Suspense fallback={<PanelLoading label="timeline" />}>
+            <TimelinePanel panelPlacement="floating" variant={timelinePanelVariant} />
+          </React.Suspense>
         </div>
       ) : null}
       {surfaces.panels.toolbar.enabled ? (
-        <ToolbarPanel panelPlacement="floating" />
+        <React.Suspense fallback={<PanelLoading label="toolbar" />}>
+          <ToolbarPanel panelPlacement="floating" />
+        </React.Suspense>
       ) : null}
     </div>
   );

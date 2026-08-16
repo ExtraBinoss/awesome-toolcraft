@@ -30,7 +30,12 @@ function trackedLoader(path: string, importer: ToolPageLoader): ToolPageLoader {
 
 export const toolPageLoaders: Record<string, ToolPageLoader> = {
   "/tools/ascii-lab": trackedLoader("ascii-lab", () =>
-    import("./tools/ascii-lab/AsciiLabPage"),
+    Promise.all([
+      import("./tools/ascii-lab/AsciiLabPage"),
+      import("./tools/ascii-lab/ascii-lab-loaders").then((module) => {
+        module.preloadAsciiLabRenderer();
+      }),
+    ]).then(([page]) => page),
   ),
   "/tools/dither-heatmap": trackedLoader("dither-heatmap", () =>
     import("./tools/dither-heatmap/DitherHeatmapPage"),
