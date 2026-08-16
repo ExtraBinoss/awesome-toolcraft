@@ -20,9 +20,9 @@ function snapValueToAllowedValues(
     return null;
   }
 
-  const safeValues = allowedValues
-    .filter((item) => Number.isFinite(item))
-    .map((item) => Math.min(max, Math.max(min, item)));
+  const safeValues = allowedValues.flatMap((item) =>
+    Number.isFinite(item) ? [Math.min(max, Math.max(min, item))] : [],
+  );
 
   if (!safeValues.length) {
     return null;

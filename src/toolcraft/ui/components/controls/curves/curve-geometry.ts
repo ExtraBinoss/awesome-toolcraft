@@ -2,7 +2,6 @@ import type { CurvePoint } from "../control-types";
 
 export type CurveInterpolation = "monotone" | "smooth";
 
-export const curveViewBoxSize = 268;
 export const curveInset = 18;
 export const curveGraphSize = 232;
 export const curveGraphMax = curveInset + curveGraphSize;

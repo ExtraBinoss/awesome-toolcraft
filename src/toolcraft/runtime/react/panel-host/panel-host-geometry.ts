@@ -51,12 +51,15 @@ function getPanelSnapEdge(
   edges: readonly PanelSnapEdge[],
   zone: number,
 ): PanelSnapEdge | null {
-  const candidates = edges
-    .map((edge) => ({
-      edge,
-      value: getPanelEdgeDistance(edge, projectedPosition, dimensions, viewport),
-    }))
-    .filter((candidate) => candidate.value <= zone);
+  const candidates: Array<{ edge: PanelSnapEdge; value: number }> = [];
+
+  for (const edge of edges) {
+    const value = getPanelEdgeDistance(edge, projectedPosition, dimensions, viewport);
+
+    if (value <= zone) {
+      candidates.push({ edge, value });
+    }
+  }
 
   if (candidates.length === 0) {
     return null;

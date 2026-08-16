@@ -125,7 +125,12 @@ function DialogContent({
   return (
     <DialogPortal container={portalContainer}>
       <DialogOverlay />
-      <DialogLayoutContext.Provider value={{ sectioned, showCloseButton }}>
+      <DialogLayoutContext.Provider
+        value={React.useMemo(
+          () => ({ sectioned, showCloseButton }),
+          [sectioned, showCloseButton],
+        )}
+      >
         <DialogPrimitive.Popup
           data-slot="dialog-content"
           className={cn(

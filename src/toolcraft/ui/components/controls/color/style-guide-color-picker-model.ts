@@ -35,7 +35,7 @@ export function useColorModel({
 }: ColorModelOptions) {
   const normalizedHex = normalizeHexColor(value) ?? "#000000";
   const [optimisticColor, setOptimisticColor] = useState<HsvColor>(() => hexToHsv(normalizedHex));
-  const [draftHexValue, setDraftHexValue] = useState(normalizedHex.toUpperCase());
+  const [draftHexValue, setDraftHexValue] = useState(() => normalizedHex.toUpperCase());
   const latestHsvRef = useRef(optimisticColor);
   const lastEmittedHexRef = useRef(normalizedHex);
   const rafIdRef = useRef<number | null>(null);

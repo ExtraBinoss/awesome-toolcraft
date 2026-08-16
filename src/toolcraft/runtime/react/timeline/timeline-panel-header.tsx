@@ -9,14 +9,16 @@ import { clampToolcraftTimelineTime } from '../../state/timeline-values';
 import { TimelineIconButton } from './timeline-icon-button';
 
 type TimelinePanelHeaderProps = {
-  canExpand: boolean;
   currentTimeSeconds: number;
   durationSeconds: number;
-  isExpanded: boolean;
-  isLooping: boolean;
-  isPlaying: boolean;
-  isScrubbing: boolean;
-  playbackReady: boolean;
+  status: {
+    canExpand: boolean;
+    isExpanded: boolean;
+    isLooping: boolean;
+    isPlaying: boolean;
+    isScrubbing: boolean;
+    playbackReady: boolean;
+  };
   onDurationCommit: (value: string) => void;
   onScrubKeyDown: (event: React.KeyboardEvent<HTMLDivElement>) => void;
   onScrubPointerDown: (event: React.PointerEvent<HTMLDivElement>) => void;
@@ -290,14 +292,9 @@ function TimelineDurationValue({
 }
 
 export function TimelinePanelHeader({
-  canExpand,
   currentTimeSeconds,
   durationSeconds,
-  isExpanded,
-  isLooping,
-  isPlaying,
-  isScrubbing,
-  playbackReady,
+  status,
   onDurationCommit,
   onScrubKeyDown,
   onScrubPointerDown,
@@ -309,6 +306,7 @@ export function TimelinePanelHeader({
   stripRef,
   variant,
 }: TimelinePanelHeaderProps): React.JSX.Element {
+  const { canExpand, isExpanded, isLooping, isPlaying, isScrubbing, playbackReady } = status;
   if (variant === 'compact') {
     return (
       <div

@@ -11,7 +11,8 @@ import {
   type CurvePoint,
 } from "../control-types";
 import { ControlFieldLabel } from "../../control-layout";
-import { ChannelTabs, CurveGraph, singleCurveChannels } from "./curve-graph";
+import { ChannelTabs, CurveGraph } from "./curve-graph";
+import { singleCurveChannels } from "./curve-graph-data";
 import {
   type CurveInterpolation,
   constrainCurvePoint,

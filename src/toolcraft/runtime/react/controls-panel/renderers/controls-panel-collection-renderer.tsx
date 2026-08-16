@@ -42,6 +42,47 @@ export type CollectionActionsControlRenderArgs = {
   value: unknown;
 };
 
+type CollectionItemEntry = {
+  index: number;
+  item: unknown;
+  itemKey: string;
+  itemName: string;
+};
+
+function getCollectionItemSignature(item: unknown): string {
+  if (typeof item === "object" && item !== null) {
+    try {
+      return JSON.stringify(item);
+    } catch {
+      return Object.prototype.toString.call(item);
+    }
+  }
+
+  return `${typeof item}:${String(item)}`;
+}
+
+function createCollectionItemEntries(
+  control: ToolcraftControlSchema,
+  items: readonly unknown[],
+  itemType: string,
+): CollectionItemEntry[] {
+  const occurrences = new Map<string, number>();
+
+  return items.map((item, index) => {
+    const itemName = getCollectionItemName(control, index);
+    const signature = getCollectionItemSignature(item);
+    const occurrence = occurrences.get(signature) ?? 0;
+    occurrences.set(signature, occurrence + 1);
+
+    return {
+      index,
+      item,
+      itemKey: `${itemType}:${signature}:${occurrence}`,
+      itemName,
+    };
+  });
+}
+
 export function renderCollectionActionsControl({
   control,
   name,
@@ -54,6 +95,7 @@ export function renderCollectionActionsControl({
   const canAdd = hardMaxItems === null || items.length < hardMaxItems;
   const canRemove = items.length > minItems;
   const itemType = getCollectionItemType(control);
+  const itemEntries = createCollectionItemEntries(control, items, itemType);
 
   function setItems(nextItems: unknown[], label: string): void {
     setControlValue(control.target, nextItems, label);
@@ -90,13 +132,12 @@ export function renderCollectionActionsControl({
         className="grid min-w-0 grid-cols-2 gap-x-2 gap-y-4"
         data-slot="collection-actions-items-grid"
       >
-        {items.map((item, index) => {
-          const itemName = getCollectionItemName(control, index);
+        {itemEntries.map(({ index, item, itemKey, itemName }) => {
 
           return (
             <Color
               hex={asColorValue(item).hex}
-              key={itemName || index}
+              key={itemName || itemKey}
               name={itemName}
               onValueChange={(nextValue: { hex: string }, meta?: ControlChangeMeta) =>
                 updateItem(index, nextValue, meta)
@@ -110,14 +151,13 @@ export function renderCollectionActionsControl({
   }
 
   function renderColorOpacityItems(): React.ReactNode {
-    return items.map((item, index) => {
+    return itemEntries.map(({ index, item, itemKey, itemName }) => {
       const colorOpacityValue = asColorOpacityValue(item);
-      const itemName = getCollectionItemName(control, index);
 
       return (
         <ColorOpacity
           hex={colorOpacityValue.hex}
-          key={itemName || index}
+          key={itemName || itemKey}
           name={itemName}
           onValueChange={(nextValue, meta) => updateItem(index, nextValue, meta)}
           opacity={colorOpacityValue.opacity}
@@ -127,10 +167,14 @@ export function renderCollectionActionsControl({
     });
   }
 
-  function renderStackedItemControl(item: unknown, index: number): React.ReactNode {
+  function renderStackedItemControl({
+    index,
+    item,
+    itemKey,
+    itemName,
+  }: CollectionItemEntry): React.ReactNode {
     const itemControl = control.itemControl;
-    const itemName = getCollectionItemName(control, index);
-    const key = `${itemName || "item"}-${index}`;
+    const key = itemName || itemKey;
     const update = (nextValue: unknown, meta?: ControlChangeMeta) => {
       updateItem(index, nextValue, meta);
     };
@@ -260,7 +304,7 @@ export function renderCollectionActionsControl({
       return renderColorOpacityItems();
     }
 
-    return items.map(renderStackedItemControl);
+    return itemEntries.map(renderStackedItemControl);
   }
 
   return (

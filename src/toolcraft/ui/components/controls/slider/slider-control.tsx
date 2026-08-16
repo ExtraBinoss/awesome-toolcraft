@@ -56,14 +56,10 @@ export function SliderControl({
   valueLabel,
   variant = "continuous",
 }: SliderControlProps): React.JSX.Element {
-  const [currentValue, setCurrentValue] = React.useState(value);
+  const currentValue = value;
   const liveHistoryGroupRef = React.useRef<string | null>(null);
   const pendingValueRef = React.useRef<number | null>(null);
   const rafIdRef = React.useRef<number | null>(null);
-
-  React.useEffect(() => {
-    setCurrentValue(value);
-  }, [value]);
 
   React.useEffect(() => {
     return () => {
@@ -101,8 +97,6 @@ export function SliderControl({
 
   function commitValue(nextValue: number, meta?: ControlChangeMeta): void {
     const clampedValue = clampSliderValue(nextValue, min, max);
-
-    setCurrentValue(clampedValue);
 
     if (meta?.history === "merge") {
       pendingValueRef.current = clampedValue;

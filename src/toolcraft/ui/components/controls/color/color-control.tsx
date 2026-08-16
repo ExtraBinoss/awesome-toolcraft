@@ -6,10 +6,8 @@ import { ControlFieldLabel } from "../../control-layout";
 import { Field } from "../../primitives";
 import { cn } from "../../../lib/utils";
 import type { ControlChangeMeta } from "../control-types";
-import {
-  ColorOpacityInput,
-  parseOpacityValue,
-} from "./color-opacity-input";
+import { ColorOpacityInput } from "./color-opacity-input";
+import { parseOpacityValue } from "./color-opacity-utils";
 import type {
   ColorControlGroupProps,
   ColorControlInput,
@@ -82,7 +80,7 @@ export function ColorControl(props: ColorControlProps): React.JSX.Element {
         {props.inputs.map((input, index) => (
           <ColorControlField
             fullWidth
-            key={`${input.name}-${index}`}
+          key={input.name}
             {...input}
           />
         ))}

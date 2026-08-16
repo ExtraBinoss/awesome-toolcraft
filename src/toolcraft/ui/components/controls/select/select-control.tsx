@@ -147,14 +147,9 @@ function SelectControlField({
 }: SelectControlInput): React.JSX.Element {
   const fieldRef = React.useRef<HTMLDivElement>(null);
   const popupMaxWidth = useMeasuredElementWidth(fieldRef);
-  const [currentValue, setCurrentValue] = React.useState(value);
-
-  React.useEffect(() => {
-    setCurrentValue(value);
-  }, [value]);
+  const currentValue = value;
 
   function updateValue(nextValue: string): void {
-    setCurrentValue(nextValue);
     onValueChange?.(nextValue);
   }
 
@@ -194,7 +189,7 @@ export function SelectControl(
       >
         {props.inputs.map((input, index) => (
           <SelectControlField
-            key={`${input.name}-${index}`}
+            key={input.name}
             {...input}
           />
         ))}

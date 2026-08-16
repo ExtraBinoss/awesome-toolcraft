@@ -10,6 +10,7 @@ export * from "./state/create-template-state";
 export * from "./state/keyframe-evaluation";
 export * from "./state/persistence";
 export * from "./state/reducer";
+export * from "./state/store";
 export * from "./state/timeline-loop";
 export * from "./state/timeline-values";
 export * from "./state/types";

@@ -2,5 +2,5 @@
 
 export {
   ChannelTabs,
-  channelMeta,
 } from "./channel-tabs";
+export { channelMeta } from "./channel-tabs-data";

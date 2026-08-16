@@ -1,7 +1,7 @@
 "use client";
 
 import type * as React from "react";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
 import { Field } from "../../primitives";
 import {
@@ -40,12 +40,8 @@ export function GradientControl({
   stops,
 }: GradientControlProps): React.JSX.Element {
   const trackRef = useRef<HTMLDivElement | null>(null);
-  const [uncontrolledAngle, setUncontrolledAngle] = useState(() =>
-    getGradientAngle(angleProp),
-  );
-  const [uncontrolledGradientType, setUncontrolledGradientType] = useState(() =>
-    getGradientType(gradientTypeProp),
-  );
+  const [uncontrolledAngle, setUncontrolledAngle] = useState(90);
+  const [uncontrolledGradientType, setUncontrolledGradientType] = useState<GradientType>("linear");
   const angle =
     typeof angleProp === "undefined"
       ? uncontrolledAngle
@@ -54,18 +50,6 @@ export function GradientControl({
     typeof gradientTypeProp === "undefined"
       ? uncontrolledGradientType
       : getGradientType(gradientTypeProp);
-
-  useEffect(() => {
-    if (typeof angleProp !== "undefined") {
-      setUncontrolledAngle(getGradientAngle(angleProp));
-    }
-  }, [angleProp]);
-
-  useEffect(() => {
-    if (typeof gradientTypeProp !== "undefined") {
-      setUncontrolledGradientType(getGradientType(gradientTypeProp));
-    }
-  }, [gradientTypeProp]);
 
   function handleValueChange(
     value: {

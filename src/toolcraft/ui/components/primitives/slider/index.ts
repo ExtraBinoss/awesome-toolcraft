@@ -1,4 +1,4 @@
 "use client";
 
-export { Slider, SliderInteractionProvider } from "./slider";
+export { Slider } from "./slider";
 export type { SliderInteractionChangeDetails } from "./slider";

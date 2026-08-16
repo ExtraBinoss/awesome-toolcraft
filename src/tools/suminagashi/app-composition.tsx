@@ -1,7 +1,7 @@
 import type { ToolcraftAppComposition } from "@/toolcraft/runtime/react/app-shell/toolcraft-app";
 
 import { appSchema } from "./app-schema";
-import { exportSuminagashi, SuminagashiRenderer } from "./suminagashi-renderer";
+import { SuminagashiRenderer } from "./suminagashi-renderer";
 
 function hslToHex(hue: number, saturation: number, lightness: number): string {
   const s = saturation / 100;
@@ -18,14 +18,16 @@ export const appComposition: ToolcraftAppComposition = {
   canvasContent: <SuminagashiRenderer />,
   renderDefaultCanvasMedia: false,
   onPanelAction: ({ action, dispatch, state }) => {
-    if (action.value === "export.png") return exportSuminagashi(state);
+    if (action.value === "export.png") return SuminagashiRenderer.exportImage(state);
     if (action.value === "suminagashi.randomize") {
-      dispatch({ type: "controls.setValue", target: "suminagashi.seed", value: Math.floor(Math.random() * 1000) + 1, label: "Randomize seed" });
-      dispatch({ type: "controls.setValue", target: "suminagashi.drops", value: 4 + Math.floor(Math.random() * 15), label: "Randomize drops" });
-      dispatch({ type: "controls.setValue", target: "suminagashi.ringCount", value: 12 + Math.floor(Math.random() * 54), label: "Randomize rings" });
-      dispatch({ type: "controls.setValue", target: "suminagashi.turbulence", value: Math.floor(Math.random() * 65), label: "Randomize turbulence" });
-      dispatch({ type: "controls.setValue", target: "suminagashi.swirl", value: 10 + Math.floor(Math.random() * 80), label: "Randomize swirl" });
-      dispatch({ type: "controls.setValue", target: "suminagashi.flowAngle", value: Math.floor(Math.random() * 360), label: "Randomize flow angle" });
+      dispatch([
+        { type: "controls.setValue", target: "suminagashi.seed", value: Math.floor(Math.random() * 1000) + 1, label: "Randomize seed" },
+        { type: "controls.setValue", target: "suminagashi.drops", value: 4 + Math.floor(Math.random() * 15), label: "Randomize drops" },
+        { type: "controls.setValue", target: "suminagashi.ringCount", value: 12 + Math.floor(Math.random() * 54), label: "Randomize rings" },
+        { type: "controls.setValue", target: "suminagashi.turbulence", value: Math.floor(Math.random() * 65), label: "Randomize turbulence" },
+        { type: "controls.setValue", target: "suminagashi.swirl", value: 10 + Math.floor(Math.random() * 80), label: "Randomize swirl" },
+        { type: "controls.setValue", target: "suminagashi.flowAngle", value: Math.floor(Math.random() * 360), label: "Randomize flow angle" },
+      ]);
     }
     if (action.value === "suminagashi.randomizeColors") {
       const current = state.values["suminagashi.palette"];

@@ -19,7 +19,7 @@ export function LetterSpacingIcon(): React.JSX.Element {
       <rect fill="#D9D9D9" height="16" width="1" />
       <rect fill="#D9D9D9" height="16" width="1" x="15" />
       <path
-        d="M5.18182 13H4L7.41818 3H8.58182L12 13H10.8182L8.03636 4.58203H7.96364L5.18182 13ZM5.61818 9.09375H10.3818V10.168H5.61818V9.09375Z"
+        d="M5.2 13H4L7.4 3h1.2L12 13h-1.2L8 4.6h-.1L5.2 13ZM5.6 9.1h4.8v1.1H5.6V9.1Z"
         fill="white"
       />
     </svg>
@@ -54,7 +54,7 @@ export function LineHeightIcon(): React.JSX.Element {
         y="15"
       />
       <path
-        d="M5.18182 13H4L7.41818 3H8.58182L12 13H10.8182L8.03636 4.58203H7.96364L5.18182 13ZM5.61818 9.09375H10.3818V10.168H5.61818V9.09375Z"
+        d="M5.2 13H4L7.4 3h1.2L12 13h-1.2L8 4.6h-.1L5.2 13ZM5.6 9.1h4.8v1.1H5.6V9.1Z"
         fill="white"
       />
     </svg>

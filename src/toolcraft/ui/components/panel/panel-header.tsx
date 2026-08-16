@@ -4,10 +4,8 @@ import * as React from "react";
 import { ArrowCounterClockwiseIcon } from "@phosphor-icons/react";
 
 import { PrimitiveArrowIcon } from "../primitives";
-import {
-  PanelIconButton,
-  stopPanelHeaderButtonPointerDown,
-} from "./panel-icon-button";
+import { PanelIconButton } from "./panel-icon-button";
+import { stopPanelHeaderButtonPointerDown } from "./panel-events";
 
 type PanelHeaderProps = {
   collapsed: boolean;

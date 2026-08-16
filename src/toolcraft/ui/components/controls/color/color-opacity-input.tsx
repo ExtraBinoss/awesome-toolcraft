@@ -9,10 +9,7 @@ import {
   InputGroupText,
 } from "../../primitives";
 import type { ControlChangeMeta } from "../control-types";
-
-export function parseOpacityValue(opacity: number | undefined): number {
-  return Math.min(100, Math.max(0, Math.round(opacity ?? 100)));
-}
+import { parseOpacityValue } from "./color-opacity-utils";
 
 function normalizeOpacityInput(value: string): number {
   const parsedValue = Number.parseFloat(value);

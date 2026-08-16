@@ -136,7 +136,14 @@ function ColorValueCells({
       : mode === "hsl"
         ? channels.hsl
         : channels.hsb;
+  const channelNames =
+    mode === "rgb"
+      ? ["red", "green", "blue"]
+      : mode === "hsl"
+        ? ["hue", "saturation", "lightness"]
+        : ["hue", "saturation", "brightness"];
   const values = showOpacity ? [...colorValues, 100] : colorValues;
+  const valueChannelNames = showOpacity ? [...channelNames, "alpha"] : channelNames;
 
   return (
     <InputGroup
@@ -145,16 +152,17 @@ function ColorValueCells({
       size="sm"
     >
       <div className="relative flex h-full min-w-0 flex-1">
-        {values.slice(1).map((_, index) => (
+        {valueChannelNames.slice(1).map((channel, index) => (
           <span
             aria-hidden
             className={colorValueCellSeparatorClassName}
-            key={`${mode}-separator-${index}`}
+            key={`${mode}-${channel}-separator`}
             style={{ left: `${((index + 1) / values.length) * 100}%` }}
           />
         ))}
         {values.map((value, index) => {
-          const isAlphaChannel = index === 3;
+          const channel = valueChannelNames[index]!;
+          const isAlphaChannel = channel === "alpha";
 
           return (
             <InputGroupInput
@@ -162,7 +170,7 @@ function ColorValueCells({
               className={colorValueInputClassName}
               disabled={disabled}
               inputMode="numeric"
-              key={`${mode}-${index}`}
+              key={`${mode}-${channel}`}
               readOnly={isAlphaChannel}
               value={String(value)}
               onBlur={isAlphaChannel ? undefined : onColorValueBlur}

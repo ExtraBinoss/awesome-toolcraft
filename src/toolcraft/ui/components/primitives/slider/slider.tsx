@@ -105,6 +105,5 @@ function Slider<Value extends number | readonly number[]>({
   );
 }
 
-export { SliderInteractionProvider } from "./slider-interaction";
 export type { SliderInteractionChangeDetails } from "./slider-interaction";
 export { Slider };

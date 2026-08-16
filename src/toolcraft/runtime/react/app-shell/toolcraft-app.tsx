@@ -4,52 +4,16 @@ import * as React from "react";
 
 import type { ResolvedToolcraftAppSchema } from "../../schema/types";
 import { CanvasShell } from "../canvas/canvas-shell";
-import type { ToolcraftPanelActionHandler } from "../controls-panel/controls-panel";
+import {
+  ControlsPanel,
+  type ToolcraftPanelActionHandler,
+} from "../controls-panel/controls-panel";
 import type { ToolcraftControlRendererMap } from "../controls-panel/control-renderers";
+import { LayersPanel } from "../layers/layers-panel";
+import { TimelinePanel } from "../timeline/timeline-panel";
+import { ToolbarPanel } from "./toolbar-panel";
 import { ToolcraftRoot } from "./toolcraft-root";
-import { useToolcraft } from "./use-toolcraft";
-import { logToolLoad, logToolLoadDuration } from "@/tool-load-debug";
-
-const ControlsPanel = React.lazy(() =>
-  (() => {
-    const startedAt = performance.now();
-    logToolLoad("panel import:start controls");
-    return import("../controls-panel/controls-panel").then((module) => {
-      logToolLoadDuration("panel import:end controls", startedAt);
-      return { default: module.ControlsPanel };
-    });
-  })(),
-);
-const LayersPanel = React.lazy(() =>
-  (() => {
-    const startedAt = performance.now();
-    logToolLoad("panel import:start layers");
-    return import("../layers/layers-panel").then((module) => {
-      logToolLoadDuration("panel import:end layers", startedAt);
-      return { default: module.LayersPanel };
-    });
-  })(),
-);
-const TimelinePanel = React.lazy(() =>
-  (() => {
-    const startedAt = performance.now();
-    logToolLoad("panel import:start timeline");
-    return import("../timeline/timeline-panel").then((module) => {
-      logToolLoadDuration("panel import:end timeline", startedAt);
-      return { default: module.TimelinePanel };
-    });
-  })(),
-);
-const ToolbarPanel = React.lazy(() =>
-  (() => {
-    const startedAt = performance.now();
-    logToolLoad("panel import:start toolbar");
-    return import("./toolbar-panel").then((module) => {
-      logToolLoadDuration("panel import:end toolbar", startedAt);
-      return { default: module.ToolbarPanel };
-    });
-  })(),
-);
+import { useToolcraftSelector } from "./use-toolcraft";
 
 export type ToolcraftAppComposition = {
   canvasContent?: React.ReactNode;
@@ -70,47 +34,6 @@ function cn(...classNames: Array<string | false | null | undefined>): string {
   return classNames.filter(Boolean).join(" ");
 }
 
-function RuntimePanelFallback({ label }: { label: string }): React.JSX.Element {
-  return (
-    <div
-      aria-label={`Loading ${label}`}
-      className="pointer-events-auto absolute right-3 bottom-3 z-30 rounded-lg border border-[color:var(--border)] bg-[color:var(--card)] px-3 py-2 text-xs text-[color:var(--muted-foreground)] shadow-lg"
-      role="status"
-    >
-      Loading {label}…
-    </div>
-  );
-}
-
-function useAfterFirstPaint(): boolean {
-  const [ready, setReady] = React.useState(false);
-
-  React.useEffect(() => {
-    const handle = requestAnimationFrame(() => setReady(true));
-    return () => cancelAnimationFrame(handle);
-  }, []);
-
-  return ready;
-}
-
-function DeferredRuntimePanel({
-  children,
-  label,
-}: {
-  children: React.ReactNode;
-  label: string;
-}): React.JSX.Element {
-  const ready = useAfterFirstPaint();
-
-  return ready ? (
-    <React.Suspense fallback={<RuntimePanelFallback label={label} />}>
-      {children}
-    </React.Suspense>
-  ) : (
-    <RuntimePanelFallback label={label} />
-  );
-}
-
 function ToolcraftAppContent({
   canvasContent,
   className,
@@ -119,12 +42,21 @@ function ToolcraftAppContent({
   renderDefaultCanvasMedia = true,
   style,
 }: Omit<ToolcraftAppProps, "schema">): React.JSX.Element {
-  const { state } = useToolcraft();
-  const surfaces = state.schema.assembly.surfaces;
-  const timelinePanelHidden = state.panels.timeline.hidden === true;
-  const timelinePanelVariant =
-    state.panels.timeline.extended === true ? "extended" : "compact";
-
+  const { surfaces, timelinePanelHidden, timelinePanelVariant } = useToolcraftSelector(
+    React.useCallback((state) => ({
+      surfaces: state.schema.assembly.surfaces,
+      timelinePanelHidden: state.panels.timeline.hidden === true,
+      timelinePanelVariant:
+        state.panels.timeline.extended === true ? ("extended" as const) : ("compact" as const),
+    }), []),
+    React.useCallback(
+      (left, right) =>
+        left.surfaces === right.surfaces &&
+        left.timelinePanelHidden === right.timelinePanelHidden &&
+        left.timelinePanelVariant === right.timelinePanelVariant,
+      [],
+    ),
+  );
   return (
     <div
       className={cn(
@@ -143,18 +75,14 @@ function ToolcraftAppContent({
         </CanvasShell>
       ) : null}
       {surfaces.panels.layers?.enabled ? (
-        <DeferredRuntimePanel label="layers">
-          <LayersPanel panelPlacement="floating" />
-        </DeferredRuntimePanel>
+        <LayersPanel panelPlacement="floating" />
       ) : null}
       {surfaces.panels.controls?.enabled ? (
-        <DeferredRuntimePanel label="controls">
-          <ControlsPanel
-            controlRenderers={controlRenderers}
-            onPanelAction={onPanelAction}
-            panelPlacement="floating"
-          />
-        </DeferredRuntimePanel>
+        <ControlsPanel
+          controlRenderers={controlRenderers}
+          onPanelAction={onPanelAction}
+          panelPlacement="floating"
+        />
       ) : null}
       {surfaces.panels.timeline?.enabled ? (
         <div
@@ -162,15 +90,11 @@ function ToolcraftAppContent({
           data-toolcraft-timeline-panel-variant={timelinePanelVariant}
           hidden={timelinePanelHidden}
         >
-          <DeferredRuntimePanel label="timeline">
-            <TimelinePanel panelPlacement="floating" variant={timelinePanelVariant} />
-          </DeferredRuntimePanel>
+          <TimelinePanel panelPlacement="floating" variant={timelinePanelVariant} />
         </div>
       ) : null}
       {surfaces.panels.toolbar.enabled ? (
-        <DeferredRuntimePanel label="toolbar">
-          <ToolbarPanel panelPlacement="floating" />
-        </DeferredRuntimePanel>
+        <ToolbarPanel panelPlacement="floating" />
       ) : null}
     </div>
   );

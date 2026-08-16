@@ -3,9 +3,9 @@
 import * as React from "react";
 
 import type {
-  ToolcraftCommand,
   ToolcraftLayer,
 } from "../../state/types";
+import type { ToolcraftDispatch } from "../../state/store";
 import {
   getLayerInsertIndicatorTarget,
   getNearestLayerInsertTarget,
@@ -101,7 +101,7 @@ export function useLayersPanelDragController({
   listRef,
   visibleLayers,
 }: {
-  dispatch: React.Dispatch<ToolcraftCommand>;
+  dispatch: ToolcraftDispatch;
   layers: readonly ToolcraftLayer[];
   listRef: React.RefObject<HTMLUListElement | null>;
   visibleLayers: readonly ToolcraftLayer[];

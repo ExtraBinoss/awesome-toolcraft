@@ -10,9 +10,9 @@ export type {
   PanelActionsProps,
 } from "./panel-actions";
 export { PanelHeader } from "./panel-header";
+export { stopPanelHeaderButtonPointerDown } from "./panel-events";
 export {
   PanelIconButton,
-  stopPanelHeaderButtonPointerDown,
 } from "./panel-icon-button";
 export { PanelSection } from "./panel-section";
 export type { PanelSectionProps } from "./panel-section";

@@ -56,16 +56,15 @@ const anchorLabels = {
 export function AnchorGridControl({
   name,
   onValueChange,
-  value = "center",
+  value,
 }: AnchorGridControlProps): React.JSX.Element {
-  const [currentValue, setCurrentValue] = React.useState(value);
-
-  React.useEffect(() => {
-    setCurrentValue(value);
-  }, [value]);
+  const [uncontrolledValue, setUncontrolledValue] = React.useState<AnchorGridValue>(
+    () => value ?? "center",
+  );
+  const currentValue = value ?? uncontrolledValue;
 
   function updateValue(nextValue: AnchorGridValue): void {
-    setCurrentValue(nextValue);
+    setUncontrolledValue(nextValue);
     onValueChange?.(nextValue);
   }
 

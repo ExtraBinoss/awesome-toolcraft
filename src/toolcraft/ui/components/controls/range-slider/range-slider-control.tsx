@@ -48,15 +48,11 @@ export function RangeSliderControl({
   valueLabel,
   variant = "continuous",
 }: RangeSliderControlProps): React.JSX.Element {
-  const [rangeValue, setRangeValue] = React.useState<readonly number[]>(value);
   const liveHistoryGroupRef = React.useRef<string | null>(null);
+  const rangeValue = value;
   const resolvedValueLabel = valueLabel
     ? applySliderValueLabelUnit(valueLabel, unit)
     : formatRangeSliderValue(rangeValue, unit);
-
-  React.useEffect(() => {
-    setRangeValue(value);
-  }, [value]);
 
   function getLiveHistoryMeta(): ControlChangeMeta {
     liveHistoryGroupRef.current ??= createControlHistoryGroupId(`range-slider:${name}`);
@@ -78,7 +74,6 @@ export function RangeSliderControl({
     const resolvedValue =
       typeof nextValue === "number" ? [nextValue, nextValue] : [...nextValue];
 
-    setRangeValue(resolvedValue);
     onValueChange?.(resolvedValue, meta);
   }
 
@@ -89,7 +84,6 @@ export function RangeSliderControl({
       return;
     }
 
-    setRangeValue(nextValue);
     onValueChange?.(nextValue);
   }
 

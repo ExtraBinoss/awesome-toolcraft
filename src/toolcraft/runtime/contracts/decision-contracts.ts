@@ -315,7 +315,7 @@ export function getToolcraftDecisionRule(
   return TOOLCRAFT_DECISION_CONTRACT.find((rule) => rule.id === id);
 }
 
-export function getToolcraftDecisionRulesByArea(
+function getToolcraftDecisionRulesByArea(
   area: ToolcraftDecisionArea,
 ): ToolcraftDecisionRule[] {
   return TOOLCRAFT_DECISION_CONTRACT.filter((rule) => rule.area === area);
@@ -324,7 +324,7 @@ export function getToolcraftDecisionRulesByArea(
 export type ToolcraftDecisionRuleId =
   (typeof TOOLCRAFT_DECISION_CONTRACT)[number]["id"];
 
-export function getToolcraftDecisionDiagnosticSeverity(
+function getToolcraftDecisionDiagnosticSeverity(
   id: ToolcraftDecisionRuleId,
 ): ToolcraftDecisionDiagnosticSeverity {
   const level = getToolcraftDecisionRule(id)?.level;

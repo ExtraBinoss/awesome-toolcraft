@@ -3,6 +3,7 @@ import { Combobox as ComboboxPrimitive } from "@base-ui/react";
 import { cva } from "class-variance-authority";
 import { outlineControlSurfaceClassName } from "../../lib/control-outline";
 import { cn } from "../../lib/utils";
+import { comboboxPopupSurfaceClassName } from "./combobox-styles";
 import { Button } from "../primitives";
 import { PrimitiveArrowIcon } from "../primitives";
 import {
@@ -29,12 +30,6 @@ const comboboxActiveInputBorderClassName = [
   "has-[[data-slot=combobox-trigger][data-popup-open]]:border-[color:color-mix(in_oklab,var(--border)_30%,transparent)]",
   "has-[[data-slot=combobox-trigger][data-open]]:border-[color:color-mix(in_oklab,var(--border)_30%,transparent)]",
 ].join(" ");
-const comboboxPopupSurfaceBaseClassName =
-  "floating-popup-surface group/combobox-content relative overflow-hidden rounded-lg border p-1 popup-text-xs-plus text-[color:var(--popover-foreground)] [&>[data-slot=combobox-search]]:-mx-1 [&>[data-slot=combobox-search]]:-mt-1 [&>[data-slot=combobox-search]]:mb-0 [&>[data-slot=combobox-search]]:border-b [&>[data-slot=combobox-search]]:border-[color:color-mix(in_oklab,var(--border)_5%,transparent)] [&>[data-slot=combobox-search]]:pr-1 [&>[data-slot=combobox-search]]:pl-0 [&>[data-slot=combobox-search]]:pt-1 [&>[data-slot=combobox-search]]:pb-1 [&>[data-slot=combobox-search]>[data-slot=input-group]]:m-0 [&>[data-slot=combobox-search]>[data-slot=input-group]]:rounded-none [&>[data-slot=combobox-search]>[data-slot=input-group]]:border-none [&>[data-slot=combobox-search]>[data-slot=input-group]]:bg-transparent [&>[data-slot=combobox-search]>[data-slot=input-group]]:shadow-none";
-const comboboxPopupSurfaceClassName = cn(
-  comboboxPopupSurfaceBaseClassName,
-  "max-h-(--available-height) w-[min(var(--anchor-width),calc(var(--spacing)*64))] max-w-[min(var(--available-width),calc(var(--spacing)*64))] min-w-[min(calc(var(--anchor-width)+calc(var(--spacing)*7)),calc(var(--spacing)*64))] origin-(--transform-origin) duration-100 data-[chips=true]:min-w-[min(var(--anchor-width),calc(var(--spacing)*64))] data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
-);
 const ComboboxChipsSizeContext =
   React.createContext<ComboboxFieldSize>("default");
 const useComboboxChipsSize = (): ComboboxFieldSize =>
@@ -258,7 +253,9 @@ function ComboboxItem({
   ...props
 }: ComboboxPrimitive.Item.Props) {
   const itemContent =
-    typeof children === "string" || typeof children === "number" ? (
+    children == null || React.isValidElement(children) || Array.isArray(children) ? (
+      children
+    ) : (
       <ScrollFade
         className="no-scrollbar min-w-0"
         containerClassName="min-w-0 flex-1"
@@ -268,8 +265,6 @@ function ComboboxItem({
       >
         <span className="inline-block whitespace-nowrap pr-2">{children}</span>
       </ScrollFade>
-    ) : (
-      children
     );
 
   return (
@@ -481,6 +476,5 @@ export {
   ComboboxChipsInput,
   ComboboxTrigger,
   ComboboxValue,
-  comboboxPopupSurfaceClassName,
   useComboboxAnchor,
 };

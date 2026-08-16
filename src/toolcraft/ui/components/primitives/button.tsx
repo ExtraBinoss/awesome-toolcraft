@@ -6,7 +6,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 
 import { useButtonLoadingState } from "./internal/button-loading";
 import { pressedSelectedItemClassName } from "./selection-state";
-import type { LoaderSize } from "./animated-loader";
+import type { LoaderSize } from "./animated-loader-utils";
 import { cn } from "../../lib/utils";
 
 type ButtonIconWeight =
@@ -426,4 +426,4 @@ function Button({
   );
 }
 
-export { Button, buttonVariants };
+export { Button };

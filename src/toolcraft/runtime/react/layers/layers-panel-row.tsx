@@ -15,16 +15,8 @@ import {
 
 type LayerRowProps = {
   depth: number;
-  hasMedia: boolean;
   insertIndicatorDepth?: number;
   insertPlacement?: LayerDropPlacement;
-  isDragging: boolean;
-  isDropTarget: boolean;
-  isGroupDropAvailable: boolean;
-  isGroupHighlighted: boolean;
-  isReorderDragging: boolean;
-  isSelected: boolean;
-  isVisible: boolean;
   layer: ToolcraftLayer;
   onDelete: () => void;
   onPointerCancel: React.PointerEventHandler<HTMLElement>;
@@ -35,6 +27,16 @@ type LayerRowProps = {
   onSelect: () => void;
   onToggleCollapsed: () => void;
   onToggleVisibility: () => void;
+  state: {
+    drag: "dragging" | "idle";
+    dropTarget: "target" | "none";
+    groupDrop: "available" | "none";
+    groupHighlight: "highlighted" | "none";
+    media: "available" | "none";
+    reorderDrag: "dragging" | "idle";
+    selection: "selected" | "unselected";
+    visibility: "visible" | "hidden";
+  };
 };
 
 const selectedLayerSurfaceClassName =
@@ -206,7 +208,7 @@ function LayerRowIcon({
             y="30"
           />
           <path
-            d="M60 162.719L88.809 123.726C90.2597 121.762 93.1154 121.545 94.8465 123.266L168 196"
+            d="M60 162.7L88.8 123.7C90.3 121.8 93.1 121.5 94.8 123.3L168 196"
             stroke="currentColor"
             strokeLinecap="round"
             strokeWidth="16"
@@ -222,27 +224,28 @@ function LayerRowIcon({
 
 function LayerActionButtons({
   displayName,
-  isEditingName,
-  isDragging,
-  isReorderDragging,
-  isVisible,
+  editingState,
+  interactionState,
   layer,
   onDelete,
   onToggleVisibility,
+  visibilityState,
 }: {
   displayName: string;
-  isEditingName: boolean;
-  isDragging: boolean;
-  isReorderDragging: boolean;
-  isVisible: boolean;
+  editingState: "editing" | "idle";
+  interactionState: "dragging" | "reorder-dragging" | "idle";
   layer: ToolcraftLayer;
   onDelete: () => void;
   onToggleVisibility: () => void;
+  visibilityState: "visible" | "hidden";
 }): React.JSX.Element | null {
-  if (isEditingName) {
+  if (editingState === "editing") {
     return null;
   }
 
+  const isDragging = interactionState === "dragging";
+  const isReorderDragging = interactionState === "reorder-dragging";
+  const isVisible = visibilityState === "visible";
   const mutedIconStyle = isVisible ? undefined : { opacity: 0.3 };
 
   return (
@@ -341,16 +344,8 @@ function useLayerNameEditing({
 
 export function LayerRow({
   depth,
-  hasMedia,
   insertIndicatorDepth,
   insertPlacement,
-  isDragging,
-  isDropTarget,
-  isGroupDropAvailable,
-  isGroupHighlighted,
-  isReorderDragging,
-  isSelected,
-  isVisible,
   layer,
   onDelete,
   onPointerCancel,
@@ -361,9 +356,18 @@ export function LayerRow({
   onSelect,
   onToggleCollapsed,
   onToggleVisibility,
+  state,
 }: LayerRowProps): React.JSX.Element {
   const displayName = getLayerDisplayName(layer);
   const isGroup = isGroupLayer(layer);
+  const hasMedia = state.media === "available";
+  const isDragging = state.drag === "dragging";
+  const isDropTarget = state.dropTarget === "target";
+  const isGroupDropAvailable = state.groupDrop === "available";
+  const isGroupHighlighted = state.groupHighlight === "highlighted";
+  const isReorderDragging = state.reorderDrag === "dragging";
+  const isSelected = state.selection === "selected";
+  const isVisible = state.visibility === "visible";
   const nameEditing = useLayerNameEditing({ displayName, onRename });
 
   return (
@@ -461,13 +465,18 @@ export function LayerRow({
         </div>
         <LayerActionButtons
           displayName={displayName}
-          isEditingName={nameEditing.isEditingName}
-          isDragging={isDragging}
-          isReorderDragging={isReorderDragging}
-          isVisible={isVisible}
+          editingState={nameEditing.isEditingName ? "editing" : "idle"}
+          interactionState={
+            isDragging
+              ? "dragging"
+              : isReorderDragging
+                ? "reorder-dragging"
+                : "idle"
+          }
           layer={layer}
           onDelete={onDelete}
           onToggleVisibility={onToggleVisibility}
+          visibilityState={isVisible ? "visible" : "hidden"}
         />
       </div>
     </li>

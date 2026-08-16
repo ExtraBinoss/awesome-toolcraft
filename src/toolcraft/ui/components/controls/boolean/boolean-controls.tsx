@@ -22,16 +22,9 @@ function useBooleanControlValue({
   checked: boolean;
   onCheckedChange?: (checked: boolean) => void;
 }): [boolean, (checked: boolean) => void] {
-  const [currentChecked, setCurrentChecked] = React.useState(checked);
-
-  React.useEffect(() => {
-    setCurrentChecked(checked);
-  }, [checked]);
-
   return [
-    currentChecked,
+    checked,
     (nextChecked: boolean) => {
-      setCurrentChecked(nextChecked);
       onCheckedChange?.(nextChecked);
     },
   ];

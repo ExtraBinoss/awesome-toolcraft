@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useRef, useState, type CSSProperties } from 'react';
 import { Eye, EyeOff, Trash2 } from 'lucide-react';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, m } from 'motion/react';
 
 import type {
   ToolcraftTimelineKeyframe,
@@ -87,6 +87,10 @@ function getTimelineTrackTimeFromClientX({
   );
 }
 
+function getKeyframeTrackElement(target: Element): HTMLElement | null {
+  return target.closest('[data-slot="timeline-keyframe-track"]');
+}
+
 export function TimelineKeyframeRow({
   durationSeconds,
   group,
@@ -109,8 +113,6 @@ export function TimelineKeyframeRow({
   const selectedGroupKeyframe = group.keyframes.find(
     (keyframe) => keyframe.id === selectedKeyframeId,
   );
-  const getKeyframeTrackElement = (target: Element): HTMLElement | null =>
-    target.closest('[data-slot="timeline-keyframe-track"]');
   const handleKeyframePointerDown = (
     event: React.PointerEvent<HTMLButtonElement>,
     keyframe: ToolcraftTimelineKeyframe,
@@ -210,8 +212,8 @@ export function TimelineKeyframeRow({
   };
 
   return (
-    <motion.div
-      animate={{ height: timelineKeyframeRowHeightPx, opacity: 1 }}
+    <m.div
+      animate={{ opacity: 1 }}
       className={cn(
         'w-full shrink-0 overflow-hidden border-t border-[color:color-mix(in_oklab,var(--border)_6%,transparent)] transition-colors duration-150 ease-out select-none first:border-t-0',
         selectedGroupKeyframe
@@ -221,8 +223,8 @@ export function TimelineKeyframeRow({
       data-scrubbing={isScrubbing ? 'true' : 'false'}
       data-slot="timeline-keyframe-row"
       data-visible={isVisible ? 'true' : 'false'}
-      exit={{ height: 0, opacity: 0 }}
-      initial={{ height: 0, opacity: 0 }}
+      exit={{ opacity: 0 }}
+      initial={{ opacity: 0 }}
       transition={timelineKeyframePresenceTransition}
     >
       <div className="grid h-9 w-full grid-cols-[164px_minmax(0,1fr)_36px] overflow-visible">
@@ -287,7 +289,7 @@ export function TimelineKeyframeRow({
                 const displayTimeSeconds = draftKeyframeTimes[keyframe.id] ?? keyframe.timeSeconds;
 
                 return (
-                  <motion.button
+                  <m.button
                     animate={{ opacity: 1 }}
                     aria-label={`${group.label} keyframe at ${formatTimelineSeconds(
                       keyframe.timeSeconds,
@@ -335,7 +337,7 @@ export function TimelineKeyframeRow({
                         isSelected && isVisible ? 'bg-[color:var(--foreground)]' : 'bg-current',
                       )}
                     />
-                  </motion.button>
+                  </m.button>
                 );
               })}
             </AnimatePresence>
@@ -355,6 +357,6 @@ export function TimelineKeyframeRow({
           </TimelineIconButton>
         </div>
       </div>
-    </motion.div>
+    </m.div>
   );
 }

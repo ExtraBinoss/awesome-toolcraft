@@ -1,15 +1,21 @@
-import { StrictMode } from "react";
-import { createRoot } from "react-dom/client";
+async function bootstrap(): Promise<void> {
+  const reactScanEnabled =
+    import.meta.env.DEV &&
+    new URLSearchParams(window.location.search).get("react-scan") === "1";
 
-import { App } from "./App";
-import { logToolLoad } from "./tool-load-debug";
-import "./toolcraft-app.css";
-import "./styles.css";
+  if (reactScanEnabled) {
+    const { scan } = await import("react-scan");
+    scan({
+      animationSpeed: "off",
+      enabled: true,
+      log: false,
+      showToolbar: true,
+      trackUnnecessaryRenders: true,
+    });
+  }
 
-logToolLoad("boot:main module evaluated");
+  const { mountToolcraftApp } = await import("./mount-app");
+  mountToolcraftApp();
+}
 
-createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-);
+void bootstrap();

@@ -10,6 +10,30 @@ export type ToolEntry = {
 // Add future tools here. Images must use AVIF or WebP.
 export const tools: ToolEntry[] = [
   {
+    slug: "ascii-lab",
+    name: "ASCII Lab",
+    category: "ASCII / Image / 3D",
+    status: "Available",
+    image: "/tool-images/suminagashi.avif",
+    href: "/tools/ascii-lab",
+  },
+  {
+    slug: "dither-heatmap",
+    name: "Dither / Heatmap",
+    category: "Image / Video",
+    status: "Available",
+    image: "/tool-images/suminagashi.avif",
+    href: "/tools/dither-heatmap",
+  },
+  {
+    slug: "artistic-3d",
+    name: "Artistic 3D",
+    category: "3D / Shaders",
+    status: "Available",
+    image: "/tool-images/gradient-generator.jpg",
+    href: "/tools/artistic-3d",
+  },
+  {
     slug: "blob-tracking",
     name: "Blob Tracking",
     category: "Interactive",

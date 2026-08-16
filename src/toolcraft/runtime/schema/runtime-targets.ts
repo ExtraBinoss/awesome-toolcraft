@@ -54,7 +54,7 @@ export function isToolcraftTimelinePanelRuntimeTarget(target: string): boolean {
   );
 }
 
-export function isToolcraftReservedTarget(
+function isToolcraftReservedTarget(
   target: string,
 ): target is ToolcraftReservedTarget {
   return toolcraftReservedTargets.includes(target as ToolcraftReservedTarget);

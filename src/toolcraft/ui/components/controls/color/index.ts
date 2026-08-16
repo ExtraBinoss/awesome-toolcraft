@@ -25,23 +25,10 @@ export {
   type ColorFormatMode,
   type ColorSurfaceModel,
 } from "./style-guide-color-picker-channel-utils";
-export {
-  DEFAULT_COLOR_FORMAT_MODE,
-  StyleGuideColorPicker,
-} from "./style-guide-color-picker";
-export {
-  getColorSurfaceStyle,
-  getColorSurfaceThumbPosition,
-} from "./color-surface";
-export { getColorSurfaceSliderConfig } from "./color-model-slider";
+export { StyleGuideColorPicker } from "./style-guide-color-picker";
+export { getColorSurfaceSliderConfig } from "./color-model-slider-utils";
 export { getSurfaceHsvColor } from "./style-guide-color-picker-surface-geometry";
-export {
-  PALETTE_SHADE_STEPS,
-  PaletteControl,
-  STYLE_GUIDE_PRIMARY_FAMILY_OPTIONS,
-  TAILWIND_COLOR_PALETTE,
-  getPaletteHex,
-} from "./palette-control";
+export { PaletteControl } from "./palette-control";
 export type {
   PaletteColorFamily,
   PaletteControlChangeMeta,

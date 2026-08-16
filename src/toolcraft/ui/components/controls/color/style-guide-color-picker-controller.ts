@@ -9,7 +9,7 @@ import {
   useState,
   type MutableRefObject,
 } from "react";
-import { getColorSurfaceSliderConfig } from "./color-model-slider";
+import { getColorSurfaceSliderConfig } from "./color-model-slider-utils";
 import { hsvToHex, type HsvColor } from "../../../lib/style-guide-color-utils";
 import {
   getColorChannels,

@@ -17,9 +17,9 @@ import { XIcon } from "@phosphor-icons/react";
 import { cn } from "../../../lib/utils";
 import { Button } from "../../primitives";
 import {
-  FileDropPlusGlyph,
   getImageTransformStyle,
 } from "./file-drop-model";
+import { FileDropPlusGlyph } from "./file-drop-plus-glyph";
 import type { FileDropPreview, FileDropPreviewEntry } from "./file-drop-types";
 
 type SortablePreviewTileProps = {
@@ -77,8 +77,18 @@ function SortablePreviewTile({
         event.stopPropagation();
         onPreviewSelect?.(itemKey);
       }}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          event.stopPropagation();
+          onPreviewSelect?.(itemKey);
+        }
+      }}
       ref={setNodeRef}
+      aria-selected={selected}
+      role="option"
       style={style}
+      tabIndex={0}
       {...(isSortable ? attributes : {})}
       {...(isSortable ? listeners : {})}
     >

@@ -4,9 +4,9 @@ import * as React from "react";
 
 import { clampToolcraftCanvasZoom } from "../../state/canvas-zoom";
 import type {
-  ToolcraftCommand,
   ToolcraftPoint,
 } from "../../state/types";
+import type { ToolcraftDispatch } from "../../state/store";
 
 type CanvasDragState = {
   originX: number;
@@ -16,8 +16,16 @@ type CanvasDragState = {
   startY: number;
 };
 
-const wheelZoomSensitivity = 0.12;
-const wheelPinchZoomSensitivity = 0.5;
+type PendingCanvasTransform = {
+  element: HTMLElement;
+  scale: number;
+  x: number;
+  y: number;
+};
+
+const wheelPinchZoomSensitivity = 0.0025;
+const wheelTransformSmoothingMs = 52;
+const wheelInteractionSettleMs = 320;
 
 function isEventTargetInsideElement(
   target: EventTarget | null,
@@ -30,13 +38,9 @@ function getNextWheelZoom(
   currentZoom: number,
   event: Pick<WheelEvent, "ctrlKey" | "deltaY">,
 ): number {
-  const sensitivity = event.ctrlKey
-    ? wheelPinchZoomSensitivity
-    : wheelZoomSensitivity;
-  const rawDelta = -event.deltaY * sensitivity;
-  const zoomDelta = Math.trunc(rawDelta) || Math.sign(rawDelta);
+  const nextZoom = currentZoom * Math.exp(-event.deltaY * wheelPinchZoomSensitivity);
 
-  return clampToolcraftCanvasZoom(currentZoom + zoomDelta);
+  return clampToolcraftCanvasZoom(Math.round(nextZoom * 100) / 100);
 }
 
 function getZoomedCanvasOffset({
@@ -74,7 +78,7 @@ export function useCanvasViewportInteractions({
   offset,
   zoom,
 }: {
-  dispatch: React.Dispatch<ToolcraftCommand>;
+  dispatch: ToolcraftDispatch;
   draggable: boolean;
   offset: ToolcraftPoint;
   zoom: number;
@@ -90,13 +94,96 @@ export function useCanvasViewportInteractions({
   const offsetRef = React.useRef(offset);
   const zoomRef = React.useRef(zoom);
   const accumulatedOffsetRef = React.useRef(offset);
-  const wheelDebounceTimerRef = React.useRef<any>(null);
+  const wheelDebounceTimerRef = React.useRef<number | undefined>(undefined);
+  const transformFrameRef = React.useRef<number | null>(null);
+  const pendingTransformRef = React.useRef<PendingCanvasTransform | null>(null);
+  const renderedTransformRef = React.useRef<PendingCanvasTransform | null>(null);
+  const smoothTransformRef = React.useRef(false);
+  const lastTransformTimestampRef = React.useRef(0);
+  const pendingWheelViewportRef = React.useRef<{ offset: ToolcraftPoint; zoom: number } | null>(null);
+
+  const scheduleCanvasTransform = React.useCallback(
+    (
+      element: HTMLElement,
+      x: number,
+      y: number,
+      scale: number,
+      smooth = false,
+    ): void => {
+      pendingTransformRef.current = { element, scale, x, y };
+      smoothTransformRef.current = smooth;
+
+      if (transformFrameRef.current !== null) {
+        return;
+      }
+
+      lastTransformTimestampRef.current = window.performance.now();
+      const animateTransform = (timestamp: number): void => {
+        const target = pendingTransformRef.current;
+
+        if (!target) {
+          transformFrameRef.current = null;
+          return;
+        }
+
+        const previous = renderedTransformRef.current ?? target;
+        const elapsed = Math.max(1, timestamp - lastTransformTimestampRef.current);
+        const blend = smoothTransformRef.current
+          ? 1 - Math.exp(-elapsed / wheelTransformSmoothingMs)
+          : 1;
+        const next = {
+          element: target.element,
+          scale: previous.scale + (target.scale - previous.scale) * blend,
+          x: previous.x + (target.x - previous.x) * blend,
+          y: previous.y + (target.y - previous.y) * blend,
+        };
+        const settled =
+          Math.abs(target.x - next.x) < 0.05 &&
+          Math.abs(target.y - next.y) < 0.05 &&
+          Math.abs(target.scale - next.scale) < 0.0001;
+        const rendered = settled ? target : next;
+
+        rendered.element.style.transform = `translate(-50%, -50%) translate3d(${rendered.x}px, ${rendered.y}px, 0) scale(${rendered.scale})`;
+        renderedTransformRef.current = rendered;
+        lastTransformTimestampRef.current = timestamp;
+
+        if (settled) {
+          pendingTransformRef.current = null;
+          transformFrameRef.current = null;
+          return;
+        }
+
+        transformFrameRef.current = window.requestAnimationFrame(animateTransform);
+      };
+
+      transformFrameRef.current = window.requestAnimationFrame(animateTransform);
+    },
+    [],
+  );
+
+  const flushCanvasTransform = React.useCallback((): void => {
+    const target = pendingTransformRef.current;
+
+    if (transformFrameRef.current !== null) {
+      window.cancelAnimationFrame(transformFrameRef.current);
+      transformFrameRef.current = null;
+    }
+
+    if (!target) {
+      return;
+    }
+
+    target.element.style.transform = `translate(-50%, -50%) translate3d(${target.x}px, ${target.y}px, 0) scale(${target.scale})`;
+    renderedTransformRef.current = target;
+    pendingTransformRef.current = null;
+  }, []);
 
   React.useEffect(() => {
     offsetRef.current = offset;
     zoomRef.current = zoom;
     if (!dragRef.current && !wheelDebounceTimerRef.current) {
       accumulatedOffsetRef.current = offset;
+      renderedTransformRef.current = null;
     }
   }, [offset, zoom]);
 
@@ -128,12 +215,22 @@ export function useCanvasViewportInteractions({
 
       event.preventDefault();
       event.stopPropagation();
-
       const currentZoom = zoomRef.current;
+      const worldEl = viewportElement.querySelector<HTMLElement>('[data-toolcraft-canvas-world]');
+
+      if (worldEl) {
+        worldEl.style.willChange = "transform";
+        renderedTransformRef.current ??= {
+          element: worldEl,
+          scale: currentZoom / 100,
+          x: accumulatedOffsetRef.current.x,
+          y: accumulatedOffsetRef.current.y,
+        };
+      }
 
       if (!event.ctrlKey) {
         if (wheelDebounceTimerRef.current) {
-          clearTimeout(wheelDebounceTimerRef.current as number);
+          window.clearTimeout(wheelDebounceTimerRef.current);
         }
 
         accumulatedOffsetRef.current = {
@@ -143,46 +240,88 @@ export function useCanvasViewportInteractions({
 
         const nextX = accumulatedOffsetRef.current.x;
         const nextY = accumulatedOffsetRef.current.y;
+        offsetRef.current = { x: nextX, y: nextY };
 
-        const worldEl = viewportElement.querySelector<HTMLElement>('[data-toolcraft-canvas-world]');
         if (worldEl) {
           const scale = currentZoom / 100;
-          worldEl.style.transform = `translate(-50%, -50%) translate(${nextX}px, ${nextY}px) scale(${scale})`;
+          scheduleCanvasTransform(worldEl, nextX, nextY, scale, true);
         }
 
-        wheelDebounceTimerRef.current = setTimeout(() => {
-          wheelDebounceTimerRef.current = null;
-          dispatch({
-            offset: { x: nextX, y: nextY },
-            type: "canvas.setOffset",
-          });
-        }, 150);
+        pendingWheelViewportRef.current = {
+          offset: { x: nextX, y: nextY },
+          zoom: currentZoom,
+        };
+        wheelDebounceTimerRef.current = window.setTimeout(() => {
+          wheelDebounceTimerRef.current = undefined;
+          flushCanvasTransform();
+          const pendingViewport = pendingWheelViewportRef.current;
+          pendingWheelViewportRef.current = null;
+          if (pendingViewport) {
+            dispatch({
+              offset: pendingViewport.offset,
+              type: "canvas.setViewport",
+              zoom: pendingViewport.zoom,
+            });
+          }
+          if (worldEl) worldEl.style.removeProperty("will-change");
+        }, wheelInteractionSettleMs);
         return;
       }
 
       if (wheelDebounceTimerRef.current) {
-        clearTimeout(wheelDebounceTimerRef.current as number);
-        wheelDebounceTimerRef.current = null;
+        window.clearTimeout(wheelDebounceTimerRef.current);
       }
 
       const nextZoom = getNextWheelZoom(currentZoom, event);
 
       if (nextZoom === currentZoom) {
+        flushCanvasTransform();
+        const pendingViewport = pendingWheelViewportRef.current;
+        pendingWheelViewportRef.current = null;
+        if (pendingViewport) {
+          dispatch({
+            offset: pendingViewport.offset,
+            type: "canvas.setViewport",
+            zoom: pendingViewport.zoom,
+          });
+        }
+        if (worldEl) worldEl.style.removeProperty("will-change");
         return;
       }
 
-      dispatch({
-        offset: getZoomedCanvasOffset({
-          clientX: event.clientX,
-          clientY: event.clientY,
-          currentZoom,
-          nextZoom,
-          offset: accumulatedOffsetRef.current,
-          viewportElement,
-        }),
-        type: "canvas.setViewport",
-        zoom: nextZoom,
+      const nextOffset = getZoomedCanvasOffset({
+        clientX: event.clientX,
+        clientY: event.clientY,
+        currentZoom,
+        nextZoom,
+        offset: accumulatedOffsetRef.current,
+        viewportElement,
       });
+
+      accumulatedOffsetRef.current = nextOffset;
+      offsetRef.current = nextOffset;
+      zoomRef.current = nextZoom;
+      pendingWheelViewportRef.current = {
+        offset: nextOffset,
+        zoom: nextZoom,
+      };
+      if (worldEl) {
+        scheduleCanvasTransform(worldEl, nextOffset.x, nextOffset.y, nextZoom / 100, true);
+      }
+      wheelDebounceTimerRef.current = window.setTimeout(() => {
+        wheelDebounceTimerRef.current = undefined;
+        flushCanvasTransform();
+        const pendingViewport = pendingWheelViewportRef.current;
+        pendingWheelViewportRef.current = null;
+        if (pendingViewport) {
+          dispatch({
+            offset: pendingViewport.offset,
+            type: "canvas.setViewport",
+            zoom: pendingViewport.zoom,
+          });
+        }
+        if (worldEl) worldEl.style.removeProperty("will-change");
+      }, wheelInteractionSettleMs);
     };
 
     workspaceElement.addEventListener("wheel", handleWheel, listenerOptions);
@@ -194,10 +333,19 @@ export function useCanvasViewportInteractions({
         listenerOptions,
       );
       if (wheelDebounceTimerRef.current) {
-        clearTimeout(wheelDebounceTimerRef.current as number);
+        window.clearTimeout(wheelDebounceTimerRef.current);
+        wheelDebounceTimerRef.current = undefined;
       }
+      if (transformFrameRef.current !== null) {
+        window.cancelAnimationFrame(transformFrameRef.current);
+        transformFrameRef.current = null;
+        pendingTransformRef.current = null;
+      }
+      pendingWheelViewportRef.current = null;
+      const worldEl = viewportElement.querySelector<HTMLElement>('[data-toolcraft-canvas-world]');
+      if (worldEl) worldEl.style.removeProperty("will-change");
     };
-  }, [dispatch]);
+  }, [dispatch, flushCanvasTransform, scheduleCanvasTransform]);
 
   const handlePointerDown: React.PointerEventHandler<HTMLDivElement> = React.useCallback(
     (event) => {
@@ -206,7 +354,6 @@ export function useCanvasViewportInteractions({
       }
 
       event.preventDefault();
-
       if (typeof event.currentTarget.setPointerCapture === "function") {
         event.currentTarget.setPointerCapture(event.pointerId);
       }
@@ -236,10 +383,10 @@ export function useCanvasViewportInteractions({
       const worldEl = event.currentTarget.querySelector<HTMLElement>('[data-toolcraft-canvas-world]');
       if (worldEl) {
         const scale = zoomRef.current / 100;
-        worldEl.style.transform = `translate(-50%, -50%) translate(${nextX}px, ${nextY}px) scale(${scale})`;
+        scheduleCanvasTransform(worldEl, nextX, nextY, scale);
       }
     },
-    [],
+    [scheduleCanvasTransform],
   );
 
   const handlePointerUp: React.PointerEventHandler<HTMLDivElement> = React.useCallback(
@@ -257,18 +404,23 @@ export function useCanvasViewportInteractions({
       }
 
       dragRef.current = null;
-
       const finalX = drag.originX + event.clientX - drag.startX;
       const finalY = drag.originY + event.clientY - drag.startY;
 
       if (finalX !== drag.originX || finalY !== drag.originY) {
+        const worldEl = event.currentTarget.querySelector<HTMLElement>(
+          '[data-toolcraft-canvas-world]',
+        );
+        if (worldEl) {
+          scheduleCanvasTransform(worldEl, finalX, finalY, zoomRef.current / 100);
+        }
         dispatch({
           offset: { x: finalX, y: finalY },
           type: "canvas.setOffset",
         });
       }
     },
-    [dispatch],
+    [dispatch, scheduleCanvasTransform],
   );
 
   return {

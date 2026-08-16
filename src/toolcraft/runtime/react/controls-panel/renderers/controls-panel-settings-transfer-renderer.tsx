@@ -3,43 +3,52 @@
 import * as React from "react";
 import { PanelActions } from "@/toolcraft/ui/components/panel/panel-actions";
 
-import type { ToolcraftCommand, ToolcraftState } from "../../../state/types";
 import {
   downloadToolcraftSettings,
   importToolcraftSettings,
 } from "../../app-shell/settings-transfer";
+import {
+  useToolcraftDispatch,
+  useToolcraftStore,
+} from "../../app-shell/use-toolcraft";
 
 export type SettingsTransferControlRenderArgs = {
-  dispatch: React.Dispatch<ToolcraftCommand>;
   id: string;
-  state: ToolcraftState;
 };
 
-export function renderSettingsTransferControl({
-  dispatch,
-  id,
-  state,
-}: SettingsTransferControlRenderArgs): React.ReactNode {
+function SettingsTransferControl(): React.JSX.Element {
+  const dispatch = useToolcraftDispatch();
+  const store = useToolcraftStore();
+
   return (
     <PanelActions
       actions={[
         {
           icon: "upload-simple",
           name: "Export Settings",
-          onClick: () => downloadToolcraftSettings(state),
+          onClick: () => {
+            store.syncPlayhead();
+            downloadToolcraftSettings(store.getState());
+          },
           variant: "outline",
         },
         {
           icon: "download-simple",
           name: "Import Settings",
           onClick: () => {
-            void importToolcraftSettings({ dispatch, state });
+            store.syncPlayhead();
+            void importToolcraftSettings({ dispatch, state: store.getState() });
           },
           variant: "outline",
         },
       ]}
-      key={id}
       columns={2}
     />
   );
+}
+
+export function renderSettingsTransferControl({
+  id,
+}: SettingsTransferControlRenderArgs): React.ReactNode {
+  return <SettingsTransferControl key={id} />;
 }

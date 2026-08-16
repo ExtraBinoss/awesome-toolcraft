@@ -193,14 +193,16 @@ function areDependenciesEqual(previous: readonly unknown[], next: readonly unkno
 
 function useDependencyVersion(dependencies: readonly unknown[]): number {
   const previousDependenciesRef = useRef(dependencies);
-  const versionRef = useRef(0);
+  const [version, setVersion] = useState(0);
 
-  if (!areDependenciesEqual(previousDependenciesRef.current, dependencies)) {
-    previousDependenciesRef.current = dependencies;
-    versionRef.current += 1;
-  }
+  useLayoutEffect(() => {
+    if (!areDependenciesEqual(previousDependenciesRef.current, dependencies)) {
+      previousDependenciesRef.current = dependencies;
+      setVersion((current) => current + 1);
+    }
+  }, [dependencies]);
 
-  return versionRef.current;
+  return version;
 }
 
 function useScrollFadeInteractionDismissal({

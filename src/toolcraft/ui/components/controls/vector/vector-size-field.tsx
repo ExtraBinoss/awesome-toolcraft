@@ -7,7 +7,11 @@ import { Field, Input } from "../../primitives";
 import type { VectorControlProps } from "./vector-control-types";
 import { normalizeVectorCoordinate } from "./vector-value";
 
-export function VectorSizeField({
+export function VectorSizeField(props: VectorControlProps): React.JSX.Element {
+  return <VectorSizeFieldEditor key={`${props.x}:${props.y}`} {...props} />;
+}
+
+function VectorSizeFieldEditor({
   defaultValue,
   name,
   onValueChange,
@@ -22,11 +26,6 @@ export function VectorSizeField({
     x: normalizeVectorCoordinate(defaultValue?.x),
     y: normalizeVectorCoordinate(defaultValue?.y),
   });
-
-  React.useEffect(() => {
-    committedValueRef.current = { x, y };
-    setDraftValue({ x, y });
-  }, [x, y]);
 
   React.useEffect(() => {
     defaultValueRef.current = {

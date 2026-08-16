@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useToolcraft } from "@/toolcraft/runtime/react/app-shell/use-toolcraft";
+import { useToolcraftDispatch, useToolcraftSelector, useToolcraftStore } from "@/toolcraft/runtime/react/app-shell/use-toolcraft";
 import type { ToolcraftAssetLibraryItem } from "@/toolcraft/runtime/schema/types";
 import type { ToolcraftMediaAsset, ToolcraftState } from "@/toolcraft/runtime/state/types";
 import { BlobTrackCpuTracker, type BlobTrackTrack } from "./BlobTrack.cpu";
@@ -88,10 +88,15 @@ function renderPass(gl: WebGL2RenderingContext, handle: GlProgram, target: GlTar
 }
 
 export function BlobTrackingRenderer({ library }: { library: readonly ToolcraftAssetLibraryItem[] }): React.JSX.Element {
-  const { dispatch, state } = useToolcraft();
+  const dispatch = useToolcraftDispatch();
+  const store = useToolcraftStore();
+  const state = useToolcraftSelector(React.useCallback((snapshot) => snapshot, []));
   const sourceValue = state.values["blob.source"];
   const source = React.useMemo(() => sourceFromState(state, library), [library, sourceValue, state.mediaAssets]);
-  const valuesRef = React.useRef(state.values); valuesRef.current = state.values;
+  const valuesRef = React.useRef(state.values);
+  React.useEffect(() => {
+    valuesRef.current = state.values;
+  }, [state.values]);
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const overlayRef = React.useRef<HTMLCanvasElement>(null);
   const compositeRef = React.useRef<HTMLCanvasElement>(null);
@@ -134,6 +139,7 @@ export function BlobTrackingRenderer({ library }: { library: readonly ToolcraftA
     const bindPosition = (handle: GlProgram) => { gl.bindBuffer(gl.ARRAY_BUFFER, buffer); gl.enableVertexAttribArray(handle.position); gl.vertexAttribPointer(handle.position, 2, gl.FLOAT, false, 0, 0); };
     const draw = (now: number) => {
       if (stopped || !ready) return;
+      valuesRef.current = store.getEvaluatedValues();
       const { width, height } = renderSizeRef.current;
       const scale = Math.max(.25, Math.min(1, numberValue(valuesRef.current, "blob.resolutionScale", 1))); const detectWidth = Math.max(32, Math.round(320 * scale)), detectHeight = Math.max(18, Math.round(180 * scale));
       if (canvas.width !== width || canvas.height !== height) { canvas.width = width; canvas.height = height; overlay.width = width; overlay.height = height; composite.width = width; composite.height = height; }
@@ -160,8 +166,13 @@ export function BlobTrackingRenderer({ library }: { library: readonly ToolcraftA
         if (stopped) return;
         if (source.kind === "webcam") { if (!navigator.mediaDevices?.getUserMedia) throw new Error("Webcam access is unavailable."); stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: "user" } }); (media as HTMLVideoElement).srcObject = stream; await (media as HTMLVideoElement).play(); }
         else { media.src = source.src; await new Promise<void>((resolve, reject) => { const readyEvent = media instanceof HTMLImageElement ? "load" : "loadeddata"; media.addEventListener(readyEvent, () => resolve(), { once: true }); media.addEventListener("error", () => reject(new Error("Media could not be loaded.")), { once: true }); }); if (media instanceof HTMLVideoElement) await media.play().catch(() => undefined); }
+        if (stopped) {
+          stream?.getTracks().forEach((track) => track.stop());
+          return;
+        }
         ready = true; setStatus(""); draw(performance.now());
       } catch (error) {
+        if (stopped) return;
         console.error("[BlobTrackingRenderer] start failed:", error);
         if (source.kind === "webcam") dispatch({ history: "skip", target: "blob.source", type: "controls.setValue", value: { assetId: "jellyfish", kind: "library", mediaType: "video" } });
         setStatus(error instanceof Error ? error.message : "Media could not be loaded.");
@@ -177,7 +188,7 @@ export function BlobTrackingRenderer({ library }: { library: readonly ToolcraftA
     });
     resizeObserver.observe(canvas);
     return () => { stopped = true; cancelAnimationFrame(animation); resizeObserver.disconnect(); stream?.getTracks().forEach((track) => track.stop()); gl.deleteTexture(sourceTexture); gl.deleteTexture(overlayTexture); [mask, blurH, blurV, field, edge].forEach((target) => deleteTarget(gl, target)); gl.deleteBuffer(buffer); };
-  }, [source]);
+  }, [source, store]);
 
   return <div className="absolute inset-0 bg-black" data-toolcraft-product-output>
     <canvas className="absolute inset-0 h-full w-full" ref={canvasRef} />

@@ -32,26 +32,31 @@ export type ToolcraftBuiltInControlType = Exclude<
 >;
 
 export const TOOLCRAFT_BUILT_IN_CONTROL_TYPES = Object.freeze(
-  Object.values(TOOLCRAFT_COMPONENT_CONTRACTS)
-    .filter(
-      (contract) =>
+  Object.values(TOOLCRAFT_COMPONENT_CONTRACTS).reduce<ToolcraftBuiltInControlType[]>(
+    (types, contract) => {
+      if (
         (contract.kind === "control" || contract.id === "settingsTransfer") &&
-        contract.id !== "customControl",
-    )
-    .map((contract) => contract.schemaType),
+        contract.id !== "customControl"
+      ) {
+        types.push(contract.schemaType as ToolcraftBuiltInControlType);
+      }
+      return types;
+    },
+    [],
+  ),
 ) as readonly ToolcraftBuiltInControlType[];
 
 const toolcraftBuiltInControlTypes = new Set<string>(
   TOOLCRAFT_BUILT_IN_CONTROL_TYPES,
 );
 
-export function isToolcraftBuiltInControlType(
+function isToolcraftBuiltInControlType(
   value: string,
 ): value is ToolcraftBuiltInControlType {
   return toolcraftBuiltInControlTypes.has(value);
 }
 
-export function getToolcraftComponentContract<const Id extends ToolcraftComponentContractId>(
+function getToolcraftComponentContract<const Id extends ToolcraftComponentContractId>(
   id: Id,
 ): (typeof TOOLCRAFT_COMPONENT_CONTRACTS)[Id] {
   return TOOLCRAFT_COMPONENT_CONTRACTS[id];

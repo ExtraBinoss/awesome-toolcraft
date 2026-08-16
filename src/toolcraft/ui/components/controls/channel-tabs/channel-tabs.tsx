@@ -2,15 +2,9 @@ import type * as React from "react";
 
 import type { CurveChannel, MixerChannel } from "../control-types";
 import { SegmentedControl } from "../segmented";
+import { channelMeta } from "./channel-tabs-data";
 
 type Channel = CurveChannel | MixerChannel;
-
-export const channelMeta = {
-  B: { color: "#147CE4" },
-  G: { color: "#3BA641" },
-  R: { color: "var(--destructive)" },
-  RGB: { color: "var(--foreground)" },
-} as const;
 
 export function ChannelTabs<T extends Channel>({
   ariaLabel,

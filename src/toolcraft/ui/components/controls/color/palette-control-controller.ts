@@ -56,7 +56,7 @@ export function usePaletteControlController({
 }: PaletteControlProps): PaletteControlViewProps {
   const initialValue = value ?? defaultValue;
   const [optimisticValue, setOptimisticValue] =
-    React.useState<PaletteControlValue>(initialValue);
+    React.useState<PaletteControlValue | null>(null);
   const [isShadeDragging, setIsShadeDragging] = React.useState(false);
   const [indicatorTopPercent, setIndicatorTopPercent] = React.useState(() =>
     getShadeIndicatorTopPercent(initialValue.shade),
@@ -73,9 +73,18 @@ export function usePaletteControlController({
   const onCommitRef = React.useRef(onCommit);
   const onInteractionStateChangeRef = React.useRef(onInteractionStateChange);
 
+  const hasPendingInteraction =
+    isShadeDragging ||
+    pendingCommitRef.current !== null ||
+    pendingPersistRef.current !== null;
+  const resolvedOptimisticValue =
+    value && !hasPendingInteraction
+      ? value
+      : (optimisticValue ?? value ?? defaultValue);
+
   const activePalette =
     TAILWIND_COLOR_PALETTE.find(
-      (palette) => palette.name === optimisticValue.family,
+      (palette) => palette.name === resolvedOptimisticValue.family,
     ) ?? TAILWIND_COLOR_PALETTE[0];
   const shadeSegmentPercent = 100 / PALETTE_SHADE_STEPS.length;
 
@@ -296,20 +305,8 @@ export function usePaletteControlController({
       return;
     }
 
-    setIndicatorTopPercent(getShadeIndicatorTopPercent(optimisticValue.shade));
-  }, [isShadeDragging, optimisticValue.shade]);
-
-  React.useEffect(() => {
-    if (!value) {
-      return;
-    }
-
-    if (isShadeDragging || pendingCommitRef.current) {
-      return;
-    }
-
-    syncOptimisticValue(value);
-  }, [isShadeDragging, syncOptimisticValue, value]);
+    setIndicatorTopPercent(getShadeIndicatorTopPercent(resolvedOptimisticValue.shade));
+  }, [isShadeDragging, resolvedOptimisticValue.shade]);
 
   React.useEffect(() => {
     if (!isShadeDragging) {
@@ -394,7 +391,7 @@ export function usePaletteControlController({
     disabled,
     indicatorTopPercent,
     isShadeDragging,
-    optimisticValue,
+    optimisticValue: resolvedOptimisticValue,
     paletteBlockHeight: getPaletteBlockHeight(),
     shadeSegmentPercent,
     shadeTrackRef,

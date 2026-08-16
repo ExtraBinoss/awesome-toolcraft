@@ -90,11 +90,15 @@ export function readControlsPanelCollapsedSections(
       return {};
     }
 
-    return Object.fromEntries(
-      payload.collapsed
-        .filter((item): item is string => typeof item === "string" && item.length > 0)
-        .map((item) => [item, true]),
-    );
+    const collapsedSections: Record<string, boolean> = {};
+
+    for (const item of payload.collapsed) {
+      if (typeof item === "string" && item.length > 0) {
+        collapsedSections[item] = true;
+      }
+    }
+
+    return collapsedSections;
   } catch {
     return {};
   }
@@ -108,9 +112,13 @@ export function writeControlsPanelCollapsedSections(
     return;
   }
 
-  const collapsed = Object.entries(collapsedSectionByKey)
-    .filter(([, collapsedValue]) => collapsedValue)
-    .map(([key]) => key);
+  const collapsed: string[] = [];
+
+  for (const [key, collapsedValue] of Object.entries(collapsedSectionByKey)) {
+    if (collapsedValue) {
+      collapsed.push(key);
+    }
+  }
 
   try {
     if (collapsed.length === 0) {

@@ -6,15 +6,13 @@ import type {
   ToolcraftActionCommand,
   ToolcraftActionSchema,
 } from "../../../schema/types";
-import type {
-  ToolcraftCommand,
-  ToolcraftState,
-} from "../../../state/types";
+import type { ToolcraftState } from "../../../state/types";
+import type { ToolcraftDispatch, ToolcraftStore } from "../../../state/store";
 import type { ActionControlRunAction } from "../renderers/controls-panel-action-renderer";
 
 export type ToolcraftPanelActionContext = {
   action: ToolcraftActionSchema;
-  dispatch: React.Dispatch<ToolcraftCommand>;
+  dispatch: ToolcraftDispatch;
   reportProgress: (progress: number) => void;
   state: ToolcraftState;
 };
@@ -65,11 +63,11 @@ function getActionCommand(action: ToolcraftActionSchema): ToolcraftActionCommand
 export function useControlsPanelActions({
   dispatch,
   onPanelAction,
-  state,
+  store,
 }: {
-  dispatch: React.Dispatch<ToolcraftCommand>;
+  dispatch: ToolcraftDispatch;
   onPanelAction?: ToolcraftPanelActionHandler;
-  state: ToolcraftState;
+  store: ToolcraftStore;
 }): {
   runAction: ActionControlRunAction;
   stickyFooterActive: boolean;
@@ -153,12 +151,13 @@ export function useControlsPanelActions({
     const footerActionProgressTracker = options.trackFooterPending
       ? createFooterActionProgressTracker()
       : null;
+    store.syncPlayhead();
     const result = onPanelAction?.({
       action,
       dispatch,
       reportProgress:
         footerActionProgressTracker?.reportProgress ?? noopReportProgress,
-      state,
+      state: store.getState(),
     });
 
     footerActionProgressTracker?.trackResult(result);

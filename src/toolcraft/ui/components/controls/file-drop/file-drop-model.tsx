@@ -2,7 +2,6 @@
 
 import * as React from "react";
 
-import { cn } from "../../../lib/utils";
 import type { ActionControlOption } from "../actions/actions-control";
 import type {
   FileDropImageTransform,
@@ -130,25 +129,6 @@ export function getPreviewImageStyle(
 
 export function getPreviewKey(item: FileDropPreview, index: number): string {
   return item.id ?? `${item.src}:${index}`;
-}
-
-export function FileDropPlusGlyph({
-  className,
-}: {
-  className?: string;
-}): React.JSX.Element {
-  return (
-    <svg
-      aria-hidden="true"
-      className={cn("flex-none", className)}
-      fill="none"
-      viewBox="0 0 14 14"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path d="M7 2.5V11.5" stroke="currentColor" strokeLinecap="round" strokeWidth="1" />
-      <path d="M2.5 7H11.5" stroke="currentColor" strokeLinecap="round" strokeWidth="1" />
-    </svg>
-  );
 }
 
 export const imageTransformActions = [

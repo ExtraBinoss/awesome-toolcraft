@@ -212,6 +212,7 @@ export function reduceToolcraftLayersCommand(
       }
 
       if (
+        layers.length === state.layers.length &&
         layers.every(
           (layer, index) =>
             layer.id === state.layers[index]?.id &&

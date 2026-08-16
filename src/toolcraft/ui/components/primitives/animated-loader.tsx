@@ -1,8 +1,13 @@
 import type { CSSProperties } from "react";
 
 import { cn } from "../../lib/utils";
-
-export type LoaderSize = number | string;
+import {
+  DEFAULT_ANIMATED_LOADER_HEIGHT,
+  DEFAULT_ANIMATED_LOADER_WIDTH,
+  resolveAnimatedLoaderWidthStyle,
+  toCssSize,
+  type LoaderSize,
+} from "./animated-loader-utils";
 
 export type AnimatedLoaderProps = {
   className?: string;
@@ -11,23 +16,6 @@ export type AnimatedLoaderProps = {
   insetX?: number;
   width?: LoaderSize;
 };
-
-export const DEFAULT_ANIMATED_LOADER_WIDTH = 40;
-export const DEFAULT_ANIMATED_LOADER_HEIGHT = 6;
-export const MAX_ANIMATED_LOADER_WIDTH = 64;
-
-export function toCssSize(value: LoaderSize): string {
-  return typeof value === "number" ? `${value}px` : value;
-}
-
-export function resolveAnimatedLoaderWidthStyle(width: LoaderSize, insetX?: number): string {
-  const resolvedWidth = toCssSize(width);
-  const constrainedByMaxWidth = `min(${resolvedWidth}, ${MAX_ANIMATED_LOADER_WIDTH}px)`;
-
-  return typeof insetX === "number" && insetX > 0
-    ? `min(${constrainedByMaxWidth}, max(0px, calc(100% - ${insetX * 2}px)))`
-    : constrainedByMaxWidth;
-}
 
 export function AnimatedLoader({
   className,

@@ -3,10 +3,10 @@
 import * as React from "react";
 
 import type {
-  ToolcraftCommand,
   ToolcraftPoint,
   ToolcraftState,
 } from "../../state/types";
+import type { ToolcraftDispatch } from "../../state/store";
 import {
   isToolcraftImageFile,
   readImportedFile,
@@ -33,18 +33,18 @@ function getCanvasPositionFromEvent(
 
 export function useCanvasDropImport({
   dispatch,
+  getState,
   offset,
   setDragOver,
   size,
-  state,
   uploadEnabled,
   zoom,
 }: {
-  dispatch: React.Dispatch<ToolcraftCommand>;
+  dispatch: ToolcraftDispatch;
+  getState: () => ToolcraftState;
   offset: ToolcraftPoint;
   setDragOver: React.Dispatch<React.SetStateAction<boolean>>;
   size: ToolcraftState["canvas"]["size"];
-  state: ToolcraftState;
   uploadEnabled: boolean;
   zoom: number;
 }): React.DragEventHandler<HTMLDivElement> {
@@ -64,6 +64,7 @@ export function useCanvasDropImport({
       }
 
       const position = getCanvasPositionFromEvent(event, offset, zoom);
+      const state = getState();
       const hasFileDropControls = getVisibleFileDropControls(state).length > 0;
 
       uploadedFiles.forEach((uploadedFile) => {
@@ -140,6 +141,6 @@ export function useCanvasDropImport({
         });
       });
     },
-    [dispatch, offset, setDragOver, size, state, uploadEnabled, zoom],
+    [dispatch, getState, offset, setDragOver, size, uploadEnabled, zoom],
   );
 }

@@ -16,8 +16,6 @@ export const hoverImportantSelectedItemSurfaceClassName =
 export const hoverImportantSelectedItemBorderClassName =
   "hover:!border-[color:color-mix(in_oklab,var(--border)_10%,transparent)]";
 
-export const selectedItemTextClassName = "text-[color:var(--foreground)]";
-
 export const pressedSelectedItemClassName =
   "aria-pressed:border-[color:color-mix(in_oklab,var(--border)_10%,transparent)] aria-pressed:bg-[color:color-mix(in_oklab,var(--link)_12%,transparent)] aria-pressed:text-[color:var(--foreground)] data-[pressed]:border-[color:color-mix(in_oklab,var(--border)_10%,transparent)] data-[pressed]:bg-[color:color-mix(in_oklab,var(--link)_12%,transparent)] data-[pressed]:text-[color:var(--foreground)]";
 

@@ -1,7 +1,7 @@
 import type { ToolcraftAppComposition } from "@/toolcraft/runtime/react/app-shell/toolcraft-app";
 
 import { appSchema } from "./app-schema";
-import { exportGradient, GradientRenderer } from "./gradient-renderer";
+import { GradientRenderer } from "./gradient-renderer";
 import { logToolLoad } from "@/tool-load-debug";
 
 logToolLoad("module:evaluated gradient composition:start");
@@ -21,23 +21,19 @@ export const appComposition: ToolcraftAppComposition = {
   canvasContent: <GradientRenderer />,
   renderDefaultCanvasMedia: false,
   onPanelAction: ({ action, dispatch, state }) => {
-    if (action.value === "export.png") return exportGradient(state);
+    if (action.value === "export.png") return GradientRenderer.exportImage(state);
     if (action.value === "gradient.randomize") {
-      dispatch({ type: "controls.setValue", target: "gradient.seed", value: Math.floor(Math.random() * 100) + 1, label: "Randomize gradient" });
-      dispatch({ type: "controls.setValue", target: "gradient.warp", value: 28 + Math.floor(Math.random() * 67), label: "Randomize distortion" });
-      dispatch({ type: "controls.setValue", target: "gradient.scale", value: 18 + Math.floor(Math.random() * 68), label: "Randomize flow scale" });
-      dispatch({ type: "controls.setValue", target: "gradient.density", value: 18 + Math.floor(Math.random() * 76), label: "Randomize density" });
-      dispatch({ type: "controls.setValue", target: "gradient.detail", value: 15 + Math.floor(Math.random() * 76), label: "Randomize detail" });
-      dispatch({ type: "controls.setValue", target: "gradient.softness", value: 45 + Math.floor(Math.random() * 51), label: "Randomize softness" });
-      dispatch({ type: "controls.setValue", target: "gradient.negativeSpace", value: 52 + Math.floor(Math.random() * 29), label: "Randomize negative space" });
-
       const current = state.values["gradient.fill"] as { angle?: number; stops?: unknown[] } | undefined;
-      if (current) dispatch({
-        type: "controls.setValue",
-        target: "gradient.fill",
-        value: { ...current, angle: Math.floor(Math.random() * 360) },
-        label: "Randomize gradient direction",
-      });
+      dispatch([
+        { type: "controls.setValue", target: "gradient.seed", value: Math.floor(Math.random() * 100) + 1, label: "Randomize gradient" },
+        { type: "controls.setValue", target: "gradient.warp", value: 28 + Math.floor(Math.random() * 67), label: "Randomize distortion" },
+        { type: "controls.setValue", target: "gradient.scale", value: 18 + Math.floor(Math.random() * 68), label: "Randomize flow scale" },
+        { type: "controls.setValue", target: "gradient.density", value: 18 + Math.floor(Math.random() * 76), label: "Randomize density" },
+        { type: "controls.setValue", target: "gradient.detail", value: 15 + Math.floor(Math.random() * 76), label: "Randomize detail" },
+        { type: "controls.setValue", target: "gradient.softness", value: 45 + Math.floor(Math.random() * 51), label: "Randomize softness" },
+        { type: "controls.setValue", target: "gradient.negativeSpace", value: 52 + Math.floor(Math.random() * 29), label: "Randomize negative space" },
+        ...(current ? [{ type: "controls.setValue" as const, target: "gradient.fill", value: { ...current, angle: Math.floor(Math.random() * 360) }, label: "Randomize gradient direction" }] : []),
+      ]);
     }
     if (action.value === "gradient.shuffle") {
       const current = state.values["gradient.fill"] as { stops?: Array<Record<string, unknown>> } | undefined;

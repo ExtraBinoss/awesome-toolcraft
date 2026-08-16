@@ -11,6 +11,7 @@ import type {
   ToolcraftState,
   ToolcraftTimelineKeyframe,
   ToolcraftTimelineKeyframeGroup,
+  ToolcraftTimelineState,
 } from "./types";
 
 type ToolcraftTimelineCommand = Extract<
@@ -231,12 +232,17 @@ export function reduceToolcraftTimelineCommand(
 
       const timeline = {
         ...state.timeline,
-        keyframeGroups: state.timeline.keyframeGroups
-          .map((group) => ({
-            ...group,
-            keyframes: group.keyframes.filter((keyframe) => keyframe.id !== command.keyframeId),
-          }))
-          .filter((group) => group.keyframes.length > 0),
+        keyframeGroups: state.timeline.keyframeGroups.reduce<
+          ToolcraftTimelineState["keyframeGroups"]
+        >((groups, group) => {
+          const keyframes = group.keyframes.filter(
+            (keyframe) => keyframe.id !== command.keyframeId,
+          );
+          if (keyframes.length > 0) {
+            groups.push({ ...group, keyframes });
+          }
+          return groups;
+        }, []),
         selectedKeyframeId: null,
       };
 

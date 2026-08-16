@@ -67,25 +67,19 @@ export function FileDropControl({
   }));
   const previewKeys = previewEntries.map((entry) => entry.key);
   const requiresImageSelection = assetKind === "image" && multiple && previewEntries.length > 1;
+  const resolvedSelectedPreviewKey =
+    requiresImageSelection && selectedPreviewKey && previewKeys.includes(selectedPreviewKey)
+      ? selectedPreviewKey
+      : null;
   const selectedPreviewEntry = requiresImageSelection
-    ? previewEntries.find((entry) => entry.key === selectedPreviewKey)
+    ? previewEntries.find((entry) => entry.key === resolvedSelectedPreviewKey)
     : previewEntries[0];
   const shouldRenderImageActions =
     assetKind === "image" &&
     hasPreview &&
     Boolean(onPreviewTransform) &&
     Boolean(selectedPreviewEntry) &&
-    (!requiresImageSelection || selectedPreviewKey !== null);
-
-  React.useEffect(() => {
-    if (!selectedPreviewKey) {
-      return;
-    }
-
-    if (!requiresImageSelection || !previewKeys.includes(selectedPreviewKey)) {
-      setSelectedPreviewKey(null);
-    }
-  }, [previewKeys, requiresImageSelection, selectedPreviewKey]);
+    (!requiresImageSelection || resolvedSelectedPreviewKey !== null);
 
   function handleFiles(fileList: FileList | readonly File[] | undefined): void {
     const files = Array.from(fileList ?? []);
@@ -217,7 +211,7 @@ export function FileDropControl({
           handleFiles(event.dataTransfer?.files ?? undefined);
         }}
         onKeyDown={handleDropTargetKeyDown}
-        role="button"
+        role="group"
         tabIndex={0}
       >
         {shouldRenderFileList ? (
@@ -241,7 +235,7 @@ export function FileDropControl({
             }}
             previewEntries={previewEntries}
             previewKeys={previewKeys}
-            selectedPreviewKey={selectedPreviewKey}
+            selectedPreviewKey={resolvedSelectedPreviewKey}
             sensors={sensors}
           />
         ) : hasPreview ? (

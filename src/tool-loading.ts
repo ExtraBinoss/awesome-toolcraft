@@ -3,7 +3,10 @@ import type { ComponentType } from "react";
 import { logToolLoad, logToolLoadDuration } from "./tool-load-debug";
 
 type ToolPageModule = {
+  AsciiLabPage?: ComponentType;
+  Artistic3DPage?: ComponentType;
   BlobTrackingPage?: ComponentType;
+  DitherHeatmapPage?: ComponentType;
   GradientGeneratorPage?: ComponentType;
   SuminagashiPage?: ComponentType;
 };
@@ -26,6 +29,15 @@ function trackedLoader(path: string, importer: ToolPageLoader): ToolPageLoader {
 }
 
 export const toolPageLoaders: Record<string, ToolPageLoader> = {
+  "/tools/ascii-lab": trackedLoader("ascii-lab", () =>
+    import("./tools/ascii-lab/AsciiLabPage"),
+  ),
+  "/tools/dither-heatmap": trackedLoader("dither-heatmap", () =>
+    import("./tools/dither-heatmap/DitherHeatmapPage"),
+  ),
+  "/tools/artistic-3d": trackedLoader("artistic-3d", () =>
+    import("./tools/artistic-3d/Artistic3DPage"),
+  ),
   "/tools/gradient-generator": trackedLoader("gradient-generator", () =>
     import("./tools/gradient-generator/GradientGeneratorPage"),
   ),

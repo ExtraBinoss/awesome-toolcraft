@@ -129,6 +129,5 @@ export {
   BUTTON_GROUP_FOUNDATION_PREVIEW_TABS,
   ButtonGroupSeparator,
   ButtonGroupText,
-  buttonGroupVariants,
   type ButtonGroupFoundationPreviewTabId,
 };

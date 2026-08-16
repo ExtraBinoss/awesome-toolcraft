@@ -66,25 +66,17 @@ export function ImagePickerControl({
   value,
   onValueChange,
 }: ImagePickerControlProps): React.JSX.Element {
-  const [currentValue, setCurrentValue] = React.useState(() =>
+  const [uncontrolledValue, setUncontrolledValue] = React.useState(() =>
     getInitialValue(items, value),
   );
-
-  React.useEffect(() => {
-    if (value !== undefined) {
-      setCurrentValue(value);
-      return;
-    }
-
-    setCurrentValue((previousValue) =>
-      items.some((item) => item.value === previousValue)
-        ? previousValue
-        : (items[0]?.value ?? ""),
-    );
-  }, [items, value]);
+  const currentValue =
+    value ??
+    (items.some((item) => item.value === uncontrolledValue)
+      ? uncontrolledValue
+      : (items[0]?.value ?? ""));
 
   function updateValue(nextValue: string): void {
-    setCurrentValue(nextValue);
+    setUncontrolledValue(nextValue);
     onValueChange?.(nextValue);
   }
 

@@ -39,7 +39,11 @@ import {
   readControlsPanelCollapsedSections,
   writeControlsPanelCollapsedSections,
 } from "./layout/controls-panel-collapse-storage";
-import { useToolcraft } from "../app-shell/use-toolcraft";
+import {
+  useToolcraftDispatch,
+  useToolcraftSelector,
+  useToolcraftStore,
+} from "../app-shell/use-toolcraft";
 import { ControlsPanelVirtualContent } from "./controls-panel-virtual-content";
 
 export type {
@@ -70,12 +74,14 @@ export function ControlsPanel({
   panelPlacement,
   panelState,
 }: ControlsPanelProps): React.JSX.Element | null {
-  const { dispatch, state } = useToolcraft();
+  const dispatch = useToolcraftDispatch();
+  const store = useToolcraftStore();
+  const state = useToolcraftSelector(React.useCallback((snapshot) => snapshot, []));
   const {
     runAction,
     stickyFooterActive,
     stickyFooterProgress,
-  } = useControlsPanelActions({ dispatch, onPanelAction, state });
+  } = useControlsPanelActions({ dispatch, onPanelAction, store });
   const sectionCollapseStorageKey = React.useMemo(
     () => getControlsPanelSectionCollapseStorageKey(state.schema),
     [state.schema],
@@ -146,9 +152,15 @@ export function ControlsPanel({
   function getVisibleSectionEntries(
     section: ToolcraftControlSectionSchema,
   ): ControlEntry[] {
-    return Object.entries(section.controls).filter(([, control]) =>
-      isControlVisible(control),
-    );
+    const visibleEntries: ControlEntry[] = [];
+
+    for (const entry of Object.entries(section.controls)) {
+      if (isControlVisible(entry[1])) {
+        visibleEntries.push(entry);
+      }
+    }
+
+    return visibleEntries;
   }
 
   const keyframeActions = createControlsPanelKeyframeActions({
@@ -178,12 +190,18 @@ export function ControlsPanel({
     });
   }
 
-  const visibleSections = resolvedControlsPanel.sections
-    .map((section) => ({
-      entries: getVisibleSectionEntries(section),
-      section,
-    }))
-    .filter(({ entries, section }) => isSectionVisible(section) && entries.length > 0);
+  const visibleSections: Array<{
+    entries: ControlEntry[];
+    section: ToolcraftControlSectionSchema;
+  }> = [];
+
+  for (const section of resolvedControlsPanel.sections) {
+    const entries = getVisibleSectionEntries(section);
+
+    if (isSectionVisible(section) && entries.length > 0) {
+      visibleSections.push({ entries, section });
+    }
+  }
   const visibleControlsPanelSections = visibleSections.map(({ entries, section }) => ({
     ...section,
     controls: getControlsRecord(entries),

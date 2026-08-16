@@ -4,7 +4,7 @@ import {
   createToolcraftPngExportCanvas,
   shouldIncludeToolcraftPreviewBackground,
 } from "@/toolcraft/runtime/export/export";
-import { useToolcraft } from "@/toolcraft/runtime/react/app-shell/use-toolcraft";
+import { useToolcraftSelector, useToolcraftStore } from "@/toolcraft/runtime/react/app-shell/use-toolcraft";
 import type { ToolcraftState } from "@/toolcraft/runtime/state/types";
 
 import fragmentShader from "./fragment.glsl?raw";
@@ -122,7 +122,8 @@ function drawSuminagashi(canvas: HTMLCanvasElement, state: ToolcraftState, time:
 }
 
 export function SuminagashiRenderer(): React.JSX.Element {
-  const { state } = useToolcraft();
+  const store = useToolcraftStore();
+  const state = useToolcraftSelector(React.useCallback((snapshot) => snapshot, []));
   const includeBackground = shouldIncludeToolcraftPreviewBackground({ state });
   const values = state.values;
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
@@ -130,14 +131,18 @@ export function SuminagashiRenderer(): React.JSX.Element {
   const includeBackgroundRef = React.useRef(includeBackground);
   const timeRef = React.useRef(0);
   const firstFrameRef = React.useRef(false);
-  stateRef.current = state;
-  includeBackgroundRef.current = includeBackground;
+  React.useEffect(() => {
+    stateRef.current = state;
+    includeBackgroundRef.current = includeBackground;
+  }, [includeBackground, state]);
   const animate = values["motion.animate"] === true;
 
   React.useEffect(() => {
     const canvas = canvasRef.current;
-    if (canvas && !animate) drawSuminagashi(canvas, state, 0, includeBackground);
-  }, [state, includeBackground, values]);
+    if (canvas && !animate) {
+      drawSuminagashi(canvas, { ...state, values: store.getEvaluatedValues() }, 0, includeBackground);
+    }
+  }, [animate, includeBackground, state, store]);
 
   React.useEffect(() => {
     const canvas = canvasRef.current;
@@ -164,7 +169,8 @@ export function SuminagashiRenderer(): React.JSX.Element {
     let frame = 0;
     let previous = performance.now();
     const render = (now = performance.now()) => {
-      const current = stateRef.current;
+      const committed = stateRef.current;
+      const current = { ...committed, values: store.getEvaluatedValues() };
       timeRef.current += (now - previous) / 1000;
       previous = now;
       drawSuminagashi(canvas, current, timeRef.current, includeBackgroundRef.current);
@@ -173,12 +179,12 @@ export function SuminagashiRenderer(): React.JSX.Element {
     };
     frame = requestAnimationFrame(render);
     return () => cancelAnimationFrame(frame);
-  }, [animate]);
+  }, [animate, store]);
 
   return <div style={{ width: "100%", height: "100%", display: "grid", placeItems: "center", background: "transparent" }} data-toolcraft-product-output><canvas ref={canvasRef} style={{ display: "block", width: "100%", height: "100%" }} /></div>;
 }
 
-export function renderSuminagashiToCanvas(context: CanvasRenderingContext2D, state: ToolcraftState, includeBackground: boolean): void {
+function renderSuminagashiToCanvas(context: CanvasRenderingContext2D, state: ToolcraftState, includeBackground: boolean): void {
   const output = document.createElement("canvas");
   output.width = context.canvas.width;
   output.height = context.canvas.height;
@@ -188,7 +194,7 @@ export function renderSuminagashiToCanvas(context: CanvasRenderingContext2D, sta
   context.drawImage(output, 0, 0);
 }
 
-export async function exportSuminagashi(state: ToolcraftState): Promise<void> {
+async function exportSuminagashi(state: ToolcraftState): Promise<void> {
   const includeBackground = state.values["export.includeBackground"] !== false;
   const format = String(state.values["export.image.format"] ?? "png");
   const resolution = String(state.values["export.image.resolution"] ?? "4k");
@@ -207,3 +213,5 @@ export async function exportSuminagashi(state: ToolcraftState): Promise<void> {
   link.click();
   URL.revokeObjectURL(url);
 }
+
+SuminagashiRenderer.exportImage = exportSuminagashi;

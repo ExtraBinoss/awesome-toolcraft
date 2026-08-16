@@ -1,10 +1,7 @@
 import { useId } from "react";
 
 import type { CurveChannel, CurvePoint } from "../control-types";
-import {
-  ChannelTabs as SharedChannelTabs,
-  channelMeta as sharedChannelMeta,
-} from "../channel-tabs";
+import { ChannelTabs as SharedChannelTabs } from "../channel-tabs";
 import {
   type CurveInterpolation,
   curveGraphMax,
@@ -16,15 +13,7 @@ import {
   mapPointToSvg,
   normalizeCurvePoints,
 } from "./curve-geometry";
-
-export const curveChannels = [
-  "RGB",
-  "R",
-  "G",
-  "B",
-] as const satisfies readonly CurveChannel[];
-export const singleCurveChannels = ["RGB"] as const satisfies readonly CurveChannel[];
-export const channelMeta = sharedChannelMeta;
+import { channelMeta, curveChannels } from "./curve-graph-data";
 const curveGraphRadius = 6;
 const curvePointHandleViewportSize = 20;
 const curvePointHandleViewportRadius = curvePointHandleViewportSize / 2;
@@ -313,7 +302,7 @@ function CurvePointHandles({
           activeChannel={activeChannel}
           index={index}
           dragging={draggingPointIndex === index}
-          key={`${activeChannel}-${point.x}-${point.y}-${index}`}
+          key={`${activeChannel}-${point.x}-${point.y}`}
           onPointDoubleClick={onPointDoubleClick}
           onPointKeyDown={onPointKeyDown}
           onPointPointerDown={onPointPointerDown}

@@ -3,6 +3,7 @@
 import { Children, isValidElement, useEffect, useRef, useState } from "react";
 
 import { Slider } from "./slider";
+import { getNumericValueLabelWidthReference } from "./editable-slider-value-label-utils";
 
 const editableValueTextBaseClassName =
   "block h-full min-w-0 overflow-hidden whitespace-nowrap font-sans text-xs leading-5 tabular-nums";
@@ -48,20 +49,6 @@ export function EditableSliderValueLabel({
     valueLabelRef.current = valueLabel;
   }, [valueLabel]);
 
-  useEffect(() => {
-    if (editing) {
-      const editor = editorRef.current;
-
-      if (!editor) {
-        return;
-      }
-
-      editor.textContent = valueLabelRef.current;
-      editor.focus();
-      selectEditableText(editor);
-    }
-  }, [editing]);
-
   if (disabled || !onCommit || !isEditableValueLabel) {
     const valueTextToneClassName = disabled
       ? "text-[color:color-mix(in_oklab,var(--foreground)_60%,transparent)] opacity-60"
@@ -91,6 +78,7 @@ export function EditableSliderValueLabel({
         <EditableSliderValueEditor
           ariaLabel={ariaLabel}
           editorRef={editorRef}
+          initialValue={valueLabelRef.current}
           layout={layout}
           onCancel={() => setEditing(false)}
           onCommit={commitDraft}
@@ -157,6 +145,7 @@ function getEditableValueTextClassName({
 function EditableSliderValueEditor({
   ariaLabel,
   editorRef,
+  initialValue,
   layout,
   onCancel,
   onCommit,
@@ -165,12 +154,25 @@ function EditableSliderValueEditor({
 }: {
   ariaLabel: string;
   editorRef: React.RefObject<HTMLSpanElement | null>;
+  initialValue: string;
   layout: EditableSliderValueLabelLayout;
   onCancel: () => void;
   onCommit: () => void;
   onStep?: (direction: -1 | 1, currentDraft: string) => string | undefined;
   textClassName: string;
 }): React.JSX.Element {
+  useEffect(() => {
+    const editor = editorRef.current;
+
+    if (!editor) {
+      return;
+    }
+
+    editor.textContent = initialValue;
+    editor.focus();
+    selectEditableText(editor);
+  }, [editorRef, initialValue]);
+
   return (
     <span
       aria-label={ariaLabel}
@@ -258,7 +260,7 @@ function stopEditableActivation(event: React.MouseEvent | React.PointerEvent): v
   event.stopPropagation();
 }
 
-export function getInferredValueLabelWidthReference(
+function getInferredValueLabelWidthReference(
   valueLabel: string,
   children: React.ReactNode,
 ): string | undefined {
@@ -284,36 +286,6 @@ function getSliderMetadata(children: React.ReactNode): SliderMetadataProps | und
   }
 
   return undefined;
-}
-
-export function getNumericValueLabelWidthReference(
-  valueLabel: string,
-  { max = 100, min = 0 }: SliderMetadataProps,
-): string | undefined {
-  const numericMatches = Array.from(valueLabel.matchAll(/-?\d+(?:\.\d+)?/g));
-
-  if (numericMatches.length === 0) {
-    return undefined;
-  }
-
-  const decimalPrecision = Math.max(...numericMatches.map(getNumericMatchDecimalPrecision));
-  const widestEndpoint = [min, max]
-    .map((value) => formatNumericEndpoint(value, decimalPrecision))
-    .sort((left, right) => right.length - left.length)[0];
-
-  return valueLabel.replaceAll(/-?\d+(?:\.\d+)?/g, widestEndpoint ?? "");
-}
-
-function getNumericMatchDecimalPrecision(match: RegExpMatchArray): number {
-  return match[0].split(".")[1]?.length ?? 0;
-}
-
-function formatNumericEndpoint(value: number, decimalPrecision: number): string {
-  if (decimalPrecision > 0) {
-    return value.toFixed(decimalPrecision);
-  }
-
-  return `${Math.round(value)}`;
 }
 
 function getWidestValueLabel(valueLabel: string, maxValueLabel?: string): string {

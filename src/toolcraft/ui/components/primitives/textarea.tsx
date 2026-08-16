@@ -46,4 +46,4 @@ const Textarea = React.forwardRef<
   );
 });
 
-export { Textarea, textareaVariants };
+export { Textarea };

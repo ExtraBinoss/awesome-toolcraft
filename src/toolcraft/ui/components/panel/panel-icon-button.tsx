@@ -16,12 +16,6 @@ export type PanelIconButtonProps = {
   tooltipSide?: "top" | "right" | "bottom" | "left";
 };
 
-export const stopPanelHeaderButtonPointerDown: React.PointerEventHandler<
-  HTMLButtonElement
-> = (event) => {
-  event.stopPropagation();
-};
-
 export function PanelIconButton({
   children,
   className,

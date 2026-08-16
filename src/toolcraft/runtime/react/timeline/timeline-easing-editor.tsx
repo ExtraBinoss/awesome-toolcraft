@@ -25,22 +25,25 @@ type TimelineCurveEditorDragTarget = 'p1' | 'p2';
 
 const timelineEasingCurveAnimationDurationMs = 180;
 
-export function TimelineEasingEditor({
-  easing,
-  onChange,
-}: {
+type TimelineEasingEditorProps = {
   easing: ToolcraftTimelineKeyframeEasing;
   onChange: (easing: ToolcraftTimelineKeyframeEasing) => void;
-}): React.JSX.Element {
+};
+
+function useTimelineEasingEditorState({
+  easing,
+  onChange,
+}: TimelineEasingEditorProps) {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [dragTarget, setDragTarget] = useState<TimelineCurveEditorDragTarget | null>(null);
-  const targetControlPoints = getEasingEditorControlPoints(easing);
-  const targetControlPointsKey = `${easing.type}:${targetControlPoints.join(',')}`;
+  const targetControlPoints = React.useMemo(
+    () => getEasingEditorControlPoints(easing),
+    [easing],
+  );
   const [displayedControlPoints, setDisplayedControlPoints] =
     useState<TimelineBezierControlPoints>(targetControlPoints);
   const displayedControlPointsRef =
     useRef<TimelineBezierControlPoints>(displayedControlPoints);
-  const animationFrameRef = useRef<number | null>(null);
   const [isCurveAnimating, setIsCurveAnimating] = useState(false);
   const isStep = easing.type === 'step';
   const renderedControlPoints = dragTarget ? targetControlPoints : displayedControlPoints;
@@ -118,14 +121,10 @@ export function TimelineEasingEditor({
 
     updateControlPoint(dragTarget, nextPoint);
   };
+  const handleDragMoveEvent = React.useEffectEvent(handleDragMove);
 
   useEffect(() => {
     const nextControlPoints = [...targetControlPoints] as TimelineBezierControlPoints;
-
-    if (animationFrameRef.current !== null) {
-      window.cancelAnimationFrame(animationFrameRef.current);
-      animationFrameRef.current = null;
-    }
 
     if (
       dragTarget ||
@@ -147,6 +146,7 @@ export function TimelineEasingEditor({
     }
 
     let animationStartTime: number | null = null;
+    let animationFrame = 0;
 
     setIsCurveAnimating(true);
 
@@ -163,24 +163,20 @@ export function TimelineEasingEditor({
       );
 
       if (progress < 1) {
-        animationFrameRef.current = window.requestAnimationFrame(tick);
+        animationFrame = window.requestAnimationFrame(tick);
         return;
       }
 
-      animationFrameRef.current = null;
       setIsCurveAnimating(false);
       setAnimatedControlPoints(nextControlPoints);
     };
 
-    animationFrameRef.current = window.requestAnimationFrame(tick);
+    animationFrame = window.requestAnimationFrame(tick);
 
     return () => {
-      if (animationFrameRef.current !== null) {
-        window.cancelAnimationFrame(animationFrameRef.current);
-        animationFrameRef.current = null;
-      }
+      window.cancelAnimationFrame(animationFrame);
     };
-  }, [dragTarget, targetControlPointsKey]);
+  }, [dragTarget, targetControlPoints]);
 
   useEffect(() => {
     if (!dragTarget) {
@@ -193,17 +189,17 @@ export function TimelineEasingEditor({
     const previousCursor = document.body.style.cursor;
 
     document.body.style.cursor = 'grabbing';
-    window.addEventListener('pointermove', handleDragMove);
+    window.addEventListener('pointermove', handleDragMoveEvent);
     window.addEventListener('pointerup', handlePointerUp);
     window.addEventListener('pointercancel', handlePointerUp);
 
     return () => {
       document.body.style.cursor = previousCursor;
-      window.removeEventListener('pointermove', handleDragMove);
+      window.removeEventListener('pointermove', handleDragMoveEvent);
       window.removeEventListener('pointerup', handlePointerUp);
       window.removeEventListener('pointercancel', handlePointerUp);
     };
-  }, [targetControlPoints, dragTarget, handleDragMove]);
+  }, [dragTarget]);
 
   const startControlPointDrag =
     (target: TimelineCurveEditorDragTarget) => (event: React.PointerEvent<SVGElement>) => {
@@ -223,6 +219,42 @@ export function TimelineEasingEditor({
 
     setDragTarget(point.x <= 0.5 ? 'p1' : 'p2');
   };
+
+  return {
+    endX,
+    endY,
+    firstX,
+    firstY,
+    isCurveAnimating,
+    isStep,
+    renderedControlPoints,
+    secondX,
+    secondY,
+    startControlPointDrag,
+    startCurveDrag,
+    startX,
+    startY,
+    svgRef,
+  };
+}
+
+export function TimelineEasingEditor(props: TimelineEasingEditorProps): React.JSX.Element {
+  const {
+    endX,
+    endY,
+    firstX,
+    firstY,
+    isCurveAnimating,
+    isStep,
+    renderedControlPoints,
+    secondX,
+    secondY,
+    startControlPointDrag,
+    startCurveDrag,
+    startX,
+    startY,
+    svgRef,
+  } = useTimelineEasingEditorState(props);
 
   return (
     <svg

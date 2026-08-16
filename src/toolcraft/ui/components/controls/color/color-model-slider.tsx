@@ -49,7 +49,7 @@ type ColorModelSliderProps = {
   onCommit: (nextValue: number) => void;
 };
 
-export function getColorSurfaceSliderConfig({
+function getColorSurfaceSliderConfig({
   colorModel,
   currentColorHex,
   hueLabel,
@@ -96,6 +96,7 @@ export function ColorModelSlider({
 }: ColorModelSliderProps) {
   const sliderRef = useRef<HTMLDivElement | null>(null);
   const dragBoundsRef = useRef<DOMRect | null>(null);
+  const maxRef = useRef(max);
   const latestDragValueRef = useRef(value);
   const callbacksRef = useRef({ onCommit, onDragStateChange, onPreviewChange });
   const [isDragging, setIsDragging] = useState(false);
@@ -104,8 +105,9 @@ export function ColorModelSlider({
     max === 0 ? 0 : (clampSliderValue(activeValue, max) / max) * 100;
 
   useEffect(() => {
+    maxRef.current = max;
     callbacksRef.current = { onCommit, onDragStateChange, onPreviewChange };
-  }, [onCommit, onDragStateChange, onPreviewChange]);
+  }, [max, onCommit, onDragStateChange, onPreviewChange]);
 
   useEffect(() => {
     if (!isDragging) {
@@ -118,11 +120,11 @@ export function ColorModelSlider({
       const bounds = dragBoundsRef.current;
       if (!bounds) return;
 
-      const nextValue = getSliderValueFromClientX(clientX, bounds, max);
+      const nextValue = getSliderValueFromClientX(clientX, bounds, maxRef.current);
       latestDragValueRef.current = nextValue;
       callbacksRef.current.onPreviewChange(nextValue);
     },
-    [max],
+    [],
   );
 
   const finishDrag = useCallback((shouldCommit: boolean) => {

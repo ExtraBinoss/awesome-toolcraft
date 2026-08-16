@@ -1,19 +1,22 @@
 "use client";
 
 export * from "./animated-loader";
-export { Button, buttonVariants } from "./button";
+export {
+  DEFAULT_ANIMATED_LOADER_HEIGHT,
+  DEFAULT_ANIMATED_LOADER_WIDTH,
+} from "./animated-loader-utils";
+export type { LoaderSize } from "./animated-loader-utils";
+export { Button } from "./button";
 export {
   ButtonGroup,
   ButtonGroupSeparator,
   ButtonGroupText,
-  buttonGroupVariants,
 } from "./button-group";
 export { Checkbox } from "./checkbox";
 export {
   EditableSliderValueLabel,
-  getInferredValueLabelWidthReference,
-  getNumericValueLabelWidthReference,
 } from "./editable-slider-value-label";
+export { getNumericValueLabelWidthReference } from "./editable-slider-value-label-utils";
 export {
   Field,
   FieldContent,
@@ -26,7 +29,7 @@ export {
   FieldSet,
   FieldTitle,
 } from "./field";
-export { Input, inputVariants } from "./input";
+export { Input } from "./input";
 export {
   InputGroup,
   InputGroupAddon,
@@ -68,15 +71,15 @@ export {
   SelectValue,
 } from "./select";
 export { Separator } from "./separator";
-export { Slider, SliderInteractionProvider } from "./slider";
+export { Slider } from "./slider";
 export type { SliderInteractionChangeDetails } from "./slider";
 export { Switch } from "./switch";
-export { Textarea, textareaVariants } from "./textarea";
+export { Textarea } from "./textarea";
 export {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "./tooltip";
-export { Toggle, toggleVariants } from "./toggle";
+export { Toggle } from "./toggle";
 export { ToggleGroup, ToggleGroupItem } from "./toggle-group";

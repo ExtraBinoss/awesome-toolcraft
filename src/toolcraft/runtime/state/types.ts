@@ -94,7 +94,7 @@ export type ToolcraftCommand =
   | { type: "history.undo" }
   | { type: "history.redo" };
 
-export const toolcraftRuntimeCommandTypes = [
+const toolcraftRuntimeCommandTypes = [
   "controls.setValue",
   "controls.apply",
   "controls.reset",

@@ -20,6 +20,7 @@ import type {
   ToolcraftCommand,
   ToolcraftState,
 } from "../../../state/types";
+import type { ToolcraftDispatch } from "../../../state/store";
 import type { ToolcraftControlRendererMap } from "../control-renderers";
 import type { ActionControlRunAction } from "../renderers/controls-panel-action-renderer";
 import { renderActionControl } from "../renderers/controls-panel-action-renderer";
@@ -73,7 +74,7 @@ export type ControlsPanelSetControlValue = (
 export type ControlsPanelSectionProps = {
   collapsedSectionByKey: Record<string, boolean>;
   controlRenderers?: ToolcraftControlRendererMap;
-  dispatch: React.Dispatch<ToolcraftCommand>;
+  dispatch: ToolcraftDispatch;
   dispatchCommand: (command: ToolcraftCommand) => void;
   entries: readonly ControlEntry[];
   getControlValue: (control: ToolcraftControlSchema) => unknown;
@@ -359,9 +360,7 @@ export function renderControlsPanelSection({
 
               case "settings":
                 return renderSettingsTransferControl({
-                  dispatch,
                   id,
-                  state,
                 });
 
               case null: {
@@ -374,16 +373,15 @@ export function renderControlsPanelSection({
                 return withKeyframeLabelAction({
                   children: (
                     <React.Fragment key={id}>
-                      {CustomControl({
-                        control,
-                        controlId: id,
-                        dispatch,
-                        keyframeAction: getKeyframeLabelAction(control, name, value),
-                        name,
-                        setValue: commit,
-                        state,
-                        value,
-                      })}
+                      <CustomControl
+                        control={control}
+                        controlId={id}
+                        dispatch={dispatch}
+                        keyframeAction={getKeyframeLabelAction(control, name, value)}
+                        name={name}
+                        setValue={commit}
+                        value={value}
+                      />
                     </React.Fragment>
                   ),
                   control,

@@ -31,8 +31,10 @@ function resolvePreviewWeights(entry: FontPickerFontCatalogEntry): string[] {
   const uniqueWeights = Array.from(
     new Set(
       entry.weights
-        .map((value) => Number.parseInt(value, 10))
-        .filter((value) => Number.isFinite(value))
+        .flatMap((value) => {
+          const parsed = Number.parseInt(value, 10);
+          return Number.isFinite(parsed) ? [parsed] : [];
+        })
         .sort((left, right) => left - right),
     ),
   );

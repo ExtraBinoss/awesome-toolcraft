@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import type { CSSProperties } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, m } from 'motion/react';
 
 import type {
   ToolcraftTimelineKeyframeEasing,
@@ -268,7 +268,7 @@ export function TimelineExpandedContent({
           data-slot="timeline-expanded-playhead-handle"
           style={trackPlayheadStyle}
         />
-        <motion.div
+        <m.div
           animate={{ opacity: keyframeGroups.length === 0 ? 1 : 0 }}
           aria-hidden={keyframeGroups.length === 0 ? undefined : 'true'}
           className="pointer-events-none absolute inset-0 flex min-h-0 items-center justify-center px-4 text-center text-[11px] leading-4 text-[color:color-mix(in_oklab,var(--foreground)_30%,transparent)]"
@@ -276,7 +276,7 @@ export function TimelineExpandedContent({
           transition={timelineKeyframePresenceTransition}
         >
           Add your first keyframe from the properties panel.
-        </motion.div>
+        </m.div>
         <AnimatePresence initial={false}>
           {keyframeGroups.map((group) => (
             <TimelineKeyframeRow

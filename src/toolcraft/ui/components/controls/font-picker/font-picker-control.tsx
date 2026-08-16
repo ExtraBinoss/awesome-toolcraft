@@ -24,20 +24,18 @@ import {
   getFontPickerWeightOptions,
   getStepByValue,
   getStepIndexByValue,
-  isFontPickerTextCase,
   letterSpacingSteps,
   lineHeightSteps,
-  minFontPickerFontSizePx,
   normalizeFontPickerFontSize,
   normalizeFontPickerValue,
   resolveFontPickerFontWeight,
-  textCaseOptions,
   type FontPickerInputValue,
   type FontPickerValue,
 } from "./font-picker-value";
 import { FontPickerPopoverContent } from "./font-picker-popover-content";
 import { useFontPickerPreviewPipeline } from "./use-font-picker-preview-pipeline";
 import { useFontPickerVirtualList } from "./use-font-picker-virtual-list";
+import { FontPickerTypographyControls } from "./font-picker-typography-controls";
 
 export type FontPickerControlProps = {
   defaultValue?: FontPickerInputValue;
@@ -314,111 +312,67 @@ export function FontPickerControl({
             />
           </Popover>
         </div>
-        <div
-          className="min-w-0 space-y-1.5"
-          data-slot="font-picker-weight-field"
-        >
-          <ControlFieldLabel>Weight</ControlFieldLabel>
-          <StaticSelect
-            ariaLabel="Font weight"
-            disabled={disabled || fontWeightOptions.length <= 1}
-            onValueChange={(nextWeight) => {
-              emitChange(
-                {
-                  ...normalizedValue,
-                  fontWeight: resolveFontPickerFontWeight(
-                    selectedFont,
-                    nextWeight,
-                  ),
-                },
-                { history: "merge" },
-              );
-            }}
-            options={fontWeightOptions.map((weight) => ({
-              label: weight,
-              value: weight,
-            }))}
-            scrollFadeValue={false}
-            triggerClassName="min-w-0"
-            value={normalizedValue.fontWeight}
-          />
-        </div>
-      </div>
-      <div
-        className="grid min-w-0 grid-cols-2 gap-2"
-        data-slot="font-picker-typography-controls"
-      >
-        <div className="min-w-0 space-y-1.5" data-slot="font-picker-size-field">
-          <ControlFieldLabel>Size</ControlFieldLabel>
-          <Input
-            aria-label="Font size"
-            className="[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-            disabled={disabled}
-            min={minFontPickerFontSizePx}
-            onBlur={() => commitFontSizeDraft()}
-            onChange={(event) => setFontSizeDraft(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault();
-                commitFontSizeDraft(event.currentTarget.value);
-                event.currentTarget.blur();
-                return;
-              }
-
-              if (event.key === "Escape") {
-                event.preventDefault();
-                setFontSizeDraft(String(normalizedValue.fontSize));
-                event.currentTarget.blur();
-              }
-            }}
-            step={1}
-            type="text"
-            value={fontSizeDraft}
-          />
-        </div>
-        <div
-          className="min-w-0 space-y-1.5"
-          data-slot="font-picker-text-case-field"
-        >
-          <ControlFieldLabel>Case</ControlFieldLabel>
-          <StaticSelect
-            ariaLabel="Text case"
-            disabled={disabled}
-            onValueChange={(nextTextCase) => {
-              emitChange(
-                {
-                  ...normalizedValue,
-                  textCase: isFontPickerTextCase(nextTextCase)
-                    ? nextTextCase
-                    : "original",
-                },
-                { history: "merge" },
-              );
-            }}
-            options={textCaseOptions}
-            scrollFadeValue={false}
-            value={normalizedValue.textCase}
-          />
-        </div>
-      </div>
-      <div className="min-w-0" data-slot="font-picker-color-field">
-        <ColorOpacityControl
-          hex={normalizedValue.color}
-          name="Color"
-          onValueChange={(nextColor, meta) => {
-            emitChange(
-              {
-                ...normalizedValue,
-                color: nextColor.hex,
-                opacity: nextColor.opacity,
-              },
-              meta ?? { history: "merge" },
-            );
-          }}
-          opacity={normalizedValue.opacity}
-          showLabel
+        <FontPickerWeightField
+          disabled={disabled}
+          emitChange={emitChange}
+          fontWeightOptions={fontWeightOptions}
+          normalizedValue={normalizedValue}
+          selectedFont={selectedFont}
         />
       </div>
+      <FontPickerTypographyControls
+        commitFontSizeDraft={commitFontSizeDraft}
+        disabled={disabled}
+        emitChange={emitChange}
+        fontSizeDraft={fontSizeDraft}
+        normalizedValue={normalizedValue}
+        onFontSizeDraftChange={setFontSizeDraft}
+      />
     </Field>
+  );
+}
+
+type FontPickerWeightFieldProps = {
+  disabled: boolean;
+  emitChange: (nextValue: FontPickerValue, meta?: ControlChangeMeta) => void;
+  fontWeightOptions: ReturnType<typeof getFontPickerWeightOptions>;
+  normalizedValue: FontPickerValue;
+  selectedFont: ReturnType<typeof getFontPickerFontById>;
+};
+
+function FontPickerWeightField({
+  disabled,
+  emitChange,
+  fontWeightOptions,
+  normalizedValue,
+  selectedFont,
+}: FontPickerWeightFieldProps): React.JSX.Element {
+  return (
+    <div
+      className="min-w-0 space-y-1.5"
+      data-slot="font-picker-weight-field"
+    >
+      <ControlFieldLabel>Weight</ControlFieldLabel>
+      <StaticSelect
+        ariaLabel="Font weight"
+        disabled={disabled || fontWeightOptions.length <= 1}
+        onValueChange={(nextWeight) => {
+          emitChange(
+            {
+              ...normalizedValue,
+              fontWeight: resolveFontPickerFontWeight(selectedFont, nextWeight),
+            },
+            { history: "merge" },
+          );
+        }}
+        options={fontWeightOptions.map((weight) => ({
+          label: weight,
+          value: weight,
+        }))}
+        scrollFadeValue={false}
+        triggerClassName="min-w-0"
+        value={normalizedValue.fontWeight}
+      />
+    </div>
   );
 }

@@ -9,6 +9,21 @@ const GradientGeneratorPage = lazy(() =>
     default: module.GradientGeneratorPage!,
   })),
 );
+const AsciiLabPage = lazy(() =>
+  toolPageLoaders["/tools/ascii-lab"]().then((module) => ({
+    default: module.AsciiLabPage!,
+  })),
+);
+const Artistic3DPage = lazy(() =>
+  toolPageLoaders["/tools/artistic-3d"]().then((module) => ({
+    default: module.Artistic3DPage!,
+  })),
+);
+const DitherHeatmapPage = lazy(() =>
+  toolPageLoaders["/tools/dither-heatmap"]().then((module) => ({
+    default: module.DitherHeatmapPage!,
+  })),
+);
 const BlobTrackingPage = lazy(() =>
   toolPageLoaders["/tools/blob-tracking"]().then((module) => ({
     default: module.BlobTrackingPage!,
@@ -55,6 +70,27 @@ export function App() {
     return (
       <Suspense fallback={<RouteLoading toolName="Gradient Generator" />}>
         <GradientGeneratorPage />
+      </Suspense>
+    );
+  }
+  if (path === "/tools/ascii-lab") {
+    return (
+      <Suspense fallback={<RouteLoading toolName="ASCII Lab" />}>
+        <AsciiLabPage />
+      </Suspense>
+    );
+  }
+  if (path === "/tools/artistic-3d") {
+    return (
+      <Suspense fallback={<RouteLoading toolName="Artistic 3D" />}>
+        <Artistic3DPage />
+      </Suspense>
+    );
+  }
+  if (path === "/tools/dither-heatmap") {
+    return (
+      <Suspense fallback={<RouteLoading toolName="Dither / Heatmap" />}>
+        <DitherHeatmapPage />
       </Suspense>
     );
   }

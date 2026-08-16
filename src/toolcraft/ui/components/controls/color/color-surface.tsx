@@ -33,7 +33,7 @@ function getRgbCss([red, green, blue]: [number, number, number]): string {
   return `rgb(${red} ${green} ${blue})`;
 }
 
-export function getColorSurfaceThumbPosition({
+function getColorSurfaceThumbPosition({
   colorModel,
   currentColorHex,
   optimisticColor,
@@ -77,7 +77,7 @@ export function getColorSurfaceThumbPosition({
   };
 }
 
-export function getColorSurfaceStyle({
+function getColorSurfaceStyle({
   colorModel,
   currentColorHex,
   hue,

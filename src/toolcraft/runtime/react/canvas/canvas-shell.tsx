@@ -4,11 +4,15 @@ import * as React from "react";
 
 import {
   CanvasDefaultMediaLayer,
-  getVisibleCanvasImageAssets,
 } from "./canvas-default-media-layer";
+import { getVisibleCanvasImageAssets } from "./canvas-default-media-assets";
 import { useCanvasDropImport } from "./use-canvas-drop-import";
 import { useCanvasViewportInteractions } from "./use-canvas-viewport-interactions";
-import { useToolcraft } from "../app-shell/use-toolcraft";
+import {
+  useToolcraftDispatch,
+  useToolcraftSelector,
+  useToolcraftStore,
+} from "../app-shell/use-toolcraft";
 
 export type CanvasShellProps = {
   children?: React.ReactNode;
@@ -29,10 +33,19 @@ export function CanvasShell({
   children,
   renderDefaultMedia = true,
 }: CanvasShellProps): React.JSX.Element {
-  const { dispatch, state } = useToolcraft();
+  const dispatch = useToolcraftDispatch();
+  const store = useToolcraftStore();
+  const canvasSchema = useToolcraftSelector(React.useCallback((state) => state.schema.canvas, []));
+  const canvas = useToolcraftSelector(React.useCallback((state) => state.canvas, []));
+  const layers = useToolcraftSelector(React.useCallback((state) => state.layers, []));
+  const mediaAssets = useToolcraftSelector(React.useCallback((state) => state.mediaAssets, []));
+  const selectedLayerId = useToolcraftSelector(
+    React.useCallback((state) => state.selectedLayerId, []),
+  );
   const [dragOver, setDragOver] = React.useState(false);
-  const uploadEnabled = state.schema.canvas.upload;
-  const { offset, size, zoom } = state.canvas;
+  const [isTransforming, setIsTransforming] = React.useState(false);
+  const uploadEnabled = canvasSchema.upload;
+  const { offset, size, zoom } = canvas;
   const scale = zoom / 100;
   const {
     handlePointerDown,
@@ -41,28 +54,28 @@ export function CanvasShell({
     viewportRef,
   } = useCanvasViewportInteractions({
     dispatch,
-    draggable: state.schema.canvas.draggable,
+    draggable: canvasSchema.draggable,
     offset,
     zoom,
   });
   const handleDrop = useCanvasDropImport({
     dispatch,
+    getState: store.getState,
     offset,
     setDragOver,
     size,
-    state,
     uploadEnabled,
     zoom,
   });
   const visibleMediaAssets = React.useMemo(
-    () => getVisibleCanvasImageAssets(state),
-    [state.layers, state.mediaAssets],
+    () => getVisibleCanvasImageAssets({ ...store.getState(), layers, mediaAssets }),
+    [layers, mediaAssets, store],
   );
   const hasCanvasContent = visibleMediaAssets.length > 0;
   const hasCanvasSlot = React.Children.count(children) > 0;
   const renderEditableCanvas =
-    state.schema.canvas.sizing.mode !== "intrinsic-media" ||
-    state.schema.canvas.sizeSource === "app" ||
+    canvasSchema.sizing.mode !== "intrinsic-media" ||
+    canvasSchema.sizeSource === "app" ||
     hasCanvasContent ||
     hasCanvasSlot;
 
@@ -89,10 +102,19 @@ export function CanvasShell({
       }}
       onDragOver={beginDragOver}
       onDrop={handleDrop}
-      onPointerCancel={handlePointerUp}
-      onPointerDown={handlePointerDown}
+      onPointerCancel={(event) => {
+        setIsTransforming(false);
+        handlePointerUp(event);
+      }}
+      onPointerDown={(event) => {
+        setIsTransforming(true);
+        handlePointerDown(event);
+      }}
       onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
+      onPointerUp={(event) => {
+        setIsTransforming(false);
+        handlePointerUp(event);
+      }}
       ref={viewportRef}
       role="application"
     >
@@ -100,8 +122,9 @@ export function CanvasShell({
         className="absolute top-1/2 left-1/2"
         data-toolcraft-canvas-world=""
         style={{
-          transform: `translate(-50%, -50%) translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
+          transform: `translate(-50%, -50%) translate3d(${offset.x}px, ${offset.y}px, 0) scale(${scale})`,
           transformOrigin: "center",
+          ...(isTransforming ? { willChange: "transform" } : {}),
         }}
       >
         {renderEditableCanvas ? (
@@ -121,7 +144,7 @@ export function CanvasShell({
                     dispatch={dispatch}
                     key={mediaAsset.id}
                     mediaAsset={mediaAsset}
-                    selected={state.selectedLayerId === mediaAsset.layerId}
+                    selected={selectedLayerId === mediaAsset.layerId}
                   />
                 ))
               : null}

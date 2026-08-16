@@ -84,7 +84,16 @@ function RangeInputs({
   );
 }
 
-export function RangeInputControl({
+export function RangeInputControl(props: RangeInputControlProps): React.JSX.Element {
+  return (
+    <RangeInputEditor
+      key={`${props.start}:${props.end}`}
+      {...props}
+    />
+  );
+}
+
+function RangeInputEditor({
   defaultValue,
   end,
   name,
@@ -95,11 +104,6 @@ export function RangeInputControl({
   const [currentValue, setCurrentValue] = React.useState({ end, start });
   const committedValueRef = React.useRef({ end, start });
   const defaultValueRef = React.useRef(defaultValue ?? { end, start });
-
-  React.useEffect(() => {
-    committedValueRef.current = { end, start };
-    setCurrentValue({ end, start });
-  }, [end, start]);
 
   React.useEffect(() => {
     defaultValueRef.current = defaultValue ?? { end, start };

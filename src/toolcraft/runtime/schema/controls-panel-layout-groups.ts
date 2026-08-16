@@ -10,12 +10,16 @@ export function filterLayoutGroupsForControlIds(
   layoutGroups: readonly ToolcraftControlLayoutGroupSchema[] | undefined,
   controlIds: ReadonlySet<string>,
 ): ToolcraftControlLayoutGroupSchema[] {
-  return (layoutGroups ?? [])
-    .map((layoutGroup) => ({
-      ...layoutGroup,
-      controls: layoutGroup.controls.filter((controlId) => controlIds.has(controlId)),
-    }))
-    .filter((layoutGroup) => layoutGroup.controls.length > 1);
+  return (layoutGroups ?? []).reduce<ToolcraftControlLayoutGroupSchema[]>(
+    (groups, layoutGroup) => {
+      const controls = layoutGroup.controls.filter((controlId) => controlIds.has(controlId));
+      if (controls.length > 1) {
+        groups.push({ ...layoutGroup, controls });
+      }
+      return groups;
+    },
+    [],
+  );
 }
 
 function isShortControlLabel(id: string, control: ToolcraftControlSchema): boolean {

@@ -5,7 +5,7 @@ import type {
   PointerEvent as ReactPointerEvent,
   RefObject,
 } from "react";
-import type { getColorSurfaceSliderConfig } from "./color-model-slider";
+import type { getColorSurfaceSliderConfig } from "./color-model-slider-utils";
 import type { HsvColor } from "../../../lib/style-guide-color-utils";
 import type {
   ColorFormatMode,

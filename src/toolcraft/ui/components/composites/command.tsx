@@ -150,12 +150,14 @@ const CommandTextInput = React.forwardRef<
 });
 CommandTextInput.displayName = "CommandTextInput";
 
+const EMPTY_SCROLL_FADE_WATCH: readonly unknown[] = [];
+
 function CommandList({
   className,
   scrollFade = false,
   scrollFadeClassName,
   scrollFadeContainerClassName,
-  scrollFadeWatch = [],
+  scrollFadeWatch = EMPTY_SCROLL_FADE_WATCH,
   ...props
 }: React.ComponentProps<typeof CommandPrimitive.List> & {
   scrollFade?: boolean;

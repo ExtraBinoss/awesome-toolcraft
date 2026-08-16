@@ -26,60 +26,6 @@ type SliderValueStateOptions<Value extends number | readonly number[]> = {
   variant: SliderVariant;
 };
 
-type ControlledDiscreteValueResetOptions<Value extends number | readonly number[]> = {
-  discreteValue: Value | undefined;
-  isDiscrete: boolean;
-  lastInternalDiscreteValueRef: React.RefObject<Value | undefined>;
-  max: number;
-  min: number;
-  setDiscreteValue: React.Dispatch<React.SetStateAction<Value | undefined>>;
-  snapValues?: readonly number[];
-  step: number;
-  value: Value | undefined;
-};
-
-function useControlledDiscreteValueReset<Value extends number | readonly number[]>({
-  discreteValue,
-  isDiscrete,
-  lastInternalDiscreteValueRef,
-  max,
-  min,
-  setDiscreteValue,
-  snapValues,
-  step,
-  value,
-}: ControlledDiscreteValueResetOptions<Value>) {
-  React.useEffect(() => {
-    if (!isDiscrete || value === undefined || discreteValue === undefined) {
-      return;
-    }
-
-    const lastInternalValue = lastInternalDiscreteValueRef.current;
-    if (lastInternalValue !== undefined) {
-      if (valuesMatch(value, lastInternalValue)) {
-        return;
-      }
-
-      const snappedInternalValue = snapSliderValue(lastInternalValue, min, max, step, snapValues);
-      if (valuesMatch(value, snappedInternalValue)) {
-        return;
-      }
-    }
-
-    setDiscreteValue(undefined);
-  }, [
-    discreteValue,
-    isDiscrete,
-    lastInternalDiscreteValueRef,
-    max,
-    min,
-    setDiscreteValue,
-    snapValues,
-    step,
-    value,
-  ]);
-}
-
 export function useSliderValueState<Value extends number | readonly number[]>({
   defaultValue,
   largeStep,
@@ -100,25 +46,13 @@ export function useSliderValueState<Value extends number | readonly number[]>({
   );
   const lastChangeDetailsRef = React.useRef<SliderPrimitive.Root.ChangeEventDetails | null>(null);
   const isDiscrete = variant === "discrete";
-  const resolvedValue = isDiscrete ? (discreteValue ?? value ?? defaultValue) : value;
+  const resolvedValue = isDiscrete ? (value ?? discreteValue ?? defaultValue) : value;
   const rootStep = isDiscrete ? Math.max((max - min) / 1000, 0.000001) : step;
   const rootLargeStep = isDiscrete ? (largeStep ?? step) : largeStep;
   const values = React.useMemo(
     () => getSliderValues(resolvedValue, defaultValue, min, max),
     [resolvedValue, defaultValue, min, max],
   );
-
-  useControlledDiscreteValueReset({
-    discreteValue,
-    isDiscrete,
-    lastInternalDiscreteValueRef,
-    max,
-    min,
-    setDiscreteValue,
-    snapValues,
-    step,
-    value,
-  });
 
   const handleValueChange = React.useCallback(
     (nextValue: SliderValue<Value>, eventDetails: SliderPrimitive.Root.ChangeEventDetails) => {

@@ -3,35 +3,50 @@
 import * as React from "react";
 
 import type { ResolvedToolcraftAppSchema } from "../../schema/types";
-import { createToolcraftState } from "../../state/create-template-state";
 import {
   createToolcraftPersistenceSnapshot,
   getToolcraftPersistenceKey,
   mergeToolcraftInitialState,
   parseToolcraftPersistenceSnapshot,
 } from "../../state/persistence";
-import { toolcraftReducer } from "../../state/reducer";
+import { createToolcraftStore } from "../../state/store";
 import type {
-  ToolcraftCommand,
   ToolcraftInitialState,
+  ToolcraftMediaAsset,
   ToolcraftState,
 } from "../../state/types";
 import { readToolcraftLocalStorageValue } from "./storage-key-migration";
 import { ToolcraftThemeProvider } from "./theme-runtime";
+import { ToolcraftStoreProvider } from "./toolcraft-store-provider";
+import { ToolcraftPlaybackClock } from "./toolcraft-playback-clock";
 import { logToolLoadDuration } from "@/tool-load-debug";
-
-export type ToolcraftContextValue = {
-  dispatch: React.Dispatch<ToolcraftCommand>;
-  state: ToolcraftState;
-};
-
-export const ToolcraftContext = React.createContext<ToolcraftContextValue | null>(null);
 
 export type ToolcraftRootProps = {
   children: React.ReactNode;
   initialState?: ToolcraftInitialState;
   schema: ResolvedToolcraftAppSchema;
 };
+
+type PersistenceWriteCache = {
+  lastMainSerialized?: string;
+  lastMediaAssets?: ToolcraftMediaAsset[];
+  lastMediaSerialized?: string;
+};
+
+type ToolcraftIdleWindow = Window & {
+  cancelIdleCallback?: (handle: number) => void;
+  requestIdleCallback?: (
+    callback: () => void,
+    options?: { timeout: number },
+  ) => number;
+};
+
+const persistenceDebounceMs = 300;
+const persistenceIdleTimeoutMs = 1_500;
+
+function getToolcraftMediaPersistenceKey(storageKey: string): string {
+  return `${storageKey}:media`;
+}
 
 function readPersistedInitialState(
   schema: ResolvedToolcraftAppSchema,
@@ -43,10 +58,16 @@ function readPersistedInitialState(
   }
 
   try {
-    return parseToolcraftPersistenceSnapshot(
+    const persistedState = parseToolcraftPersistenceSnapshot(
       schema,
       readToolcraftLocalStorageValue(storageKey),
     );
+    const persistedMediaState = parseToolcraftPersistenceSnapshot(
+      schema,
+      readToolcraftLocalStorageValue(getToolcraftMediaPersistenceKey(storageKey)),
+    );
+
+    return mergeToolcraftInitialState(persistedState, persistedMediaState);
   } catch {
     return undefined;
   }
@@ -55,6 +76,7 @@ function readPersistedInitialState(
 function writePersistedState(
   schema: ResolvedToolcraftAppSchema,
   state: ToolcraftState,
+  cache: PersistenceWriteCache,
 ): void {
   const storageKey = getToolcraftPersistenceKey(schema.persistence);
 
@@ -68,10 +90,49 @@ function writePersistedState(
     return;
   }
 
+  const mainState = { ...snapshot.state };
+  delete mainState.mediaAssets;
+
   try {
-    window.localStorage.setItem(storageKey, JSON.stringify(snapshot));
+    const mainSerialized = JSON.stringify({
+      ...snapshot,
+      state: mainState,
+    });
+
+    if (mainSerialized !== cache.lastMainSerialized) {
+      window.localStorage.setItem(storageKey, mainSerialized);
+      cache.lastMainSerialized = mainSerialized;
+    }
   } catch {
     // Persistence is best-effort; runtime state stays authoritative when storage is unavailable.
+  }
+
+  if (
+    schema.persistence.storage !== "localStorage" ||
+    !schema.persistence.include.includes("media")
+  ) {
+    return;
+  }
+
+  const mediaStorageKey = getToolcraftMediaPersistenceKey(storageKey);
+
+  if (state.mediaAssets === cache.lastMediaAssets) {
+    return;
+  }
+
+  try {
+    const mediaSerialized = JSON.stringify({
+      state: { mediaAssets: state.mediaAssets },
+      version: snapshot.version,
+    });
+
+    if (mediaSerialized !== cache.lastMediaSerialized) {
+      window.localStorage.setItem(mediaStorageKey, mediaSerialized);
+      cache.lastMediaSerialized = mediaSerialized;
+    }
+    cache.lastMediaAssets = state.mediaAssets;
+  } catch {
+    // Large files can exceed storage quota; the rest of the state is still persisted.
   }
 }
 
@@ -123,26 +184,19 @@ export function ToolcraftRoot({
   initialState,
   schema,
 }: ToolcraftRootProps) {
-  const [state, dispatch] = React.useReducer(
-    toolcraftReducer,
-    { initialState, schema },
-    ({ initialState, schema }) =>
-      (() => {
-        const startedAt = performance.now();
-        const nextState = createToolcraftState(
-          schema,
-          mergeToolcraftInitialState(readPersistedInitialState(schema), initialState),
-        );
-        logToolLoadDuration("runtime:state initialized", startedAt);
-        return nextState;
-      })(),
-  );
-  const latestStateRef = React.useRef(state);
-  const value = React.useMemo(() => ({ dispatch, state }), [dispatch, state]);
-
-  React.useEffect(() => {
-    latestStateRef.current = state;
-  }, [state]);
+  const [store] = React.useState(() => {
+    const startedAt = performance.now();
+    const nextStore = createToolcraftStore({
+      initialState: mergeToolcraftInitialState(
+        readPersistedInitialState(schema),
+        initialState,
+      ),
+      schema,
+    });
+    logToolLoadDuration("runtime:state initialized", startedAt);
+    return nextStore;
+  });
+  const persistenceWriteCacheRef = React.useRef<PersistenceWriteCache>({});
 
   React.useEffect(() => {
     if (!schema.toolbar.history || typeof document === "undefined") {
@@ -156,13 +210,13 @@ export function ToolcraftRoot({
 
       if (isUndoShortcut(event)) {
         event.preventDefault();
-        dispatch({ type: "history.undo" });
+        store.dispatch({ type: "history.undo" });
         return;
       }
 
       if (isRedoShortcut(event)) {
         event.preventDefault();
-        dispatch({ type: "history.redo" });
+        store.dispatch({ type: "history.redo" });
       }
     };
 
@@ -171,19 +225,46 @@ export function ToolcraftRoot({
     return () => {
       document.removeEventListener("keydown", handleDocumentKeyDown);
     };
-  }, [dispatch, schema.toolbar.history]);
+  }, [schema.toolbar.history, store]);
 
   React.useEffect(() => {
     if (schema.persistence.storage !== "localStorage") {
       return undefined;
     }
 
-    const persistTimer = window.setTimeout(() => {
-      writePersistedState(schema, state);
-    }, 120);
+    const idleWindow = window as ToolcraftIdleWindow;
+    let idleCallback = 0;
+    let persistTimer = 0;
+    const schedulePersistence = (): void => {
+      window.clearTimeout(persistTimer);
+      if (idleCallback && typeof idleWindow.cancelIdleCallback === "function") {
+        idleWindow.cancelIdleCallback(idleCallback);
+        idleCallback = 0;
+      }
+      persistTimer = window.setTimeout(() => {
+        const persist = () => {
+          writePersistedState(schema, store.getState(), persistenceWriteCacheRef.current);
+        };
 
-    return () => window.clearTimeout(persistTimer);
-  }, [schema, state]);
+        if (typeof idleWindow.requestIdleCallback === "function") {
+          idleCallback = idleWindow.requestIdleCallback(persist, {
+            timeout: persistenceIdleTimeoutMs,
+          });
+        } else {
+          persist();
+        }
+      }, persistenceDebounceMs);
+    };
+    const unsubscribe = store.subscribe(schedulePersistence);
+
+    return () => {
+      unsubscribe();
+      window.clearTimeout(persistTimer);
+      if (idleCallback && typeof idleWindow.cancelIdleCallback === "function") {
+        idleWindow.cancelIdleCallback(idleCallback);
+      }
+    };
+  }, [schema, store]);
 
   React.useEffect(() => {
     if (schema.persistence.storage !== "localStorage") {
@@ -191,7 +272,12 @@ export function ToolcraftRoot({
     }
 
     const handlePageHide = () => {
-      writePersistedState(schema, latestStateRef.current);
+      store.syncPlayhead();
+      writePersistedState(
+        schema,
+        store.getState(),
+        persistenceWriteCacheRef.current,
+      );
     };
 
     window.addEventListener("pagehide", handlePageHide);
@@ -199,11 +285,16 @@ export function ToolcraftRoot({
     return () => {
       window.removeEventListener("pagehide", handlePageHide);
     };
-  }, [schema]);
+  }, [schema, store]);
+
+  React.useEffect(() => () => store.dispose(), [store]);
 
   return (
     <ToolcraftThemeProvider>
-      <ToolcraftContext.Provider value={value}>{children}</ToolcraftContext.Provider>
+      <ToolcraftStoreProvider store={store}>
+        <ToolcraftPlaybackClock />
+        {children}
+      </ToolcraftStoreProvider>
     </ToolcraftThemeProvider>
   );
 }

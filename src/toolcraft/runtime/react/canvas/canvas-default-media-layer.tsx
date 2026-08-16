@@ -2,39 +2,13 @@
 
 import * as React from "react";
 
-import type {
-  ToolcraftCommand,
-  ToolcraftMediaAsset,
-  ToolcraftState,
-} from "../../state/types";
+import type { ToolcraftState } from "../../state/types";
+import type { ToolcraftDispatch } from "../../state/store";
+import type { ToolcraftCanvasImageAsset } from "./canvas-default-media-assets";
 import { getCanvasMediaTransformStyle } from "./canvas-media-transform";
-import { isToolcraftLayerVisibleInTree } from "../layers/layer-tree";
-
-type ToolcraftCanvasImageAsset = ToolcraftMediaAsset & {
-  size: NonNullable<ToolcraftMediaAsset["size"]>;
-};
 
 function cn(...classNames: Array<string | false | null | undefined>): string {
   return classNames.filter(Boolean).join(" ");
-}
-
-function isDefaultCanvasImageAsset(
-  state: ToolcraftState,
-  mediaAsset: ToolcraftMediaAsset,
-): mediaAsset is ToolcraftCanvasImageAsset {
-  return (
-    (mediaAsset.assetKind ?? "image") === "image" &&
-    mediaAsset.size !== undefined &&
-    isToolcraftLayerVisibleInTree(state.layers, mediaAsset.layerId)
-  );
-}
-
-export function getVisibleCanvasImageAssets(
-  state: ToolcraftState,
-): ToolcraftCanvasImageAsset[] {
-  return state.mediaAssets.filter((mediaAsset) =>
-    isDefaultCanvasImageAsset(state, mediaAsset),
-  );
 }
 
 export function CanvasDefaultMediaLayer({
@@ -44,7 +18,7 @@ export function CanvasDefaultMediaLayer({
   selected,
 }: {
   canvasSize: ToolcraftState["canvas"]["size"];
-  dispatch: React.Dispatch<ToolcraftCommand>;
+  dispatch: ToolcraftDispatch;
   mediaAsset: ToolcraftCanvasImageAsset;
   selected: boolean;
 }): React.JSX.Element {

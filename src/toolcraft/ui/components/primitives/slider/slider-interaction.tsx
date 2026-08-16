@@ -40,7 +40,7 @@ function runtimeValuesMatch(left: readonly number[], right: readonly number[]): 
   );
 }
 
-export function SliderInteractionProvider({
+function SliderInteractionProvider({
   children,
   onValueChange,
 }: {

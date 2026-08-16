@@ -44,11 +44,8 @@ export {
   ColorOpacityControl,
   ColorValueControl,
   ColorValueControl as ColorValue,
-  DEFAULT_COLOR_FORMAT_MODE,
   getColorSurfaceModel,
   getColorSurfaceSliderConfig,
-  getColorSurfaceStyle,
-  getColorSurfaceThumbPosition,
   getSurfaceHsvColor,
   PaletteControl,
   PaletteControl as Palette,
@@ -69,12 +66,6 @@ export type {
   PaletteControlProps as PaletteProps,
   PaletteControlValue,
   PaletteShadeStep,
-} from "./color";
-export {
-  PALETTE_SHADE_STEPS,
-  STYLE_GUIDE_PRIMARY_FAMILY_OPTIONS,
-  TAILWIND_COLOR_PALETTE,
-  getPaletteHex,
 } from "./color";
 export {
   ChannelMixerControl,
@@ -127,7 +118,6 @@ export {
   FontPickerControl,
   FontPickerControl as FontPicker,
   getDefaultFontPickerFontId,
-  getFontPickerCatalog,
   getFontPickerFontById,
   resolveFontPickerFontId,
 } from "./font-picker";

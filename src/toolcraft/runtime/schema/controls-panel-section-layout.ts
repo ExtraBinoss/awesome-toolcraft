@@ -20,16 +20,18 @@ function isControlGatedBySameSectionControl(
   control: ToolcraftControlSchema,
   entries: readonly [string, ToolcraftControlSchema][],
 ): boolean {
-  const gateTargets = [control.visibleWhen?.target, control.disabledWhen?.target].filter(
-    (target): target is string => Boolean(target),
+  const gateTargets = new Set(
+    [control.visibleWhen?.target, control.disabledWhen?.target].filter(
+      (target): target is string => Boolean(target),
+    ),
   );
 
-  if (gateTargets.length === 0) {
+  if (gateTargets.size === 0) {
     return false;
   }
 
   return entries.some(([, entryControl]) =>
-    gateTargets.includes(entryControl.target) &&
+    gateTargets.has(entryControl.target) &&
     getControlDefaultSectionLayout(entryControl) === "grouped",
   );
 }

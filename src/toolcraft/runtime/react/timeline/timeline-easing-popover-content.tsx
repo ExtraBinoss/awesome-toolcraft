@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ScrollFade } from '@/toolcraft/ui';
 
 import type { ToolcraftTimelineKeyframeEasing } from '../../state/types';
@@ -37,29 +37,33 @@ function getTimelineEasingPresetButtonClassName(isActive: boolean): string {
       : 'border-[color:color-mix(in_oklab,var(--border)_8%,transparent)] text-[color:var(--muted-foreground)]',
   );
 }
-export function TimelineEasingPopoverContent({
-  easing,
-  onChange,
-}: {
+type TimelineEasingPopoverContentProps = {
   easing: ToolcraftTimelineKeyframeEasing;
   onChange: (easing: ToolcraftTimelineKeyframeEasing) => void;
-}): React.JSX.Element {
-  const [inputValue, setInputValue] = useState(getEasingInputValue(easing));
+};
+
+export function TimelineEasingPopoverContent(
+  props: TimelineEasingPopoverContentProps,
+): React.JSX.Element {
+  return (
+    <TimelineEasingPopoverForm
+      {...props}
+      key={getEasingInputValue(props.easing)}
+    />
+  );
+}
+
+function TimelineEasingPopoverForm({
+  easing,
+  onChange,
+}: TimelineEasingPopoverContentProps): React.JSX.Element {
+  const inputId = React.useId();
+  const [inputValue, setInputValue] = useState(() => getEasingInputValue(easing));
   const [inputError, setInputError] = useState<string | null>(null);
-  const [inputEditing, setInputEditing] = useState(false);
   const activePresetName = findTimelineEasingPresetName(easing);
   const committedInputValue = getEasingInputValue(easing);
   const isStep = easing.type === 'step';
   const popoverWidth = useTimelineEasingPopoverWidth();
-
-  useEffect(() => {
-    if (inputEditing) {
-      return;
-    }
-
-    setInputValue(committedInputValue);
-    setInputError(null);
-  }, [committedInputValue, inputEditing]);
 
   const commitInputValue = (
     value = inputValue,
@@ -162,18 +166,19 @@ export function TimelineEasingPopoverContent({
           })}
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center gap-2">
-              <span
+              <label
                 className="text-[11px] leading-4 opacity-60"
                 data-slot="timeline-easing-section-label"
+                htmlFor={inputId}
               >
                 Curve Values
-              </span>
+              </label>
             </div>
             <input
+              id={inputId}
               className="h-8 cursor-text rounded-lg border border-[color:color-mix(in_oklab,var(--border)_10%,transparent)] bg-[color:color-mix(in_oklab,var(--background)_20%,transparent)] px-2.5 font-mono text-[12px] text-[color:var(--foreground)] transition-[background-color,border-color] duration-150 ease-out outline-none placeholder:text-[color:var(--muted-foreground)] in-data-[focus-visible-mode=keyboard]:focus-visible:border-[color:color-mix(in_oklab,var(--border)_22%,transparent)] in-data-[focus-visible-mode=keyboard]:focus-visible:bg-[color:color-mix(in_oklab,var(--foreground)_4%,transparent)]"
               onBlur={(event) => {
                 commitInputValue(event.currentTarget.value, { revertOnInvalid: true });
-                setInputEditing(false);
               }}
               onChange={(event) => {
                 setInputValue(event.currentTarget.value);
@@ -182,7 +187,6 @@ export function TimelineEasingPopoverContent({
                 }
               }}
               onFocus={(event) => {
-                setInputEditing(true);
                 event.currentTarget.select();
               }}
               onKeyDown={(event) => {

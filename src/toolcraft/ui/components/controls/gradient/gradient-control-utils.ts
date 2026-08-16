@@ -50,16 +50,6 @@ export function normalizeStopOpacity(opacity: string): number {
   return Number.isFinite(parsedValue) ? Math.round(clamp(parsedValue, 0, 100)) : 100;
 }
 
-export function normalizeColorInput(value: string): string {
-  return getNativeColorPickerValue(value).toUpperCase();
-}
-
-export function formatColorInputValue(color: string): string {
-  const normalizedColor = getNativeColorPickerValue(color).toUpperCase();
-
-  return normalizedColor.slice(1);
-}
-
 export function sortStops(stops: readonly GradientStop[]): GradientStop[] {
   return [...stops].sort(
     (left, right) => parseStopPosition(left.position) - parseStopPosition(right.position),
@@ -110,13 +100,6 @@ export function getGradientBackground(
   }
 }
 
-export function getNextGradientType(type: GradientType): GradientType {
-  const typeIndex = gradientTypeOptions.findIndex((option) => option.value === type);
-  const nextOption = gradientTypeOptions[(typeIndex + 1) % gradientTypeOptions.length];
-
-  return nextOption?.value ?? "linear";
-}
-
 export function isButtonTarget(target: EventTarget): boolean {
   return target instanceof HTMLElement && target.closest("button") !== null;
 }
@@ -155,13 +138,4 @@ export function addGradientStop(
 
 export function removeGradientStop(stops: readonly GradientStop[], index: number): GradientStop[] {
   return stops.filter((_, stopIndex) => stopIndex !== index);
-}
-
-export function reverseGradientStops(stops: readonly GradientStop[]): GradientStop[] {
-  return sortStops(
-    stops.map((stop) => ({
-      ...stop,
-      position: formatStopPosition(1 - parseStopPosition(stop.position)),
-    })),
-  );
 }

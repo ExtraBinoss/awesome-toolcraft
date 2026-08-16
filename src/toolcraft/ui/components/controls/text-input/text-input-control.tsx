@@ -149,7 +149,7 @@ export function TextInputControl(
       >
         {props.inputs.map((input, index) => (
           <TextInputControlField
-            key={`${input.name}-${index}`}
+            key={input.name}
             {...input}
           />
         ))}

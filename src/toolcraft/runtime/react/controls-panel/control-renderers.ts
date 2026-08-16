@@ -4,7 +4,7 @@ import type * as React from "react";
 import type { ControlChangeMeta } from "@/toolcraft/ui";
 
 import type { ToolcraftControlSchema } from "../../schema/types";
-import type { ToolcraftCommand, ToolcraftState } from "../../state/types";
+import type { ToolcraftDispatch } from "../../state/store";
 
 export type ToolcraftCustomControlSetValue<Value = unknown> = (
   value: Value,
@@ -14,11 +14,10 @@ export type ToolcraftCustomControlSetValue<Value = unknown> = (
 export type ToolcraftCustomControlRendererProps<Value = unknown> = {
   control: ToolcraftControlSchema;
   controlId: string;
-  dispatch: React.Dispatch<ToolcraftCommand>;
+  dispatch: ToolcraftDispatch;
   keyframeAction: React.ReactNode;
   name: string;
   setValue: ToolcraftCustomControlSetValue<Value>;
-  state: ToolcraftState;
   value: Value;
 };
 

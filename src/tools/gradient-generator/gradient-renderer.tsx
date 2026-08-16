@@ -4,7 +4,7 @@ import {
   createToolcraftPngExportCanvas,
   shouldIncludeToolcraftPreviewBackground,
 } from "@/toolcraft/runtime/export/export";
-import { useToolcraft } from "@/toolcraft/runtime/react/app-shell/use-toolcraft";
+import { useToolcraftSelector, useToolcraftStore } from "@/toolcraft/runtime/react/app-shell/use-toolcraft";
 import type { ToolcraftState } from "@/toolcraft/runtime/state/types";
 import { logToolLoad, logToolLoadDuration } from "@/tool-load-debug";
 
@@ -105,13 +105,15 @@ function drawGradient(canvas: HTMLCanvasElement, state: ToolcraftState, time: nu
 }
 
 export function GradientRenderer() {
-  const { state } = useToolcraft();
+  const store = useToolcraftStore();
+  const state = useToolcraftSelector(React.useCallback((snapshot) => snapshot, []));
   const includeBackground = shouldIncludeToolcraftPreviewBackground({ state });
 
   return (
     <InnerGradientRenderer
       values={state.values}
       includeBackground={includeBackground}
+      store={store}
     />
   );
 }
@@ -119,9 +121,11 @@ export function GradientRenderer() {
 const InnerGradientRenderer = React.memo(function InnerGradientRenderer({
   values,
   includeBackground,
+  store,
 }: {
   values: Record<string, unknown>;
   includeBackground: boolean;
+  store: ReturnType<typeof useToolcraftStore>;
 }) {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const renderState = React.useMemo(() => ({ values } as ToolcraftState), [values]);
@@ -139,9 +143,14 @@ const InnerGradientRenderer = React.memo(function InnerGradientRenderer({
   React.useEffect(() => {
     const canvas = canvasRef.current;
     if (canvas && values["motion.animate"] === false) {
-      drawGradient(canvas, renderState, visibleTimeRef.current, includeBackground);
+      drawGradient(
+        canvas,
+        { ...renderState, values: store.getEvaluatedValues() },
+        visibleTimeRef.current,
+        includeBackground,
+      );
     }
-  }, [renderState, includeBackground, values]);
+  }, [includeBackground, renderState, store, values]);
 
   React.useEffect(() => {
     const canvas = canvasRef.current;
@@ -160,7 +169,10 @@ const InnerGradientRenderer = React.memo(function InnerGradientRenderer({
     };
 
     const render = (now = performance.now()) => {
-      const currentState = renderStateRef.current;
+      const currentState = {
+        ...renderStateRef.current,
+        values: store.getEvaluatedValues(),
+      };
       if (currentState.values["motion.animate"] !== false) {
         visibleTimeRef.current += (now - last) / 1000 * (numberValue(currentState, "motion.speed", 32) / 32);
       }
@@ -189,12 +201,12 @@ const InnerGradientRenderer = React.memo(function InnerGradientRenderer({
       observer.disconnect();
       cancelAnimationFrame(frame);
     };
-  }, []);
+  }, [store]);
 
   return <div className={styles.output} data-toolcraft-product-output><canvas ref={canvasRef} className={styles.field} /></div>;
 });
 
-export function renderGradientToCanvas(context: CanvasRenderingContext2D, state: ToolcraftState, includeBackground: boolean): void {
+function renderGradientToCanvas(context: CanvasRenderingContext2D, state: ToolcraftState, includeBackground: boolean): void {
   const output = document.createElement("canvas"); output.width = context.canvas.width; output.height = context.canvas.height;
   drawGradient(output, state, 0, includeBackground);
   // The Toolcraft export helper scales its 2D context for CSS-oriented renderers.
@@ -203,7 +215,7 @@ export function renderGradientToCanvas(context: CanvasRenderingContext2D, state:
   context.clearRect(0, 0, context.canvas.width, context.canvas.height);
   context.drawImage(output, 0, 0);
 }
-export async function exportGradient(state: ToolcraftState): Promise<void> {
+async function exportGradient(state: ToolcraftState): Promise<void> {
   const includeBackground = state.values["export.includeBackground"] !== false;
   const resolution = String(state.values["export.image.resolution"] ?? "4k");
   const format = String(state.values["export.image.format"] ?? "png");
@@ -213,3 +225,5 @@ export async function exportGradient(state: ToolcraftState): Promise<void> {
   const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url;
   link.download = `gradient-generator.${format === "jpg" ? "jpg" : "png"}`; link.click(); URL.revokeObjectURL(url);
 }
+
+GradientRenderer.exportImage = exportGradient;

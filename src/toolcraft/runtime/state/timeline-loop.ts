@@ -24,7 +24,7 @@ export function getToolcraftTimelineLoopTime({
   return getPositiveModulo(currentTimeSeconds, durationSeconds);
 }
 
-export function getToolcraftTimelineLoopProgress(
+function getToolcraftTimelineLoopProgress(
   options: ToolcraftTimelineLoopOptions,
 ): number {
   if (!Number.isFinite(options.durationSeconds) || options.durationSeconds <= 0) {

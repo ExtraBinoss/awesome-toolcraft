@@ -27,10 +27,6 @@ export const toolcraftCanvasAspectRatioPresets = [
   { height: 1080, ratioHeight: 3, ratioWidth: 4, value: "4:3", width: 1440 },
 ] as const satisfies readonly ToolcraftCanvasAspectRatioPreset[];
 
-export const toolcraftCanvasAspectRatioPresetValues = new Set<string>(
-  toolcraftCanvasAspectRatioPresets.map((preset) => preset.value),
-);
-
 export function getToolcraftCanvasAspectRatioPreset(
   value: string,
 ): ToolcraftCanvasAspectRatioPreset | null {

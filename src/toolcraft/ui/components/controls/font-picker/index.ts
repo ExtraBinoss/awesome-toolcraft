@@ -16,7 +16,6 @@ export type {
 } from "./font-picker-value";
 export {
   getDefaultFontPickerFontId,
-  getFontPickerCatalog,
   getFontPickerFontById,
   resolveFontPickerFontId,
 } from "./font-catalog";

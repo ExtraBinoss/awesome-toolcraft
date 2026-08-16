@@ -1,15 +1,30 @@
-export * from "./performance-types";
-export {
+import {
   defaultToolcraftBrowserCheckPolicy,
   defineToolcraftPerformance,
 } from "./performance-browser-policy";
-export {
+import {
   collectToolcraftPerformanceSensitiveControls,
   collectToolcraftUnclassifiedPerformanceControls,
 } from "./performance-control-classification";
-export {
+import { validateToolcraftPerformanceCoverage } from "./performance-coverage-validator";
+import {
   getToolcraftControlPerformanceValues,
   getToolcraftSchemaPerformanceValues,
   requireToolcraftSchemaPerformanceValues,
 } from "./performance-schema-queries";
-export { validateToolcraftPerformanceCoverage } from "./performance-coverage-validator";
+
+export * from "./performance-types";
+export {
+  defaultToolcraftBrowserCheckPolicy,
+  defineToolcraftPerformance,
+};
+export {
+  collectToolcraftPerformanceSensitiveControls,
+  collectToolcraftUnclassifiedPerformanceControls,
+};
+export {
+  getToolcraftControlPerformanceValues,
+  getToolcraftSchemaPerformanceValues,
+  requireToolcraftSchemaPerformanceValues,
+};
+export { validateToolcraftPerformanceCoverage };

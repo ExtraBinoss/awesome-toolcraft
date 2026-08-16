@@ -15,7 +15,7 @@ import type { ToolcraftPanelState } from "../../state/types";
 import { PanelContainer } from "../panel-host/panel-host";
 import type { PanelPlacement, PanelStateChange } from "../panel-host/panel-host-types";
 import { useToolcraftTheme } from "./theme-runtime";
-import { useToolcraft } from "./use-toolcraft";
+import { useToolcraftDispatch, useToolcraftSelector } from "./use-toolcraft";
 
 export type ToolbarPanelProps = {
   className?: string;
@@ -101,16 +101,19 @@ export function ToolbarPanel({
   panelPlacement,
   panelState,
 }: ToolbarPanelProps): React.JSX.Element {
-  const { dispatch, state } = useToolcraft();
+  const dispatch = useToolcraftDispatch();
+  const toolbar = useToolcraftSelector(React.useCallback((state) => state.schema.toolbar, []));
+  const history = useToolcraftSelector(React.useCallback((state) => state.history, []));
+  const zoom = useToolcraftSelector(React.useCallback((state) => state.canvas.zoom, []));
   const { resolvedTheme, toggleResolvedTheme } = useToolcraftTheme();
   const nextTheme = resolvedTheme === "dark" ? "light" : "dark";
-  const canUndo = state.history.undo.length > 0;
-  const canRedo = state.history.redo.length > 0;
-  const back = state.schema.toolbar.back;
-  const historyEnabled = state.schema.toolbar.history;
-  const radarEnabled = state.schema.toolbar.radar;
-  const themeEnabled = state.schema.toolbar.theme;
-  const zoomEnabled = state.schema.toolbar.zoom;
+  const canUndo = history.undo.length > 0;
+  const canRedo = history.redo.length > 0;
+  const back = toolbar.back;
+  const historyEnabled = toolbar.history;
+  const radarEnabled = toolbar.radar;
+  const themeEnabled = toolbar.theme;
+  const zoomEnabled = toolbar.zoom;
 
   const toolbarSurface = (
     <PanelSurface
@@ -170,7 +173,7 @@ export function ToolbarPanel({
               dispatch({ type: "canvas.zoomReset" });
             }}
           >
-            {state.canvas.zoom}%
+            {zoom}%
           </span>
           <ToolbarIconButton
             label="Zoom in"

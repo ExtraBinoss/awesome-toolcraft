@@ -2,8 +2,10 @@
 
 import * as React from "react";
 import {
+  domMax,
   animate,
-  motion,
+  LazyMotion,
+  m,
   useDragControls,
   useMotionValue,
   type MotionValue,
@@ -26,7 +28,7 @@ import type {
   PanelStageProps,
   PanelViewport,
 } from "./panel-host-types";
-import { useToolcraft } from "../app-shell/use-toolcraft";
+import { useToolcraftDispatch, useToolcraftSelector } from "../app-shell/use-toolcraft";
 
 function cn(...classNames: Array<string | false | null | undefined>): string {
   return classNames.filter(Boolean).join(" ");
@@ -153,7 +155,7 @@ function usePanelSnapControls({
   return { handleDragEnd, panelRef, resetPosition, x, y };
 }
 
-export function PanelHost({
+function PanelHost({
   children,
   className,
   dragMode,
@@ -227,42 +229,46 @@ export function PanelHost({
 
   return (
     <div className={cn("pointer-events-none", config.wrapperClassName, className)} style={style}>
-      <motion.div
-        className={cn("pointer-events-auto", isDragging && "cursor-grabbing", innerClassName)}
-        data-dragging={isDragging ? "true" : "false"}
-        data-drag-mode={resolvedDragMode}
-        data-panel-id={resolvedPanelId}
-        data-panel-type={panelType}
-        data-slot="toolcraft-runtime-panel-host"
-        data-snap-edges={resolvedSnap?.edges.join(" ")}
-        drag
-        dragControls={dragControls}
-        dragElastic={0}
-        dragListener={false}
-        dragMomentum={false}
-        dragTransition={panelDragTransition}
-        onDoubleClick={handleDoubleClick}
-        onDragEnd={handleDragEnd}
-        onDragStart={() => setIsDragging(true)}
-        onPointerDown={handlePointerDown}
-        ref={panelRef}
-        style={{ x, y }}
-      >
-        {children}
-      </motion.div>
+      <LazyMotion features={domMax}>
+        <m.div
+          className={cn("pointer-events-auto", isDragging && "cursor-grabbing", innerClassName)}
+          data-dragging={isDragging ? "true" : "false"}
+          data-drag-mode={resolvedDragMode}
+          data-panel-id={resolvedPanelId}
+          data-panel-type={panelType}
+          data-slot="toolcraft-runtime-panel-host"
+          data-snap-edges={resolvedSnap?.edges.join(" ")}
+          drag
+          dragControls={dragControls}
+          dragElastic={0}
+          dragListener={false}
+          dragMomentum={false}
+          dragTransition={panelDragTransition}
+          onDoubleClick={handleDoubleClick}
+          onDragEnd={handleDragEnd}
+          onDragStart={() => setIsDragging(true)}
+          onPointerDown={handlePointerDown}
+          ref={panelRef}
+          style={{ x, y }}
+        >
+          {children}
+        </m.div>
+      </LazyMotion>
     </div>
   );
 }
 
-export function ToolcraftPanelHost({
+function ToolcraftPanelHost({
   onPositionChange,
   onResetPosition,
   panelType,
   position,
   ...props
 }: ToolcraftPanelHostProps): React.JSX.Element {
-  const { dispatch, state } = useToolcraft();
-  const panelState = state.panels[panelType];
+  const dispatch = useToolcraftDispatch();
+  const panelState = useToolcraftSelector(
+    React.useCallback((state) => state.panels[panelType], [panelType]),
+  );
 
   return (
     <PanelHost
@@ -281,7 +287,7 @@ export function ToolcraftPanelHost({
   );
 }
 
-export function PanelStage({
+function PanelStage({
   children,
   className,
   ...props

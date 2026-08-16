@@ -1,4 +1,5 @@
-import { AnimatedLoader, type LoaderSize } from "../primitives";
+import { AnimatedLoader } from "../primitives";
+import type { LoaderSize } from "../primitives/animated-loader-utils";
 import { cn } from "../../lib/utils";
 
 const DEFAULT_SPINNER_LOADER_WIDTH = 16;

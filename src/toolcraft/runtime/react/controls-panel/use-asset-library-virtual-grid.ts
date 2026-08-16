@@ -22,9 +22,11 @@ export function useAssetLibraryVirtualGrid<Item>(
   const [scrollTop, setScrollTop] = React.useState(0);
   const [viewportHeight, setViewportHeight] = React.useState(0);
   const [rowHeight, setRowHeight] = React.useState(0);
+  const [rowElement, setRowElement] = React.useState<HTMLDivElement | null>(null);
   const scrollFrameRef = React.useRef<number | null>(null);
   const rowObserverRef = React.useRef<ResizeObserver | null>(null);
   const previousItemsRef = React.useRef(items);
+  const itemsChanged = previousItemsRef.current !== items;
 
   const rows = React.useMemo(() => {
     const nextRows: Item[][] = [];
@@ -39,33 +41,35 @@ export function useAssetLibraryVirtualGrid<Item>(
   }, []);
 
   const rowRef = React.useCallback((node: HTMLDivElement | null) => {
-    rowObserverRef.current?.disconnect();
-    rowObserverRef.current = null;
-    if (!node || typeof ResizeObserver === "undefined") return;
+    setRowElement(node);
+  }, []);
+
+  React.useEffect(() => {
+    if (!rowElement || typeof ResizeObserver === "undefined") {
+      return undefined;
+    }
     const measure = () => {
-      const measuredHeight = Math.round(node.getBoundingClientRect().height);
+      const measuredHeight = Math.round(rowElement.getBoundingClientRect().height);
       if (measuredHeight > 0) setRowHeight(measuredHeight);
     };
     measure();
     const observer = new ResizeObserver(measure);
-    observer.observe(node);
+    observer.observe(rowElement);
     rowObserverRef.current = observer;
-  }, []);
+    return () => {
+      observer.disconnect();
+      if (rowObserverRef.current === observer) {
+        rowObserverRef.current = null;
+      }
+    };
+  }, [rowElement]);
 
   React.useEffect(() => {
     if (previousItemsRef.current !== items) {
       previousItemsRef.current = items;
-      setScrollTop(0);
       if (viewportElement) viewportElement.scrollTop = 0;
     }
   }, [items, viewportElement]);
-
-  React.useEffect(() => {
-    return () => {
-      rowObserverRef.current?.disconnect();
-      rowObserverRef.current = null;
-    };
-  }, [viewportElement]);
 
   React.useEffect(() => {
     if (!viewportElement) return undefined;
@@ -93,7 +97,8 @@ export function useAssetLibraryVirtualGrid<Item>(
 
   const rowStep = rowHeight > 0 ? rowHeight + 6 : 0;
   const visibleRowCount = rowStep > 0 && viewportHeight > 0 ? Math.ceil(viewportHeight / rowStep) : rows.length;
-  const firstVisibleRowIndex = rowStep > 0 ? Math.max(0, Math.floor(scrollTop / rowStep) - overscanRows) : 0;
+  const effectiveScrollTop = itemsChanged ? 0 : scrollTop;
+  const firstVisibleRowIndex = rowStep > 0 ? Math.max(0, Math.floor(effectiveScrollTop / rowStep) - overscanRows) : 0;
   const virtualEndIndex = rowStep > 0 ? Math.min(rows.length, firstVisibleRowIndex + visibleRowCount + overscanRows * 2) : rows.length;
   const visibleRows = React.useMemo(() => rows.slice(firstVisibleRowIndex, virtualEndIndex), [firstVisibleRowIndex, rows, virtualEndIndex]);
 

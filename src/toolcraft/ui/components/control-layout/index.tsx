@@ -27,7 +27,11 @@ const ControlFieldLabelActionContext =
 const ControlFieldLabelHelpContext =
   React.createContext<ControlFieldLabelHelpContextValue | null>(null);
 
-export const panelSectionSurfaceClassName = [
+function stopHeaderToggle(event: React.SyntheticEvent): void {
+  event.stopPropagation();
+}
+
+const panelSectionSurfaceClassName = [
   "flex flex-col pt-2 pb-6 first:border-t-0 data-[toolcraft-section-actions]:first:border-t",
   "border-t border-[color:color-mix(in_oklab,var(--border)_8%,transparent)]",
   "transition-colors duration-150 ease-out hover:bg-[color:color-mix(in_oklab,var(--foreground)_3%,transparent)]",
@@ -142,10 +146,6 @@ export function ControlSectionHeader({
     toggleCollapsed();
   }
 
-  function stopHeaderToggle(event: React.SyntheticEvent): void {
-    event.stopPropagation();
-  }
-
   return (
     <div
       aria-expanded={collapsible ? !collapsed : undefined}
@@ -171,6 +171,7 @@ export function ControlSectionHeader({
           onClick={stopHeaderToggle}
           onKeyDown={stopHeaderToggle}
           onPointerDown={stopHeaderToggle}
+          role="presentation"
         >
           {action}
           {collapsible ? (
@@ -296,7 +297,9 @@ export function ControlFieldLabelActionProvider({
   children: React.ReactNode;
 }): React.JSX.Element {
   return (
-    <ControlFieldLabelActionContext.Provider value={{ action, label }}>
+    <ControlFieldLabelActionContext.Provider
+      value={React.useMemo(() => ({ action, label }), [action, label])}
+    >
       {children}
     </ControlFieldLabelActionContext.Provider>
   );
@@ -310,7 +313,9 @@ export function ControlFieldLabelHelpProvider({
   children: React.ReactNode;
 }): React.JSX.Element {
   return (
-    <ControlFieldLabelHelpContext.Provider value={{ help, label }}>
+    <ControlFieldLabelHelpContext.Provider
+      value={React.useMemo(() => ({ help, label }), [help, label])}
+    >
       {children}
     </ControlFieldLabelHelpContext.Provider>
   );

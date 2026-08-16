@@ -246,8 +246,9 @@ export function renderControlLayoutGroups({
       continue;
     }
 
+    const layoutGroupControlIds = new Set(layoutGroup.controls);
     const groupedRenderedControls = renderedGroups.filter((candidate) =>
-      candidate.ids.some((id) => layoutGroup.controls.includes(id)),
+      candidate.ids.some((id) => layoutGroupControlIds.has(id)),
     );
     const firstGroupedControl = groupedRenderedControls[0];
 

@@ -16,7 +16,7 @@ import { PaperclipIcon, XIcon } from "@phosphor-icons/react";
 
 import { cn } from "../../../lib/utils";
 import { Button } from "../../primitives";
-import { FileDropPlusGlyph } from "./file-drop-model";
+import { FileDropPlusGlyph } from "./file-drop-plus-glyph";
 import type { FileDropPreview, FileDropPreviewEntry } from "./file-drop-types";
 
 type SortableFileRowProps = {

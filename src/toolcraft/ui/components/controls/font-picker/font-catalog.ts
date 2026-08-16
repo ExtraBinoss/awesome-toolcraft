@@ -37,18 +37,20 @@ const fontCatalog: FontPickerFontCatalogEntry[] = (
 ).map((entry) => ({
   ...entry,
   subsets: Array.from(
-    new Set(entry.subsets.map((value) => value.trim()).filter(Boolean)),
+    new Set(entry.subsets.flatMap((value) => {
+      const normalized = value.trim();
+      return normalized ? [normalized] : [];
+    })),
   ),
   weights: Array.from(
-    new Set(entry.weights.map((value) => value.trim()).filter(Boolean)),
+    new Set(entry.weights.flatMap((value) => {
+      const normalized = value.trim();
+      return normalized ? [normalized] : [];
+    })),
   ),
 }));
 
 const fontById = new Map(fontCatalog.map((entry) => [entry.id, entry]));
-
-export function getFontPickerCatalog(): readonly FontPickerFontCatalogEntry[] {
-  return fontCatalog;
-}
 
 export function getDefaultFontPickerFontId(): string {
   return fontById.has(defaultFontId)

@@ -3,9 +3,11 @@ import { type Button as BaseButtonPrimitive } from "@base-ui/react/button";
 
 import {
   AnimatedLoader,
+} from "../animated-loader";
+import {
   DEFAULT_ANIMATED_LOADER_HEIGHT,
   type LoaderSize,
-} from "../animated-loader";
+} from "../animated-loader-utils";
 
 export const DEFAULT_BUTTON_LOADING_WIDTH = 96;
 export const DEFAULT_BUTTON_LOADING_EDGE_INSET = 16;

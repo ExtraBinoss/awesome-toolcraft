@@ -8,15 +8,15 @@ import {
   clampToolcraftTimelineTime,
   toolcraftTimelineScrubStepSeconds,
 } from '../../state/timeline-values';
+import type { ToolcraftStore } from '../../state/store';
 
 type TimelineClockOptions = {
   durationSeconds: number;
-  isHoverPaused: boolean;
   isLooping: boolean;
   isPlaying: boolean;
   isScrubbing: boolean;
-  setCurrentTimeSeconds: React.Dispatch<React.SetStateAction<number>>;
   setIsPlaying: React.Dispatch<React.SetStateAction<boolean>>;
+  store: ToolcraftStore;
 };
 
 type TimelineScrubberOptions = {
@@ -66,61 +66,102 @@ function getKeyboardScrubTime({
 
 export function useTimelineClock({
   durationSeconds,
-  isHoverPaused,
   isLooping,
   isPlaying,
   isScrubbing,
-  setCurrentTimeSeconds,
   setIsPlaying,
+  store,
 }: TimelineClockOptions): void {
   useEffect(() => {
+    const debug = import.meta.env.DEV && import.meta.env.MODE !== 'test';
+
     if (
       !isPlaying ||
-      isHoverPaused ||
       isScrubbing ||
       typeof window === 'undefined' ||
       typeof window.requestAnimationFrame !== 'function'
     ) {
+      if (debug) {
+        console.info('[Toolcraft timeline] RAF blocked', {
+          hasWindow: typeof window !== 'undefined',
+          isPlaying,
+          isScrubbing,
+          requestAnimationFrame: typeof window === 'undefined'
+            ? 'unavailable'
+            : typeof window.requestAnimationFrame,
+        });
+      }
       return;
     }
 
     let frame = 0;
     let previousTimestamp = window.performance.now();
+    let lastLoggedSecond = -1;
+    if (debug) {
+      console.info('[Toolcraft timeline] RAF started', {
+        durationSeconds,
+        isLooping,
+        playhead: store.getPlayhead(),
+        startedAt: previousTimestamp,
+      });
+    }
     const tick = (timestamp: number) => {
-      const elapsedSeconds = (timestamp - previousTimestamp) / 1000;
+      const elapsedSeconds = Math.max(0, (timestamp - previousTimestamp) / 1000);
 
       previousTimestamp = timestamp;
-      setCurrentTimeSeconds((currentValue) => {
-        const nextValue = currentValue + elapsedSeconds;
+      const nextValue = store.getPlayhead() + elapsedSeconds;
+      const currentLoggedSecond = Math.floor(nextValue);
 
-        if (nextValue < durationSeconds) {
-          return nextValue;
-        }
+      if (debug && currentLoggedSecond !== lastLoggedSecond) {
+        lastLoggedSecond = currentLoggedSecond;
+        console.info('[Toolcraft timeline] RAF tick', {
+          elapsedSeconds,
+          nextValue,
+          timestamp,
+        });
+      }
 
-        if (isLooping) {
-          return getToolcraftTimelineLoopTime({
+      if (nextValue < durationSeconds) {
+        store.setPlayhead(nextValue, timestamp);
+        frame = window.requestAnimationFrame(tick);
+        return;
+      }
+
+      if (isLooping) {
+        store.setPlayhead(
+          getToolcraftTimelineLoopTime({
             currentTimeSeconds: nextValue,
             durationSeconds,
-          });
-        }
+          }),
+          timestamp,
+        );
+        frame = window.requestAnimationFrame(tick);
+        return;
+      }
 
-        setIsPlaying(false);
-        return durationSeconds;
-      });
-      frame = window.requestAnimationFrame(tick);
+      store.setPlayhead(durationSeconds, timestamp);
+      store.syncPlayhead();
+      setIsPlaying(false);
     };
 
     frame = window.requestAnimationFrame(tick);
 
-    return () => window.cancelAnimationFrame(frame);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      store.syncPlayhead();
+      if (debug) {
+        console.info('[Toolcraft timeline] RAF stopped', {
+          playhead: store.getPlayhead(),
+        });
+      }
+    };
   }, [
     durationSeconds,
-    isHoverPaused,
     isLooping,
     isPlaying,
     isScrubbing,
-    setCurrentTimeSeconds,
     setIsPlaying,
+    store,
   ]);
 }
 
@@ -132,13 +173,15 @@ export function useTimelineScrubber({
   setIsPlaying,
 }: TimelineScrubberOptions): TimelineScrubberResult {
   const [isScrubbing, setIsScrubbing] = useState(false);
+  const [previousDisabled, setPreviousDisabled] = useState(disabled);
   const stripRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
+  if (disabled !== previousDisabled) {
+    setPreviousDisabled(disabled);
     if (disabled && isScrubbing) {
       setIsScrubbing(false);
     }
-  }, [disabled, isScrubbing]);
+  }
 
   const getScrubGeometry = (): { rect: DOMRect; trackStart: number; trackWidth: number } | null => {
     const rect = stripRef.current?.getBoundingClientRect();

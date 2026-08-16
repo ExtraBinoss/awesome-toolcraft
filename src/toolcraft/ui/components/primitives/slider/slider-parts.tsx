@@ -90,16 +90,18 @@ function SliderMarkers({
   orientation: SliderOrientation;
 }): React.JSX.Element | null {
   const markerOffsets = markerValues?.length
-    ? markerValues
-        .filter((value) => value > min && value < max)
-        .map((value) => ((value - min) / (max - min)) * 100)
+    ? markerValues.flatMap((value) =>
+        value > min && value < max
+          ? [((value - min) / (max - min)) * 100]
+          : [],
+      )
     : Array.from({ length: markerCount }, (_, index) => {
         if (index === 0 || index === markerCount - 1) {
           return null;
         }
 
         return (index / (markerCount - 1)) * 100;
-      }).filter((offset): offset is number => offset !== null);
+      }).flatMap((offset) => (offset === null ? [] : [offset]));
 
   if (markerOffsets.length === 0) {
     return null;
