@@ -4,16 +4,20 @@ import * as React from "react";
 
 import type { ResolvedToolcraftAppSchema } from "../../schema/types";
 import { CanvasShell } from "../canvas/canvas-shell";
-import {
-  ControlsPanel,
-  type ToolcraftPanelActionHandler,
-} from "../controls-panel/controls-panel";
+import type { ToolcraftPanelActionHandler } from "../controls-panel/controls-panel";
 import type { ToolcraftControlRendererMap } from "../controls-panel/control-renderers";
-import { LayersPanel } from "../layers/layers-panel";
 import { TimelinePanel } from "../timeline/timeline-panel";
 import { ToolbarPanel } from "./toolbar-panel";
 import { ToolcraftRoot } from "./toolcraft-root";
 import { useToolcraftSelector } from "./use-toolcraft";
+
+const controlsPanelModule = import("../controls-panel/controls-panel");
+const ControlsPanel = React.lazy(() =>
+  controlsPanelModule.then((module) => ({ default: module.ControlsPanel })),
+);
+const LayersPanel = React.lazy(() =>
+  import("../layers/layers-panel").then((module) => ({ default: module.LayersPanel })),
+);
 
 export type ToolcraftAppComposition = {
   canvasContent?: React.ReactNode;
@@ -32,6 +36,18 @@ const toolcraftMinAppWidthPx = 1024;
 
 function cn(...classNames: Array<string | false | null | undefined>): string {
   return classNames.filter(Boolean).join(" ");
+}
+
+function PanelLoading({ label }: { label: string }): React.JSX.Element {
+  return (
+    <div
+      aria-label={`Loading ${label}`}
+      className="pointer-events-none absolute right-3 bottom-3 z-30 rounded-md border border-[color:var(--border)] bg-[color:var(--card)] px-2 py-1 text-[10px] text-[color:var(--muted-foreground)]"
+      role="status"
+    >
+      Loading {label}…
+    </div>
+  );
 }
 
 function ToolcraftAppContent({
@@ -75,14 +91,18 @@ function ToolcraftAppContent({
         </CanvasShell>
       ) : null}
       {surfaces.panels.layers?.enabled ? (
-        <LayersPanel panelPlacement="floating" />
+        <React.Suspense fallback={<PanelLoading label="layers" />}>
+          <LayersPanel panelPlacement="floating" />
+        </React.Suspense>
       ) : null}
       {surfaces.panels.controls?.enabled ? (
-        <ControlsPanel
-          controlRenderers={controlRenderers}
-          onPanelAction={onPanelAction}
-          panelPlacement="floating"
-        />
+        <React.Suspense fallback={<PanelLoading label="controls" />}>
+          <ControlsPanel
+            controlRenderers={controlRenderers}
+            onPanelAction={onPanelAction}
+            panelPlacement="floating"
+          />
+        </React.Suspense>
       ) : null}
       {surfaces.panels.timeline?.enabled ? (
         <div

@@ -3,11 +3,15 @@ import * as React from "react";
 import type { ToolcraftAppComposition } from "@/toolcraft/runtime/react/app-shell/toolcraft-app";
 
 import { appSchema } from "./app-schema";
-import { AsciiLabExportControl } from "./ascii-lab-export-control";
 
 const AsciiLabRenderer = React.lazy(() =>
   import("./ascii-lab-renderer").then((module) => ({
     default: module.AsciiLabRenderer,
+  })),
+);
+const AsciiLabExportControl = React.lazy(() =>
+  import("./ascii-lab-export-control").then((module) => ({
+    default: module.AsciiLabExportControl,
   })),
 );
 
