@@ -8,6 +8,7 @@ export type ToolcraftControlRendererKind =
   | "basic"
   | "collection"
   | "compound"
+  | "export"
   | "media"
   | "settings";
 
@@ -22,6 +23,7 @@ export const TOOLCRAFT_CONTROL_RENDERER_REGISTRY = {
   color: "compound",
   colorOpacity: "compound",
   curves: "compound",
+  export: "export",
   fileDrop: "media",
   fontPicker: "compound",
   gradient: "compound",

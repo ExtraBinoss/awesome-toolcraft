@@ -4,12 +4,8 @@ import * as React from "react";
 import { ArrowCounterClockwiseIcon } from "@phosphor-icons/react";
 import { Button } from "@/toolcraft/ui/components/primitives/button";
 import { PanelSection } from "@/toolcraft/ui/components/panel/panel-section";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/toolcraft/ui/components/primitives/tooltip";
 import type { ControlChangeMeta } from "@/toolcraft/ui/components/controls/control-types";
+import { ControlFieldLabelResetProvider } from "@/toolcraft/ui/components/control-layout";
 
 import type {
   ToolcraftControlSectionSchema,
@@ -24,35 +20,23 @@ import type { ToolcraftControlRendererMap } from "../control-renderers";
 import type { ActionControlRunAction } from "../renderers/controls-panel-action-renderer";
 import { withControlLabelHelp } from "./controls-panel-help";
 import type { ControlsPanelKeyframeActions } from "../keyframes/controls-panel-keyframes";
+import { ActionControlRenderer } from "../renderers/controls-panel-action-renderer";
+import { BasicControlRenderer } from "../renderers/controls-panel-basic-renderers";
+import { CollectionActionsControlRenderer } from "../renderers/controls-panel-collection-renderer";
+import { CompoundRenderer } from "../renderers/controls-panel-compound-renderers";
+import { preloadCompoundControlRenderers } from "../renderers/controls-panel-heavy-renderer-loaders";
+import { SettingsTransferControl } from "../renderers/controls-panel-settings-transfer-renderer";
 
-const LazyCollectionActionsControl = React.lazy(() =>
-  import("../renderers/controls-panel-collection-renderer").then((module) => ({
-    default: module.CollectionActionsControlRenderer,
-  })),
-);
-const LazyActionControl = React.lazy(() =>
-  import("../renderers/controls-panel-action-renderer").then((module) => ({
-    default: module.ActionControlRenderer,
-  })),
-);
-const LazySettingsTransferControl = React.lazy(() =>
-  import("../renderers/controls-panel-settings-transfer-renderer").then((module) => ({
-    default: module.SettingsTransferControl,
-  })),
-);
+const loadMediaRenderer = () => import("../renderers/controls-panel-media-renderer");
+const loadExportRenderer = () => import("../renderers/controls-panel-export-renderer");
 const LazyFileDropControl = React.lazy(() =>
-  import("../renderers/controls-panel-media-renderer").then((module) => ({
+  loadMediaRenderer().then((module) => ({
     default: module.FileDropControlRenderer,
   })),
 );
-const LazyBasicControlRenderer = React.lazy(() =>
-  import("../renderers/controls-panel-basic-renderers").then((module) => ({
-    default: module.BasicControlRenderer,
-  })),
-);
-const LazyCompoundRenderer = React.lazy(() =>
-  import("../renderers/controls-panel-compound-renderers").then((module) => ({
-    default: module.CompoundRenderer,
+const LazyExportControl = React.lazy(() =>
+  loadExportRenderer().then((module) => ({
+    default: module.ToolcraftExportControlRenderer,
   })),
 );
 import {
@@ -74,6 +58,13 @@ import {
   shouldHideToggleParameterControlLabel,
 } from "./controls-panel-inline-layout";
 import { getControlsPanelSectionCollapseKey } from "./controls-panel-collapse-storage";
+
+export function preloadControlsPanelRenderers(controlTypes: ReadonlySet<string>): void {
+  const imports: Promise<unknown>[] = [preloadCompoundControlRenderers(controlTypes)];
+  if (controlTypes.has("fileDrop")) imports.push(loadMediaRenderer());
+  if (controlTypes.has("export")) imports.push(loadExportRenderer());
+  void Promise.all(imports);
+}
 
 export type ControlsPanelSetControlValue = (
   target: string,
@@ -133,12 +124,10 @@ function getSectionResetAction({
   const label = `Reset ${sectionTitle} section`;
 
   return (
-    <Tooltip>
-      <TooltipTrigger
-        render={
           <Button
             aria-label={label}
             data-control-section-reset-button=""
+            data-toolcraft-tooltip={label}
             onClick={() => {
               dispatchCommand({
                 label,
@@ -149,13 +138,9 @@ function getSectionResetAction({
             size="icon-sm"
             type="button"
             variant="ghost"
-          />
-        }
-      >
+          >
         <ArrowCounterClockwiseIcon />
-      </TooltipTrigger>
-      <TooltipContent side="top">{label}</TooltipContent>
-    </Tooltip>
+          </Button>
   );
 }
 
@@ -190,6 +175,31 @@ function withControlTargetBoundary({
     >
       {node}
     </div>
+  );
+}
+
+function withControlLabelReset({
+  children,
+  control,
+  dispatchCommand,
+  label,
+}: {
+  children: React.ReactNode;
+  control: ToolcraftControlSchema;
+  dispatchCommand: (command: ToolcraftCommand) => void;
+  label: string;
+}): React.ReactNode {
+  return (
+    <ControlFieldLabelResetProvider
+      label={label}
+      reset={() => dispatchCommand({
+        label: `Reset ${label}`,
+        targets: [control.target],
+        type: "controls.resetTargets",
+      })}
+    >
+      {children}
+    </ControlFieldLabelResetProvider>
   );
 }
 
@@ -284,8 +294,7 @@ export function renderControlsPanelSection({
               node: withControlTargetBoundary({
                 controlIds: ids,
                 node: (
-                  <React.Suspense fallback={<ControlRendererLoading size="large" />}>
-                    <LazyCompoundRenderer
+                    <CompoundRenderer
                       kind="colorGroup"
                       args={{
                         entries: group.entries,
@@ -299,7 +308,6 @@ export function renderControlsPanelSection({
                         withKeyframeLabelAction,
                       }}
                     />
-                  </React.Suspense>
                 ),
                 targets: group.entries.map(([, control]) => control.target),
               }),
@@ -336,20 +344,17 @@ export function renderControlsPanelSection({
             switch (getToolcraftControlRendererKind(control.type)) {
               case "action":
                 return (
-                  <React.Suspense fallback={<ControlRendererLoading />}>
-                    <LazyActionControl
+                    <ActionControlRenderer
                       control={control}
                       id={id}
                       name={name}
                       runAction={runAction}
                     />
-                  </React.Suspense>
                 );
 
               case "basic":
                 return (
-                  <React.Suspense fallback={<ControlRendererLoading size="compact" />}>
-                    <LazyBasicControlRenderer
+                    <BasicControlRenderer
                       commit={commit}
                       control={control}
                       id={id}
@@ -359,13 +364,11 @@ export function renderControlsPanelSection({
                       vectorPadShape={vectorPadShape}
                       withKeyframeLabelAction={withKeyframeLabelAction}
                     />
-                  </React.Suspense>
                 );
 
               case "compound":
                 return (
-                  <React.Suspense fallback={<ControlRendererLoading />}>
-                    <LazyCompoundRenderer
+                    <CompoundRenderer
                       kind="control"
                       args={{
                         commit,
@@ -380,19 +383,16 @@ export function renderControlsPanelSection({
                         withKeyframeLabelAction,
                       }}
                     />
-                  </React.Suspense>
                 );
 
               case "collection":
                 return (
-                  <React.Suspense fallback={<ControlRendererLoading size="large" />}>
-                    <LazyCollectionActionsControl
+                    <CollectionActionsControlRenderer
                       control={control}
                       name={name}
                       setControlValue={setControlValue}
                       value={value}
                     />
-                  </React.Suspense>
                 );
 
               case "media":
@@ -408,11 +408,16 @@ export function renderControlsPanelSection({
                   </React.Suspense>
                 );
 
+              case "export":
+                return (
+                  <React.Suspense fallback={<ControlRendererLoading size="large" />}>
+                    <LazyExportControl control={control} />
+                  </React.Suspense>
+                );
+
               case "settings":
                 return (
-                  <React.Suspense fallback={<ControlRendererLoading />}>
-                    <LazySettingsTransferControl key={id} />
-                  </React.Suspense>
+                  <SettingsTransferControl key={id} />
                 );
 
               case null: {
@@ -453,12 +458,17 @@ export function renderControlsPanelSection({
             node: withControlTargetBoundary({
               controlIds: ids,
               node: withCompoundControlSectionDivider({
-                children: withControlLabelHelp({
-                  children: node,
+                children: withControlLabelReset({
+                  children: withControlLabelHelp({
+                    children: node,
+                    control,
+                    label: name,
+                    providerKey: id,
+                    sectionTitle: section.title,
+                  }),
                   control,
+                  dispatchCommand,
                   label: name,
-                  providerKey: id,
-                  sectionTitle: section.title,
                 }),
                 control,
               }),

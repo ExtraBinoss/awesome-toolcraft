@@ -4,6 +4,7 @@ import tailwindcss from "@tailwindcss/vite";
 import path from "node:path";
 
 export default defineConfig({
+  base: process.env.GITHUB_ACTIONS === "true" ? "/awesome-toolcraft/" : "/",
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: { "@": path.resolve(__dirname, "src") },
@@ -14,22 +15,11 @@ export default defineConfig({
   },
   optimizeDeps: {
     include: [
-      "@base-ui/react/button",
-      "@base-ui/react/checkbox",
-      "@base-ui/react/input",
-      "@base-ui/react/merge-props",
       "@base-ui/react/popover",
       "@base-ui/react/select",
       "@base-ui/react/slider",
-      "@base-ui/react/switch",
-      "@base-ui/react/tooltip",
-      "@base-ui/react/toggle",
-      "@base-ui/react/toggle-group",
-      "@base-ui/react/use-render",
       "@phosphor-icons/react",
       "jotai",
-      "jotai/utils",
-      "lucide-react",
       "motion/react",
     ],
   },

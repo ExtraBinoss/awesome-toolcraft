@@ -3,7 +3,8 @@
 import * as React from "react";
 
 import { ControlFieldLabel } from "../../control-layout";
-import { Field, Input } from "../../primitives";
+import { Field } from "../../primitives/field";
+import { Input } from "../../primitives/input";
 import type { VectorControlProps } from "./vector-control-types";
 import { normalizeVectorCoordinate } from "./vector-value";
 

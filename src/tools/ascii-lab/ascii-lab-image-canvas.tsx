@@ -4,6 +4,7 @@ import * as React from "react";
 
 import type { ToolcraftMediaAsset } from "@/toolcraft/runtime/state/types";
 import type { ToolcraftStore } from "@/toolcraft/runtime/state/store";
+import { isToolcraftCanvasNavigationActive } from "@/toolcraft/runtime/react/canvas/canvas-navigation-performance";
 
 function numberValue(values: Record<string, unknown>, target: string, fallback: number): number {
   const value = values[target];
@@ -247,8 +248,6 @@ function renderTextSource(
   context.lineWidth = Math.max(2, fontSize * (style === "double" ? 0.055 : 0.032));
   context.fillStyle = "#fff";
   context.strokeStyle = "#fff";
-  context.shadowColor = "rgba(255,255,255,0.9)";
-  context.shadowBlur = fontSize * numberValue(values, "ascii.textGlow", 8) / 400;
 
   const maxWidth = width * 0.84;
   const lines = wrapText(context, text, maxWidth, tracking);
@@ -265,28 +264,50 @@ function renderTextSource(
   context.scale(pulse, pulse);
   context.translate(-width * 0.5, -height * 0.5);
 
-  lines.forEach((line, lineIndex) => {
-    const lineWidth = measureTrackedText(context, line, tracking);
-    const startX = align === "left"
-      ? width * 0.08
-      : align === "right"
-        ? width * 0.92 - lineWidth
-        : (width - lineWidth) * 0.5;
-    drawTrackedText(
-      context,
-      line,
-      startX,
-      top + lineIndex * lineHeight,
-      tracking,
-      style,
-      animation,
-      animationAmount,
-      loopProgress,
-      cycleMix,
-      fontSize,
-      lineIndex,
+  const drawLines = () => {
+    lines.forEach((line, lineIndex) => {
+      const lineWidth = measureTrackedText(context, line, tracking);
+      const startX = align === "left"
+        ? width * 0.08
+        : align === "right"
+          ? width * 0.92 - lineWidth
+          : (width - lineWidth) * 0.5;
+      drawTrackedText(
+        context,
+        line,
+        startX,
+        top + lineIndex * lineHeight,
+        tracking,
+        style,
+        animation,
+        animationAmount,
+        loopProgress,
+        cycleMix,
+        fontSize,
+        lineIndex,
+      );
+    });
+  };
+
+  if (values["ascii.textShadowEnabled"] !== false) {
+    context.save();
+    context.translate(
+      fontSize * numberValue(values, "ascii.textShadowX", 5) / 100,
+      fontSize * numberValue(values, "ascii.textShadowY", 8) / 100,
     );
-  });
+    context.globalAlpha = numberValue(values, "ascii.textShadowOpacity", 65) / 100;
+    context.fillStyle = colorValue(values, "ascii.textShadowColor", "#7C3AED");
+    context.strokeStyle = context.fillStyle;
+    context.filter = `blur(${fontSize * numberValue(values, "ascii.textShadowBlur", 12) / 500}px)`;
+    drawLines();
+    context.restore();
+  }
+
+  context.fillStyle = "#fff";
+  context.strokeStyle = "#fff";
+  context.shadowColor = "rgba(255,255,255,0.9)";
+  context.shadowBlur = fontSize * numberValue(values, "ascii.textGlow", 8) / 400;
+  drawLines();
   context.restore();
 }
 
@@ -514,6 +535,7 @@ export function AsciiImageCanvas({
 
   React.useEffect(() => {
     return store.subscribePlayhead((timeSeconds, timestamp) => {
+      if (isToolcraftCanvasNavigationActive()) return;
       const values = store.getEvaluatedValues();
       const requestedFps = Number(values["performance.fps"] ?? 30);
       const frameInterval = 1_000 / Math.max(1, Math.min(60, requestedFps));
@@ -598,6 +620,7 @@ export function AsciiTextCanvas({
 
   React.useEffect(() => {
     return store.subscribePlayhead((timeSeconds, timestamp) => {
+      if (isToolcraftCanvasNavigationActive()) return;
       const values = store.getEvaluatedValues();
       const requestedFps = Number(values["performance.fps"] ?? 30);
       const frameInterval = 1_000 / Math.max(1, Math.min(60, requestedFps));

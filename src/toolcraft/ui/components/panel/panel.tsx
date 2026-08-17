@@ -82,6 +82,7 @@ export function Panel({
           }
           data-slot="toolcraft-panel-content"
           contentRenderer={contentRenderer}
+          scrollFadeMode="none"
           stickyFooter={
             stickyFooterChildren.length > 0 ? stickyFooterChildren : undefined
           }

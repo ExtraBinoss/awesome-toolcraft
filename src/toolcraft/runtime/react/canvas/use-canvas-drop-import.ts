@@ -2,6 +2,7 @@
 
 import * as React from "react";
 
+import { saveToolcraftMedia } from "../../media/media-library";
 import type {
   ToolcraftPoint,
   ToolcraftState,
@@ -68,6 +69,9 @@ export function useCanvasDropImport({
       const hasFileDropControls = getVisibleFileDropControls(state).length > 0;
 
       uploadedFiles.forEach((uploadedFile) => {
+        if (uploadedFile.type.startsWith("image/") || uploadedFile.type.startsWith("video/")) {
+          void saveToolcraftMedia(uploadedFile).catch(() => undefined);
+        }
         const targetControl = getCanvasDropTarget(state, uploadedFile);
 
         if (!targetControl) {

@@ -3,19 +3,13 @@ import * as React from "react";
 import type { ToolcraftAppComposition } from "@/toolcraft/runtime/react/app-shell/toolcraft-app";
 
 import { appSchema } from "./app-schema";
-import { asciiLabRendererModule } from "./ascii-lab-loaders";
+import { loadAsciiLabRenderer } from "./ascii-lab-loaders";
 
 const AsciiLabRenderer = React.lazy(() =>
-  asciiLabRendererModule.then((module) => ({
+  loadAsciiLabRenderer().then((module) => ({
     default: module.AsciiLabRuntimeRenderer,
   })),
 );
-const AsciiLabExportControl = React.lazy(() =>
-  import("./ascii-lab-export-control").then((module) => ({
-    default: module.AsciiLabExportControl,
-  })),
-);
-
 function AsciiRendererFallback(): React.JSX.Element {
   return (
     <div
@@ -41,7 +35,6 @@ export const appComposition: ToolcraftAppComposition = {
       <AsciiLabRenderer />
     </React.Suspense>
   ),
-  controlRenderers: { asciiLabExport: AsciiLabExportControl },
   onPanelAction: ({ action, dispatch }) => {
     const charset = charsetPresets[action.value];
 

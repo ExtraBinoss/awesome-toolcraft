@@ -7,13 +7,10 @@ import {
   type FontPickerFontCatalogEntry,
   type FontPickerFontFilterValue,
 } from "./font-catalog";
-import { queueFontPickerPreviewLoadBatch } from "./font-preview-loader";
 import {
   fontItemHeightPx,
   fontListHeightWithFooterPx,
   fontListOverscanItems,
-  fontPreloadBufferAheadItems,
-  fontPreloadBufferBehindItems,
   fontVirtualItemStepPx,
   type FontPickerPinnedSelectedRowSide,
 } from "./font-picker-list";
@@ -57,9 +54,10 @@ export function useFontPickerVirtualList({
   const shouldScrollSelectedOnOpenRef = React.useRef(false);
   const scrollFrameRef = React.useRef<number | null>(null);
 
+  const deferredQuery = React.useDeferredValue(query);
   const filteredFonts = React.useMemo(
-    () => filterFontPickerFonts(query, category),
-    [category, query],
+    () => filterFontPickerFonts(deferredQuery, category),
+    [category, deferredQuery],
   );
   const selectedFontIndex = React.useMemo(() => {
     if (!selectedFont) {
@@ -131,34 +129,6 @@ export function useFontPickerVirtualList({
     setScrollTop(nextScrollTop);
   }, []);
 
-  const queueBufferedPreload = React.useCallback(
-    (direction: "backward" | "forward") => {
-      if (!filteredFonts.length) {
-        return;
-      }
-
-      const backwardItems =
-        direction === "forward"
-          ? fontPreloadBufferBehindItems
-          : fontPreloadBufferAheadItems;
-      const forwardItems =
-        direction === "forward"
-          ? fontPreloadBufferAheadItems
-          : fontPreloadBufferBehindItems;
-      const preloadStart = Math.max(0, virtualStartIndex - backwardItems);
-      const preloadEnd = Math.min(filteredFonts.length, virtualEndIndex + forwardItems);
-
-      if (preloadStart >= preloadEnd) {
-        return;
-      }
-
-      queueFontPickerPreviewLoadBatch(filteredFonts.slice(preloadStart, preloadEnd), {
-        priority: "normal",
-      });
-    },
-    [filteredFonts, virtualEndIndex, virtualStartIndex],
-  );
-
   const setCategoryWithReset = React.useCallback(
     (nextCategory: FontPickerFontFilterValue) => {
       resetViewportScroll();
@@ -193,14 +163,6 @@ export function useFontPickerVirtualList({
     scrollViewportRef.current = node;
     setScrollViewportElement(node);
   }, []);
-
-  React.useEffect(() => {
-    if (!open) {
-      return;
-    }
-
-    queueBufferedPreload(scrollDirectionRef.current);
-  }, [open, queueBufferedPreload, scrollTop]);
 
   React.useEffect(() => {
     if (!open) {

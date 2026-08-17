@@ -157,6 +157,7 @@ export function reduceToolcraftMediaCommand(
         layerId,
         mimeType: command.asset.mimeType,
         position: shouldResizeCanvas ? { x: 0, y: 0 } : command.asset.position,
+        ...(command.asset.revision !== undefined ? { revision: command.asset.revision } : {}),
         ...(command.asset.size ? { size: command.asset.size } : {}),
         ...(sourceTarget ? { sourceTarget } : {}),
       };

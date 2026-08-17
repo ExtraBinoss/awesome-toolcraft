@@ -25,7 +25,10 @@ import {
   useControlsPanelActions,
 } from "./actions/controls-panel-actions";
 import { createControlsPanelKeyframeActions } from "./keyframes/controls-panel-keyframes";
-import { renderControlsPanelSection } from "./layout/controls-panel-section";
+import {
+  preloadControlsPanelRenderers,
+  renderControlsPanelSection,
+} from "./layout/controls-panel-section";
 import { PanelContainer } from "../panel-host/panel-host";
 import type { PanelPlacement, PanelStateChange } from "../panel-host/panel-host-types";
 import type { ToolcraftControlRendererMap } from "./control-renderers";
@@ -45,8 +48,10 @@ import {
   useToolcraftDispatch,
   useToolcraftSelector,
   useToolcraftStore,
+  useToolcraftValues,
 } from "../app-shell/use-toolcraft";
 import { ControlsPanelVirtualContent } from "./controls-panel-virtual-content";
+import { ControlsPanelDelegatedTooltip } from "./controls-panel-delegated-tooltip";
 
 logToolLoad("panel module:evaluated controls");
 
@@ -82,36 +87,12 @@ function getControlsResetKey(state: ToolcraftState): number {
 function controlsPanelStructureMatches(left: ToolcraftState, right: ToolcraftState): boolean {
   return (
     left.schema === right.schema &&
-    left.canvas === right.canvas &&
+    left.canvas.size === right.canvas.size &&
     left.mediaAssets === right.mediaAssets &&
-    left.timeline.expanded === right.timeline.expanded &&
     left.timeline.keyframeGroups === right.timeline.keyframeGroups &&
     left.timeline.selectedKeyframeId === right.timeline.selectedKeyframeId &&
     getControlsResetKey(left) === getControlsResetKey(right)
   );
-}
-
-function recordsMatch(
-  left: Record<string, unknown>,
-  right: Record<string, unknown>,
-): boolean {
-  const keys = Object.keys(left);
-  return keys.length === Object.keys(right).length && keys.every(
-    (key) => Object.is(left[key], right[key]),
-  );
-}
-
-function useTargetValues(targets: readonly string[]): Record<string, unknown> {
-  const targetsKey = JSON.stringify(targets);
-  const selector = React.useMemo(
-    () => (state: ToolcraftState) => Object.fromEntries(
-      targets.map((target) => [target, state.values[target]]),
-    ),
-    // The serialized target list intentionally defines selector identity.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [targetsKey],
-  );
-  return useToolcraftSelector(selector, recordsMatch);
 }
 
 function ControlsPanelSectionValueSubscription({
@@ -121,7 +102,7 @@ function ControlsPanelSectionValueSubscription({
   render: () => React.JSX.Element;
   targets: readonly string[];
 }): React.JSX.Element {
-  useTargetValues(targets);
+  useToolcraftValues(targets);
   return render();
 }
 
@@ -151,7 +132,7 @@ export function ControlsPanel({
     }
     return [...targets];
   }, [structuralState.schema]);
-  const conditionValues = useTargetValues(conditionTargets);
+  const conditionValues = useToolcraftValues(conditionTargets);
   const state = React.useMemo<ToolcraftState>(() => ({
     ...structuralState,
     values: { ...structuralState.values, ...conditionValues },
@@ -169,13 +150,23 @@ export function ControlsPanel({
     Record<string, boolean>
   >(() => readControlsPanelCollapsedSections(sectionCollapseStorageKey));
   const controlsPanel = state.schema.panels.controls;
+
+  React.useEffect(() => {
+    const controlTypes = new Set<string>();
+    for (const section of controlsPanel?.sections ?? []) {
+      for (const control of Object.values(section.controls)) {
+        controlTypes.add(control.type);
+        if (control.itemControl) controlTypes.add(control.itemControl.type);
+      }
+    }
+    preloadControlsPanelRenderers(controlTypes);
+  }, [controlsPanel]);
   const keyframedControlIds = React.useMemo(
     () => new Set(state.timeline.keyframeGroups.map((group) => group.controlId)),
     [state.timeline.keyframeGroups],
   );
   const keyframeControlsEnabled = Boolean(
-    state.schema.assembly.capabilities.includes("timeline.keyframes") &&
-      state.timeline.expanded,
+    state.schema.assembly.capabilities.includes("timeline.keyframes"),
   );
 
   React.useEffect(() => {
@@ -300,9 +291,11 @@ export function ControlsPanel({
       key={controlsResetKey}
       onCollapsedChange={(collapsed) => onPanelStateChange?.({ collapsed })}
       contentRenderer={(children, viewportElement) => (
-        <ControlsPanelVirtualContent viewportElement={viewportElement}>
-          {children}
-        </ControlsPanelVirtualContent>
+        <ControlsPanelDelegatedTooltip>
+          <ControlsPanelVirtualContent viewportElement={viewportElement}>
+            {children}
+          </ControlsPanelVirtualContent>
+        </ControlsPanelDelegatedTooltip>
       )}
       onResetControls={() => dispatchCommand({ type: "controls.reset" })}
       stickyFooterActive={stickyFooterActive}

@@ -3,14 +3,11 @@
 import * as React from "react";
 
 import { ControlFieldLabel } from "../../control-layout";
-import {
-  Field,
-  Input,
-  Popover,
-  ScrollFade,
-  PopoverTrigger,
-  SelectTriggerButton,
-} from "../../primitives";
+import { Field } from "../../primitives/field";
+import { Input } from "../../primitives/input";
+import { Popover, PopoverTrigger } from "../../primitives/popover";
+import { ScrollFade } from "../../primitives/scroll-fade";
+import { SelectTriggerButton } from "../../primitives/select";
 import type { ControlChangeMeta, ControlValueChangeHandler } from "../control-types";
 import {
   getDefaultFontPickerFontId,

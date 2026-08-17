@@ -4,7 +4,8 @@ import * as React from "react";
 
 import { cn } from "../../../lib/utils";
 import { ControlFieldLabel } from "../../control-layout";
-import { EditableSliderValueLabel, Field } from "../../primitives";
+import { EditableSliderValueLabel } from "../../primitives/editable-slider-value-label";
+import { Field } from "../../primitives/field";
 import {
   createControlHistoryGroupId,
   type ControlChangeMeta,

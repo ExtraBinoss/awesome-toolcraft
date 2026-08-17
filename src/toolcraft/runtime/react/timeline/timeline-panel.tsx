@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { m } from 'motion/react';
 import {
   useCallback,
   useEffect,
@@ -31,34 +32,40 @@ import {
   timelinePanelExpandedWidthPx,
   useTimelinePanelResponsiveLayout,
 } from './timeline-panel-responsive-layout';
-import { timelineKeyframeRowHeightPx } from './timeline-panel-layout';
+import {
+  timelineExpandedTrackEndOffsetPx,
+  timelineExpandedTrackStartOffsetPx,
+  timelineKeyframeRowHeightPx,
+} from './timeline-panel-layout';
+import {
+  TimelinePanelHeader,
+  TimelinePanelMask,
+} from './timeline-panel-header';
 import { useTimelineScrubber } from './timeline-playback-hooks';
 import { PanelContainer } from '../panel-host/panel-host';
 import type { PanelPlacement, PanelStateChange } from '../panel-host/panel-host-types';
 import {
   useToolcraftDispatch,
-  useToolcraftPlayhead,
   useToolcraftSelector,
+  useToolcraftStore,
 } from '../app-shell/use-toolcraft';
 
+let timelineExpandedContentModule: Promise<typeof import('./timeline-expanded-content')> | undefined;
+function loadTimelineExpandedContent(): Promise<typeof import('./timeline-expanded-content')> {
+  timelineExpandedContentModule ??= import('./timeline-expanded-content');
+  return timelineExpandedContentModule;
+}
 const TimelineExpandedContent = React.lazy(() =>
-  import('./timeline-expanded-content').then((module) => ({
+  loadTimelineExpandedContent().then((module) => ({
     default: module.TimelineExpandedContent,
   })),
 );
-const timelinePanelHeaderModule = import('./timeline-panel-header');
-const TimelinePanelHeader = React.lazy(() =>
-  timelinePanelHeaderModule.then((module) => ({ default: module.TimelinePanelHeader })),
-);
-const TimelinePanelMask = React.lazy(() =>
-  timelinePanelHeaderModule.then((module) => ({ default: module.TimelinePanelMask })),
-);
-
 function TimelineHeaderLoading(): React.JSX.Element {
   return (
     <div
       aria-label="Loading timeline controls"
       className="toolcraft-panel-inline-loading"
+      data-timeline-loading="true"
       role="status"
     >
       <span aria-hidden="true" />
@@ -132,12 +139,13 @@ function useTimelinePanelContentState({
   variant = 'extended',
 }: TimelinePanelProps) {
   const dispatch = useToolcraftDispatch();
+  const store = useToolcraftStore();
   const schema = useToolcraftSelector(React.useCallback((state) => state.schema, []));
   const mediaAssets = useToolcraftSelector(
     React.useCallback((state) => state.mediaAssets, []),
   );
   const timeline = useToolcraftSelector(React.useCallback((state) => state.timeline, []));
-  const currentTimeSeconds = useToolcraftPlayhead();
+  const currentTimeSeconds = timeline.currentTimeSeconds;
 
   const keyframesEnabled = schema.assembly.capabilities.includes('timeline.keyframes');
   const playbackReady = isTimelineReadyForPlayback(schema, mediaAssets);
@@ -326,8 +334,41 @@ function useTimelinePanelContentState({
   const resolvedPanelPlacement = panelPlacement ?? (framed ? 'frame' : 'surface');
   const shouldConstrainToContainer = resolvedPanelPlacement === 'surface';
   const { panelRef: timelineSurfaceRef, responsiveLayout } = useTimelinePanelResponsiveLayout(
-    isExpanded && !shouldConstrainToContainer,
+    !isCompact && !shouldConstrainToContainer,
   );
+  useEffect(() => {
+    const updateVisualPlayhead = (timeSeconds: number): void => {
+      const root = timelineSurfaceRef.current;
+      if (!root) return;
+      const ratio = durationSeconds > 0
+        ? Math.max(0, Math.min(1, timeSeconds / durationSeconds))
+        : 0;
+      const percent = `${ratio * 100}%`;
+      const compactOffset = 5 - ratio * 10;
+      const compactPosition = `calc(${percent} ${compactOffset < 0 ? '-' : '+'} ${Math.abs(compactOffset)}px)`;
+      const expandedOffset = timelineExpandedTrackStartOffsetPx * (1 - ratio) - timelineExpandedTrackEndOffsetPx * ratio;
+      const expandedPosition = `calc(${percent} ${expandedOffset < 0 ? '-' : '+'} ${Math.abs(expandedOffset)}px)`;
+
+      root.querySelectorAll<HTMLElement>('[data-slot="timeline-playback-progress"]').forEach((node) => {
+        node.style.width = ratio <= 0 ? '0px' : percent;
+      });
+      root.querySelectorAll<HTMLElement>('[data-slot="timeline-playback-handle"]').forEach((node) => {
+        node.style.left = compactPosition;
+      });
+      root.querySelectorAll<HTMLElement>('[data-slot^="timeline-expanded-playhead"]').forEach((node) => {
+        node.style.left = expandedPosition;
+      });
+      root.querySelectorAll<HTMLElement>('[data-slot="timeline-current-time"]').forEach((node) => {
+        node.textContent = `${timeSeconds.toFixed(2)} / ${Number.parseFloat(durationSeconds.toFixed(2))}s`;
+      });
+      root.querySelectorAll<HTMLElement>('[role="slider"][aria-label="Playback position"]').forEach((node) => {
+        node.setAttribute('aria-valuenow', timeSeconds.toFixed(2));
+      });
+    };
+
+    updateVisualPlayhead(store.getPlayhead());
+    return store.subscribePlayhead(updateVisualPlayhead);
+  }, [durationSeconds, store, timelineSurfaceRef]);
   const unconstrainedTimelinePanelWidth = isCompact
     ? timelinePanelCompactWidthPx
     : isExpanded
@@ -402,11 +443,20 @@ function TimelinePanelContent(props: TimelinePanelProps): React.JSX.Element {
     timelinePanelWidth, timelineSurfaceRef,
     unconstrainedTimelinePanelWidth, variant,
   } = useTimelinePanelContentState(props);
+  const [expandedContentPrepared, setExpandedContentPrepared] = useState(false);
+  const prepareExpandedContent = useCallback(() => {
+    if (!keyframesEnabled || expandedContentPrepared) return;
+    void loadTimelineExpandedContent().then(() => {
+      React.startTransition(() => setExpandedContentPrepared(true));
+    });
+  }, [expandedContentPrepared, keyframesEnabled]);
 
   const timelineSurface = (
-    <div
+    <m.div
+      layout="size"
+      transition={{ layout: { duration: 0.2, ease: [0.22, 1, 0.36, 1] } }}
       className={cn(
-        'pointer-events-auto origin-top transition-[height,width,max-width,transform] duration-200 ease-out motion-reduce:transition-none',
+        'pointer-events-auto origin-top will-change-transform',
         shouldConstrainToContainer ? 'w-full' : 'max-w-full',
         !framed && className,
       )}
@@ -430,7 +480,11 @@ function TimelinePanelContent(props: TimelinePanelProps): React.JSX.Element {
           !isCompact && !isExpanded && !keyframesEnabled && 'pr-3',
         )}
         data-panel-id="timeline"
-        onPointerEnter={() => setIsHoverPaused(true)}
+        onFocusCapture={prepareExpandedContent}
+        onPointerEnter={() => {
+          prepareExpandedContent();
+          setIsHoverPaused(true);
+        }}
         onPointerLeave={(event) => {
           const nextTarget = event.relatedTarget;
 
@@ -459,6 +513,7 @@ function TimelinePanelContent(props: TimelinePanelProps): React.JSX.Element {
             onScrubPointerUp={scrubber.handleScrubPointerUp}
             onToggleExpanded={() => {
               defaultExpandedPendingRef.current = false;
+              prepareExpandedContent();
               dispatch({ expanded: !isExpanded, type: 'timeline.setExpanded' });
             }}
             onToggleLoop={() => dispatch({ type: 'timeline.toggleLoop' })}
@@ -478,9 +533,10 @@ function TimelinePanelContent(props: TimelinePanelProps): React.JSX.Element {
             variant={variant}
           />
         </React.Suspense>
-        {isExpanded && keyframesEnabled ? (
-          <React.Suspense fallback={null}>
-            <TimelineExpandedContent
+        {keyframesEnabled && (isExpanded || expandedContentPrepared) ? (
+          <div className={isExpanded ? 'contents' : 'hidden'}>
+            <React.Suspense fallback={null}>
+              <TimelineExpandedContent
               currentTimeSeconds={currentTimeSeconds}
               durationSeconds={durationSeconds}
               isScrubbing={scrubber.isScrubbing}
@@ -497,11 +553,12 @@ function TimelinePanelContent(props: TimelinePanelProps): React.JSX.Element {
               onSelectedKeyframeChange={setSelectedKeyframeId}
               selectedKeyframeId={selectedKeyframeId}
               stripRef={scrubber.stripRef}
-            />
-          </React.Suspense>
+              />
+            </React.Suspense>
+          </div>
         ) : null}
       </PanelSurface>
-    </div>
+    </m.div>
   );
 
   return (

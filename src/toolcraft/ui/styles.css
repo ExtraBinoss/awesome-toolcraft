@@ -75,7 +75,15 @@
 }
 
 .toolcraft-panel-surface {
-  --floating-popup-surface-background: color-mix(in oklab, var(--popover) 75%, transparent);
+  --floating-popup-surface-background: color-mix(in oklab, var(--popover) 96%, black);
+}
+
+/* Backdrop blur forces the browser to recomposite the animated canvas below
+   every floating panel. Use an opaque equivalent only during viewport moves. */
+[data-canvas-navigating="true"] .toolcraft-panel-surface {
+  background: color-mix(in oklab, var(--popover) 96%, black) !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
 }
 
 .no-scrollbar {

@@ -4,7 +4,7 @@ import * as React from "react";
 import { XIcon } from "@phosphor-icons/react";
 
 import { cn } from "../../../lib/utils";
-import { Button } from "../../primitives";
+import { Button } from "../../primitives/button";
 import {
   getPreviewFrameStyle,
   getPreviewImageStyle,

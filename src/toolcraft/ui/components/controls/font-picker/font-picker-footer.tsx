@@ -2,7 +2,7 @@
 
 import * as React from "react";
 
-import { Slider } from "../../primitives";
+import { Slider } from "../../primitives/slider";
 
 export function LetterSpacingIcon(): React.JSX.Element {
   return (

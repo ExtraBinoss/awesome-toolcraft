@@ -1,6 +1,9 @@
 import * as React from "react";
-import { FileDropControl as FileDrop, type FileDropPreview } from "@/toolcraft/ui/components/controls/file-drop";
+import { FileDropControl as FileDrop } from "@/toolcraft/ui/components/controls/file-drop/file-drop-control";
+import type { FileDropPreview } from "@/toolcraft/ui/components/controls/file-drop/file-drop-types";
+import { SegmentedControl } from "@/toolcraft/ui/components/controls/segmented/segmented-control";
 
+import { isToolcraftLibraryFile, saveToolcraftMedia } from "../../../media/media-library";
 import type { ToolcraftCanvasSize, ToolcraftControlSchema } from "../../../schema/types";
 import type { ToolcraftCommand, ToolcraftMediaAsset } from "../../../state/types";
 import {
@@ -8,6 +11,7 @@ import {
   readImportedFile,
   readImportedImageFile,
 } from "../../canvas/media-file";
+import { MediaLibraryPicker } from "../media-library-picker";
 
 export type FileDropControlRenderArgs = {
   canvasSize: ToolcraftCanvasSize;
@@ -16,6 +20,26 @@ export type FileDropControlRenderArgs = {
   id: string;
   mediaAssets: readonly ToolcraftMediaAsset[];
 };
+
+function MediaPickerShell({ accept, children, onLibrarySelect }: {
+  accept?: string;
+  children: React.ReactNode;
+  onLibrarySelect: (file: File) => void;
+}): React.JSX.Element {
+  const [tab, setTab] = React.useState<"import" | "library">("import");
+  return (
+    <div className="space-y-2" data-toolcraft-media-picker>
+      <SegmentedControl
+        ariaLabel="Media source"
+        name="Source"
+        onValueChange={(value) => setTab(value === "library" ? "library" : "import")}
+        options={[{ label: "Import", value: "import" }, { label: "Library", value: "library" }]}
+        value={tab}
+      />
+      {tab === "import" ? children : <MediaLibraryPicker accept={accept} onSelect={(file) => { onLibrarySelect(file); setTab("import"); }} />}
+    </div>
+  );
+}
 
 export function renderFileDropControl({
   canvasSize,
@@ -42,7 +66,30 @@ export function renderFileDropControl({
   const previewMediaIds = previewMediaAssets.map((asset) => asset.id);
 
   const importFile = (file: File, replaceExisting: boolean): void => {
+    if (!isToolcraftLibraryFile(file) && (file.type.startsWith("image/") || file.type.startsWith("video/"))) {
+      void saveToolcraftMedia(file).catch(() => undefined);
+    }
     if (assetKind === "file") {
+      if (isToolcraftImageFile(file)) {
+        void readImportedImageFile(file, canvasSize).then((importedImage) => {
+          if (!importedImage) return;
+          dispatchCommand({
+            asset: {
+              assetKind: "image",
+              dataUrl: importedImage.dataUrl,
+              fileName: file.name,
+              mimeType: file.type || "image/*",
+              position: { x: 0, y: 0 },
+              revision: file.lastModified || Date.now(),
+              size: importedImage.size,
+              sourceTarget: control.target,
+            },
+            replaceExisting,
+            type: "media.import",
+          });
+        });
+        return;
+      }
       void readImportedFile(file).then((importedFile) => {
         if (!importedFile) {
           return;
@@ -55,6 +102,7 @@ export function renderFileDropControl({
             fileName: file.name,
             mimeType: file.type || "application/octet-stream",
             position: { x: 0, y: 0 },
+            revision: file.lastModified || Date.now(),
             sourceTarget: control.target,
           },
           replaceExisting,
@@ -80,6 +128,7 @@ export function renderFileDropControl({
           fileName: file.name,
           mimeType: file.type || "image/*",
           position: { x: 0, y: 0 },
+          revision: file.lastModified || Date.now(),
           size: importedImage.size,
           sourceTarget: control.target,
         },
@@ -89,9 +138,12 @@ export function renderFileDropControl({
     });
   };
 
+  const accept = control.accept ?? (assetKind === "file" ? "" : "PNG, JPEG, GIF, SVG, WebP");
+  const libraryAccept = control.accept ?? (assetKind === "image" ? "image/*" : undefined);
   return (
-    <FileDrop
-      accept={control.accept ?? (assetKind === "file" ? "" : "PNG, JPEG, GIF, SVG, WebP")}
+    <MediaPickerShell accept={libraryAccept} onLibrarySelect={(file) => importFile(file, true)}>
+      <FileDrop
+      accept={accept}
       assetKind={assetKind}
       key={id}
       multiple={control.multiple}
@@ -168,7 +220,8 @@ export function renderFileDropControl({
           : undefined
       }
       previews={previews}
-    />
+      />
+    </MediaPickerShell>
   );
 }
 

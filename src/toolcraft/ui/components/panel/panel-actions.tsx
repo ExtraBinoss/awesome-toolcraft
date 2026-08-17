@@ -92,7 +92,7 @@ function getPanelActionAriaLabel(
   action: PanelActionOption,
   content: ReactNode,
 ): string | undefined {
-  if (typeof content === "string") {
+  if (typeof content === "string" && content === action.name) {
     return undefined;
   }
 

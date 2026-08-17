@@ -41,8 +41,8 @@ type ToolcraftIdleWindow = Window & {
   ) => number;
 };
 
-const persistenceDebounceMs = 300;
-const persistenceIdleTimeoutMs = 1_500;
+const persistenceDebounceMs = 250;
+const persistenceIdleTimeoutMs = 750;
 
 function getToolcraftMediaPersistenceKey(storageKey: string): string {
   return `${storageKey}:media`;
@@ -235,7 +235,20 @@ export function ToolcraftRoot({
     const idleWindow = window as ToolcraftIdleWindow;
     let idleCallback = 0;
     let persistTimer = 0;
+    let persistencePending = false;
+    const flushPersistence = (): void => {
+      window.clearTimeout(persistTimer);
+      persistTimer = 0;
+      if (idleCallback && typeof idleWindow.cancelIdleCallback === "function") {
+        idleWindow.cancelIdleCallback(idleCallback);
+        idleCallback = 0;
+      }
+      if (!persistencePending) return;
+      persistencePending = false;
+      writePersistedState(schema, store.getState(), persistenceWriteCacheRef.current);
+    };
     const schedulePersistence = (): void => {
+      persistencePending = true;
       window.clearTimeout(persistTimer);
       if (idleCallback && typeof idleWindow.cancelIdleCallback === "function") {
         idleWindow.cancelIdleCallback(idleCallback);
@@ -243,7 +256,8 @@ export function ToolcraftRoot({
       }
       persistTimer = window.setTimeout(() => {
         const persist = () => {
-          writePersistedState(schema, store.getState(), persistenceWriteCacheRef.current);
+          idleCallback = 0;
+          flushPersistence();
         };
 
         if (typeof idleWindow.requestIdleCallback === "function") {
@@ -255,14 +269,16 @@ export function ToolcraftRoot({
         }
       }, persistenceDebounceMs);
     };
+    const handleVisibilityChange = (): void => {
+      if (document.visibilityState === "hidden") flushPersistence();
+    };
     const unsubscribe = store.subscribe(schedulePersistence);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
       unsubscribe();
-      window.clearTimeout(persistTimer);
-      if (idleCallback && typeof idleWindow.cancelIdleCallback === "function") {
-        idleWindow.cancelIdleCallback(idleCallback);
-      }
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      flushPersistence();
     };
   }, [schema, store]);
 

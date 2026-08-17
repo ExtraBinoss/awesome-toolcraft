@@ -18,10 +18,17 @@ type ControlFieldLabelHelpContextValue = {
   label: string;
 };
 
+type ControlFieldLabelResetContextValue = {
+  label: string;
+  reset: () => void;
+};
+
 const ControlFieldLabelActionContext =
   React.createContext<ControlFieldLabelActionContextValue | null>(null);
 const ControlFieldLabelHelpContext =
   React.createContext<ControlFieldLabelHelpContextValue | null>(null);
+const ControlFieldLabelResetContext =
+  React.createContext<ControlFieldLabelResetContextValue | null>(null);
 
 function stopHeaderToggle(event: React.SyntheticEvent): void {
   event.stopPropagation();
@@ -317,6 +324,22 @@ export function ControlFieldLabelHelpProvider({
   );
 }
 
+export function ControlFieldLabelResetProvider({
+  children,
+  label,
+  reset,
+}: ControlFieldLabelResetContextValue & {
+  children: React.ReactNode;
+}): React.JSX.Element {
+  return (
+    <ControlFieldLabelResetContext.Provider
+      value={React.useMemo(() => ({ label, reset }), [label, reset])}
+    >
+      {children}
+    </ControlFieldLabelResetContext.Provider>
+  );
+}
+
 export function useControlFieldLabelAction(
   label: string | undefined,
 ): React.ReactNode {
@@ -344,6 +367,8 @@ export function ControlFieldLabel({
   const displayChildren = getControlFieldLabelDisplayChildren(children, title);
   const labelAction = useControlFieldLabelAction(title);
   const labelHelp = useControlFieldLabelHelp(title);
+  const resetContext = React.useContext(ControlFieldLabelResetContext);
+  const reset = resetContext && resetContext.label === title ? resetContext.reset : null;
 
   return (
     <span
@@ -373,6 +398,11 @@ export function ControlFieldLabel({
               "min-w-max",
             )}
             data-slot="template-field-label-text"
+            onDoubleClick={reset ? (event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              reset();
+            } : undefined}
             title={title}
           >
             {displayChildren}

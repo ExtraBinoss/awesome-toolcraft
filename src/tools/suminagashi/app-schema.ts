@@ -1,4 +1,5 @@
 import { defineToolcraft } from "@/toolcraft/runtime/schema/define-toolcraft";
+import { withBasePath } from "@/base-path";
 
 const responsive = (performanceReason: string) => ({
   performanceRole: "responsiveness" as const,
@@ -133,6 +134,7 @@ export const appSchema = defineToolcraft({
           controls: {
             imageFormat: { type: "select", target: "export.image.format", label: "Format", defaultValue: "png", options: [{ label: "PNG", value: "png" }, { label: "JPG", value: "jpg" }] },
             imageResolution: { type: "select", target: "export.image.resolution", label: "Resolution", defaultValue: "4k", options: [{ label: "2K", value: "2k" }, { label: "4K", value: "4k" }, { label: "8K", value: "8k" }], performanceRole: "workload", performanceReason: "Resolution controls exported pixel count." },
+            videoResolution: { type: "select", target: "export.video.resolution", label: "Video", defaultValue: "current", options: [{ label: "Current", value: "current" }, { label: "4K", value: "4k" }], performanceRole: "workload", performanceReason: "Video resolution controls recorded pixel count." },
           },
           layoutGroups: [{ layout: "inline", columns: 2, controls: ["imageFormat", "imageResolution"] }],
         },
@@ -140,7 +142,10 @@ export const appSchema = defineToolcraft({
           title: "Export",
           actionGroup: "secondary",
           controls: {
-            outputActions: { type: "panelActions", target: "actions.output", actions: [{ icon: "upload-simple", label: "Export image", role: "export-image", value: "export.png" }] },
+            outputActions: {
+              type: "export", target: "actions.output", label: false, defaultValue: null,
+              exportBackgroundTarget: "suminagashi.paper", exportFileName: "suminagashi",
+            },
           },
         },
       ],
@@ -148,5 +153,5 @@ export const appSchema = defineToolcraft({
   },
   persistence: { storage: "localStorage", key: "toolcraft:suminagashi:state:v1", version: 1, include: ["values", "canvas", "panels"] },
   settingsTransfer: { enabled: true, appId: "suminagashi", fileName: "suminagashi-settings" },
-  toolbar: { back: { href: "/", label: "Back to tools" }, history: true, radar: true, theme: true, zoom: true },
+  toolbar: { back: { href: withBasePath("/"), label: "Back to tools" }, history: true, radar: true, theme: true, zoom: true },
 });

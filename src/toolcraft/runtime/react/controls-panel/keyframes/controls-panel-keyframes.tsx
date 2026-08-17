@@ -4,11 +4,6 @@ import * as React from "react";
 import { DiamondIcon } from "@phosphor-icons/react";
 import { ControlFieldLabelActionProvider } from "@/toolcraft/ui/components/control-layout";
 import { Button } from "@/toolcraft/ui/components/primitives/button";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/toolcraft/ui/components/primitives/tooltip";
 
 import { getToolcraftControlKeyframeCapability } from "../../../schema/keyframe-capability";
 import type { ToolcraftControlSchema } from "../../../schema/types";
@@ -38,9 +33,6 @@ function ControlKeyframeButton({
   const label = active ? `Disable ${name} keyframes` : `Add ${name} keyframe`;
 
   return (
-    <Tooltip>
-      <TooltipTrigger
-        render={
           <Button
             aria-label={label}
             aria-pressed={active}
@@ -50,6 +42,7 @@ function ControlKeyframeButton({
                 "!text-[color:var(--link)] aria-pressed:!text-[color:var(--link)] data-popup-open:!text-[color:var(--link)] [&_svg]:!text-[color:var(--link)] [&_svg]:!fill-[color:var(--link)]",
             )}
             data-icon-active={active}
+            data-toolcraft-tooltip={label}
             onClick={(event) => {
               event.stopPropagation();
               onClick();
@@ -62,13 +55,9 @@ function ControlKeyframeButton({
             style={active ? { color: "var(--link)" } : undefined}
             type="button"
             variant="ghost-static"
-          />
-        }
-      >
+          >
         <DiamondIcon weight={active ? "fill" : "regular"} />
-      </TooltipTrigger>
-      <TooltipContent side="top">{label}</TooltipContent>
-    </Tooltip>
+          </Button>
   );
 }
 

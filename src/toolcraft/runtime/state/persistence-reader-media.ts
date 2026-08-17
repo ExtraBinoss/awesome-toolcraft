@@ -38,6 +38,10 @@ function readMediaAsset(value: unknown): ToolcraftMediaAsset | undefined {
     mediaAsset.size = size;
   }
 
+  if (typeof value.revision === "number" && Number.isFinite(value.revision)) {
+    mediaAsset.revision = value.revision;
+  }
+
   if (typeof value.sourceTarget === "string") {
     mediaAsset.sourceTarget = value.sourceTarget;
   }

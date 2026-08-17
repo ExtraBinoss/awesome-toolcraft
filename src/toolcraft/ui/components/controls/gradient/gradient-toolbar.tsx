@@ -3,8 +3,8 @@ import {
   InputGroupAddon,
   InputGroupInput,
   InputGroupText,
-  Field,
-} from "../../primitives";
+} from "../../primitives/input-group";
+import { Field } from "../../primitives/field";
 import {
   Select,
   SelectContent,
@@ -12,7 +12,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../../primitives";
+} from "../../primitives/select";
 import { useRef, useState } from "react";
 
 import type { GradientType } from "../control-types";

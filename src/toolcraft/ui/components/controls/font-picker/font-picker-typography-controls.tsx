@@ -3,7 +3,7 @@
 import * as React from "react";
 
 import { ControlFieldLabel } from "../../control-layout";
-import { Input } from "../../primitives";
+import { Input } from "../../primitives/input";
 import type { ControlChangeMeta } from "../control-types";
 import { ColorOpacityControl } from "../color";
 import { StaticSelect } from "../select";

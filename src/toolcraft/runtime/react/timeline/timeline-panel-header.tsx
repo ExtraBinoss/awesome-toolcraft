@@ -2,8 +2,8 @@
 
 import * as React from 'react';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { PauseIcon, PlayIcon, RepeatIcon, RepeatOnceIcon } from '@phosphor-icons/react';
 import { PrimitiveArrowIcon } from '@/toolcraft/ui/components/primitives/primitive-arrow-icon';
-import { Pause, Play, Repeat, Repeat1 } from 'lucide-react';
 
 import { clampToolcraftTimelineTime } from '../../state/timeline-values';
 import { TimelineIconButton } from './timeline-icon-button';
@@ -323,7 +323,7 @@ export function TimelinePanelHeader({
             label={isPlaying ? 'Pause playback' : 'Play playback'}
             onClick={onTogglePlayback}
           >
-            {isPlaying ? <Pause /> : <Play />}
+            {isPlaying ? <PauseIcon /> : <PlayIcon />}
           </TimelineIconButton>
         </div>
       </div>
@@ -349,13 +349,13 @@ export function TimelinePanelHeader({
           label={isPlaying ? 'Pause playback' : 'Play playback'}
           onClick={onTogglePlayback}
         >
-          {isPlaying ? <Pause /> : <Play />}
+          {isPlaying ? <PauseIcon /> : <PlayIcon />}
         </TimelineIconButton>
         <TimelineIconButton
           label={isLooping ? 'Disable loop' : 'Enable loop'}
           onClick={onToggleLoop}
         >
-          {isLooping ? <Repeat data-icon="loop-enabled" /> : <Repeat1 data-icon="loop-disabled" />}
+          {isLooping ? <RepeatIcon data-icon="loop-enabled" /> : <RepeatOnceIcon data-icon="loop-disabled" />}
         </TimelineIconButton>
       </div>
       <TimelinePanelDivider />
@@ -371,6 +371,7 @@ export function TimelinePanelHeader({
           'flex-1 cursor-default overflow-hidden text-right font-sans text-[11px] leading-5 whitespace-nowrap text-[color:var(--muted-foreground)] tabular-nums [contain:paint] select-none',
           isExpanded ? 'min-w-[5.5rem]' : 'min-w-0',
         )}
+        data-slot="timeline-current-time"
       >
         {formatTimelineHeaderTimeLabel({ currentTimeSeconds, durationSeconds })}
       </span>

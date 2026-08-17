@@ -14,7 +14,6 @@ import { useToolcraftSelector } from "./use-toolcraft";
 
 const controlsPanelModule = loadControlsPanel();
 const timelinePanelModule = loadTimelinePanel();
-const panelModules = Promise.all([controlsPanelModule, timelinePanelModule]);
 const ControlsPanel = React.lazy(() =>
   controlsPanelModule.then((module) => ({ default: module.ControlsPanel })),
 );
@@ -44,6 +43,35 @@ function cn(...classNames: Array<string | false | null | undefined>): string {
   return classNames.filter(Boolean).join(" ");
 }
 
+function TimelinePanelSlot(): React.JSX.Element {
+  const { hidden, variant } = useToolcraftSelector(
+    React.useCallback((state) => ({
+      hidden: state.panels.timeline.hidden === true,
+      variant: state.panels.timeline.extended === true
+        ? ("extended" as const)
+        : ("compact" as const),
+    }), []),
+    React.useCallback(
+      (left, right) => left.hidden === right.hidden && left.variant === right.variant,
+      [],
+    ),
+  );
+
+  return (
+    <div
+      data-toolcraft-timeline-panel-hidden={hidden ? "true" : undefined}
+      data-toolcraft-timeline-panel-variant={variant}
+      hidden={hidden}
+    >
+      <React.Suspense
+        fallback={<PanelLoading panelType="timeline" timelineVariant={variant} />}
+      >
+        <TimelinePanel panelPlacement="floating" variant={variant} />
+      </React.Suspense>
+    </div>
+  );
+}
+
 function ToolcraftAppContent({
   canvasContent,
   className,
@@ -53,33 +81,21 @@ function ToolcraftAppContent({
   style,
 }: Omit<ToolcraftAppProps, "schema">): React.JSX.Element {
   const [rendererReady, setRendererReady] = React.useState(false);
-  const { surfaces, timelinePanelHidden, timelinePanelVariant } = useToolcraftSelector(
-    React.useCallback((state) => ({
-      surfaces: state.schema.assembly.surfaces,
-      timelinePanelHidden: state.panels.timeline.hidden === true,
-      timelinePanelVariant:
-        state.panels.timeline.extended === true ? ("extended" as const) : ("compact" as const),
-    }), []),
-    React.useCallback(
-      (left, right) =>
-        left.surfaces === right.surfaces &&
-        left.timelinePanelHidden === right.timelinePanelHidden &&
-        left.timelinePanelVariant === right.timelinePanelVariant,
-      [],
-    ),
+  const surfaces = useToolcraftSelector(
+    React.useCallback((state) => state.schema.assembly.surfaces, []),
   );
   React.useEffect(() => {
     let active = true;
     let firstFrame = 0;
     let secondFrame = 0;
 
-    const revealRenderer = (): void => {
-      if (!active) {
-        return;
-      }
-
-      // Give React and the browser a paint opportunity for the shared panels
-      // before mounting a tool's potentially expensive canvas renderer.
+    if (document.visibilityState === "hidden") {
+      // Background tabs do not reliably receive animation frames. Mounting
+      // immediately lets module evaluation and media preparation continue.
+      setRendererReady(true);
+    } else {
+      // Give the shell a paint opportunity before mounting a potentially
+      // expensive renderer, without coupling it to panel download readiness.
       firstFrame = window.requestAnimationFrame(() => {
         secondFrame = window.requestAnimationFrame(() => {
           if (active) {
@@ -87,12 +103,7 @@ function ToolcraftAppContent({
           }
         });
       });
-    };
-
-    void panelModules.then(revealRenderer).catch((error: unknown) => {
-      revealRenderer();
-      console.error("[Toolcraft load] panel prerequisite import failed", error);
-    });
+    }
 
     return () => {
       active = false;
@@ -133,22 +144,7 @@ function ToolcraftAppContent({
         </React.Suspense>
       ) : null}
       {surfaces.panels.timeline?.enabled ? (
-        <div
-          data-toolcraft-timeline-panel-hidden={timelinePanelHidden ? "true" : undefined}
-          data-toolcraft-timeline-panel-variant={timelinePanelVariant}
-          hidden={timelinePanelHidden}
-        >
-          <React.Suspense
-            fallback={(
-              <PanelLoading
-                panelType="timeline"
-                timelineVariant={timelinePanelVariant}
-              />
-            )}
-          >
-            <TimelinePanel panelPlacement="floating" variant={timelinePanelVariant} />
-          </React.Suspense>
-        </div>
+        <TimelinePanelSlot />
       ) : null}
       {surfaces.panels.toolbar.enabled ? (
         <ToolbarPanel panelPlacement="floating" />

@@ -1,5 +1,6 @@
 import type { ComponentType } from "react";
 
+import { withoutBasePath } from "./base-path";
 import { logToolLoad, logToolLoadDuration } from "./tool-load-debug";
 
 type ToolPageModule = {
@@ -20,10 +21,18 @@ function trackedLoader(path: string, importer: ToolPageLoader): ToolPageLoader {
 
     const startedAt = performance.now();
     logToolLoad(`import:start ${path}`);
-    pending = importer().then((module) => {
-      logToolLoadDuration(`import:end ${path}`, startedAt);
-      return module;
-    });
+    pending = importer()
+      .then((module) => {
+        logToolLoadDuration(`import:end ${path}`, startedAt);
+        return module;
+      })
+      .catch((error: unknown) => {
+        // A dev-server dependency re-optimization can invalidate an in-flight
+        // module URL. Do not permanently poison this route's loader: the next
+        // navigation or preload must be allowed to retry it.
+        pending = undefined;
+        throw error;
+      });
     return pending;
   };
 }
@@ -32,9 +41,9 @@ export const toolPageLoaders: Record<string, ToolPageLoader> = {
   "/tools/ascii-lab": trackedLoader("ascii-lab", () =>
     Promise.all([
       import("./tools/ascii-lab/AsciiLabPage"),
-      import("./tools/ascii-lab/ascii-lab-loaders").then((module) => {
-        module.preloadAsciiLabRenderer();
-      }),
+      import("./tools/ascii-lab/ascii-lab-loaders").then((module) =>
+        module.preloadAsciiLabRenderer()
+      ),
     ]).then(([page]) => page),
   ),
   "/tools/dither-heatmap": trackedLoader("dither-heatmap", () =>
@@ -55,5 +64,8 @@ export const toolPageLoaders: Record<string, ToolPageLoader> = {
 };
 
 export function preloadToolPage(path: string): void {
-  toolPageLoaders[path]?.();
+  void toolPageLoaders[withoutBasePath(path)]?.().catch(() => {
+    // Hover/focus preloading is opportunistic. The actual route load retries
+    // through trackedLoader and owns presentation of any persistent failure.
+  });
 }

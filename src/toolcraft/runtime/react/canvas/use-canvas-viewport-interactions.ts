@@ -7,6 +7,7 @@ import type {
   ToolcraftPoint,
 } from "../../state/types";
 import type { ToolcraftDispatch } from "../../state/store";
+import { setToolcraftCanvasNavigationActive } from "./canvas-navigation-performance";
 
 type CanvasDragState = {
   originX: number;
@@ -24,8 +25,9 @@ type PendingCanvasTransform = {
 };
 
 const wheelPinchZoomSensitivity = 0.0025;
-const wheelTransformSmoothingMs = 52;
 const wheelInteractionSettleMs = 320;
+const wheelPanTransition = "transform 48ms linear";
+const wheelZoomTransition = "transform 72ms cubic-bezier(0.2, 0, 0, 1)";
 
 function isEventTargetInsideElement(
   target: EventTarget | null,
@@ -97,9 +99,6 @@ export function useCanvasViewportInteractions({
   const wheelDebounceTimerRef = React.useRef<number | undefined>(undefined);
   const transformFrameRef = React.useRef<number | null>(null);
   const pendingTransformRef = React.useRef<PendingCanvasTransform | null>(null);
-  const renderedTransformRef = React.useRef<PendingCanvasTransform | null>(null);
-  const smoothTransformRef = React.useRef(false);
-  const lastTransformTimestampRef = React.useRef(0);
   const pendingWheelViewportRef = React.useRef<{ offset: ToolcraftPoint; zoom: number } | null>(null);
 
   const scheduleCanvasTransform = React.useCallback(
@@ -108,55 +107,21 @@ export function useCanvasViewportInteractions({
       x: number,
       y: number,
       scale: number,
-      smooth = false,
     ): void => {
       pendingTransformRef.current = { element, scale, x, y };
-      smoothTransformRef.current = smooth;
 
       if (transformFrameRef.current !== null) {
         return;
       }
 
-      lastTransformTimestampRef.current = window.performance.now();
-      const animateTransform = (timestamp: number): void => {
+      transformFrameRef.current = window.requestAnimationFrame(() => {
         const target = pendingTransformRef.current;
-
-        if (!target) {
-          transformFrameRef.current = null;
-          return;
+        if (target) {
+          target.element.style.transform = `translate(-50%, -50%) translate3d(${target.x}px, ${target.y}px, 0) scale(${target.scale})`;
         }
-
-        const previous = renderedTransformRef.current ?? target;
-        const elapsed = Math.max(1, timestamp - lastTransformTimestampRef.current);
-        const blend = smoothTransformRef.current
-          ? 1 - Math.exp(-elapsed / wheelTransformSmoothingMs)
-          : 1;
-        const next = {
-          element: target.element,
-          scale: previous.scale + (target.scale - previous.scale) * blend,
-          x: previous.x + (target.x - previous.x) * blend,
-          y: previous.y + (target.y - previous.y) * blend,
-        };
-        const settled =
-          Math.abs(target.x - next.x) < 0.05 &&
-          Math.abs(target.y - next.y) < 0.05 &&
-          Math.abs(target.scale - next.scale) < 0.0001;
-        const rendered = settled ? target : next;
-
-        rendered.element.style.transform = `translate(-50%, -50%) translate3d(${rendered.x}px, ${rendered.y}px, 0) scale(${rendered.scale})`;
-        renderedTransformRef.current = rendered;
-        lastTransformTimestampRef.current = timestamp;
-
-        if (settled) {
-          pendingTransformRef.current = null;
-          transformFrameRef.current = null;
-          return;
-        }
-
-        transformFrameRef.current = window.requestAnimationFrame(animateTransform);
-      };
-
-      transformFrameRef.current = window.requestAnimationFrame(animateTransform);
+        pendingTransformRef.current = null;
+        transformFrameRef.current = null;
+      });
     },
     [],
   );
@@ -174,7 +139,6 @@ export function useCanvasViewportInteractions({
     }
 
     target.element.style.transform = `translate(-50%, -50%) translate3d(${target.x}px, ${target.y}px, 0) scale(${target.scale})`;
-    renderedTransformRef.current = target;
     pendingTransformRef.current = null;
   }, []);
 
@@ -183,7 +147,6 @@ export function useCanvasViewportInteractions({
     zoomRef.current = zoom;
     if (!dragRef.current && !wheelDebounceTimerRef.current) {
       accumulatedOffsetRef.current = offset;
-      renderedTransformRef.current = null;
     }
   }, [offset, zoom]);
 
@@ -215,17 +178,14 @@ export function useCanvasViewportInteractions({
 
       event.preventDefault();
       event.stopPropagation();
+      workspaceElement.dataset.canvasNavigating = "true";
+      setToolcraftCanvasNavigationActive(true);
       const currentZoom = zoomRef.current;
       const worldEl = viewportElement.querySelector<HTMLElement>('[data-toolcraft-canvas-world]');
 
       if (worldEl) {
         worldEl.style.willChange = "transform";
-        renderedTransformRef.current ??= {
-          element: worldEl,
-          scale: currentZoom / 100,
-          x: accumulatedOffsetRef.current.x,
-          y: accumulatedOffsetRef.current.y,
-        };
+        worldEl.style.transition = event.ctrlKey ? wheelZoomTransition : wheelPanTransition;
       }
 
       if (!event.ctrlKey) {
@@ -244,7 +204,7 @@ export function useCanvasViewportInteractions({
 
         if (worldEl) {
           const scale = currentZoom / 100;
-          scheduleCanvasTransform(worldEl, nextX, nextY, scale, true);
+          scheduleCanvasTransform(worldEl, nextX, nextY, scale);
         }
 
         pendingWheelViewportRef.current = {
@@ -264,6 +224,9 @@ export function useCanvasViewportInteractions({
             });
           }
           if (worldEl) worldEl.style.removeProperty("will-change");
+          if (worldEl) worldEl.style.removeProperty("transition");
+          delete workspaceElement.dataset.canvasNavigating;
+          setToolcraftCanvasNavigationActive(false);
         }, wheelInteractionSettleMs);
         return;
       }
@@ -286,6 +249,9 @@ export function useCanvasViewportInteractions({
           });
         }
         if (worldEl) worldEl.style.removeProperty("will-change");
+        if (worldEl) worldEl.style.removeProperty("transition");
+        delete workspaceElement.dataset.canvasNavigating;
+        setToolcraftCanvasNavigationActive(false);
         return;
       }
 
@@ -306,7 +272,7 @@ export function useCanvasViewportInteractions({
         zoom: nextZoom,
       };
       if (worldEl) {
-        scheduleCanvasTransform(worldEl, nextOffset.x, nextOffset.y, nextZoom / 100, true);
+        scheduleCanvasTransform(worldEl, nextOffset.x, nextOffset.y, nextZoom / 100);
       }
       wheelDebounceTimerRef.current = window.setTimeout(() => {
         wheelDebounceTimerRef.current = undefined;
@@ -321,6 +287,9 @@ export function useCanvasViewportInteractions({
           });
         }
         if (worldEl) worldEl.style.removeProperty("will-change");
+        if (worldEl) worldEl.style.removeProperty("transition");
+        delete workspaceElement.dataset.canvasNavigating;
+        setToolcraftCanvasNavigationActive(false);
       }, wheelInteractionSettleMs);
     };
 
@@ -342,8 +311,11 @@ export function useCanvasViewportInteractions({
         pendingTransformRef.current = null;
       }
       pendingWheelViewportRef.current = null;
+      delete workspaceElement.dataset.canvasNavigating;
+      setToolcraftCanvasNavigationActive(false);
       const worldEl = viewportElement.querySelector<HTMLElement>('[data-toolcraft-canvas-world]');
       if (worldEl) worldEl.style.removeProperty("will-change");
+      if (worldEl) worldEl.style.removeProperty("transition");
     };
   }, [dispatch, flushCanvasTransform, scheduleCanvasTransform]);
 
@@ -365,6 +337,14 @@ export function useCanvasViewportInteractions({
         startX: event.clientX,
         startY: event.clientY,
       };
+      const workspaceElement = event.currentTarget.closest<HTMLElement>('[data-slot="toolcraft-runtime-app"]');
+      if (workspaceElement) workspaceElement.dataset.canvasNavigating = "true";
+      setToolcraftCanvasNavigationActive(true);
+      const worldEl = event.currentTarget.querySelector<HTMLElement>('[data-toolcraft-canvas-world]');
+      if (worldEl) {
+        worldEl.style.removeProperty("transition");
+        worldEl.style.willChange = "transform";
+      }
     },
     [draggable],
   );
@@ -419,6 +399,11 @@ export function useCanvasViewportInteractions({
           type: "canvas.setOffset",
         });
       }
+      const workspaceElement = event.currentTarget.closest<HTMLElement>('[data-slot="toolcraft-runtime-app"]');
+      if (workspaceElement) delete workspaceElement.dataset.canvasNavigating;
+      setToolcraftCanvasNavigationActive(false);
+      const worldEl = event.currentTarget.querySelector<HTMLElement>('[data-toolcraft-canvas-world]');
+      if (worldEl) worldEl.style.removeProperty("will-change");
     },
     [dispatch, scheduleCanvasTransform],
   );

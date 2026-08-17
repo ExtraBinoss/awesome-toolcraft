@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 
+import { withBasePath } from "./base-path";
 import { tools } from "./tools";
 import { preloadToolPage } from "./tool-loading";
 
@@ -19,8 +20,8 @@ export function HubPage() {
   return (
     <div className="app-shell">
       <header className="topbar">
-        <a className="brand" href="/" aria-label="Toolcraft Hub home">
-          <img className="brand-mark" src="/toolcraft-hub.png" alt="" />
+        <a className="brand" href={withBasePath("/")} aria-label="Toolcraft Hub home">
+          <img className="brand-mark" src={withBasePath("/toolcraft-hub.png")} alt="" />
           <span>Toolcraft <strong>Hub</strong></span>
         </a>
           <span className="tool-count">{tools.length} tool{tools.length !== 1 ? "s" : ""}</span>

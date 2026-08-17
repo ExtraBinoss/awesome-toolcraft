@@ -20,7 +20,9 @@ export function SettingsTransferControl(): React.JSX.Element {
     <PanelActions
       actions={[
         {
-          icon: "upload-simple",
+          className: "min-w-0 gap-1.5 px-2 text-[11px] tracking-tight",
+          children: "Export",
+          icon: "download-simple",
           name: "Export Settings",
           onClick: () => {
             store.syncPlayhead();
@@ -29,7 +31,9 @@ export function SettingsTransferControl(): React.JSX.Element {
           variant: "outline",
         },
         {
-          icon: "download-simple",
+          className: "min-w-0 gap-1.5 px-2 text-[11px] tracking-tight",
+          children: "Import",
+          icon: "upload-simple",
           name: "Import Settings",
           onClick: () => {
             store.syncPlayhead();

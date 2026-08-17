@@ -43,7 +43,6 @@ export function CanvasShell({
     React.useCallback((state) => state.selectedLayerId, []),
   );
   const [dragOver, setDragOver] = React.useState(false);
-  const [isTransforming, setIsTransforming] = React.useState(false);
   const uploadEnabled = canvasSchema.upload;
   const { offset, size, zoom } = canvas;
   const scale = zoom / 100;
@@ -103,28 +102,20 @@ export function CanvasShell({
       onDragOver={beginDragOver}
       onDrop={handleDrop}
       onPointerCancel={(event) => {
-        setIsTransforming(false);
         handlePointerUp(event);
       }}
-      onPointerDown={(event) => {
-        setIsTransforming(true);
-        handlePointerDown(event);
-      }}
+      onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
-      onPointerUp={(event) => {
-        setIsTransforming(false);
-        handlePointerUp(event);
-      }}
+      onPointerUp={handlePointerUp}
       ref={viewportRef}
       role="application"
     >
       <div
-        className="absolute top-1/2 left-1/2"
+        className="absolute top-1/2 left-1/2 isolate [backface-visibility:hidden] [contain:layout_paint_style]"
         data-toolcraft-canvas-world=""
         style={{
           transform: `translate(-50%, -50%) translate3d(${offset.x}px, ${offset.y}px, 0) scale(${scale})`,
           transformOrigin: "center",
-          ...(isTransforming ? { willChange: "transform" } : {}),
         }}
       >
         {renderEditableCanvas ? (

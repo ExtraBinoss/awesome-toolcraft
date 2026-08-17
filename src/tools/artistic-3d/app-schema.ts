@@ -1,4 +1,5 @@
 import { defineToolcraft } from "@/toolcraft/runtime/schema/define-toolcraft";
+import { withBasePath } from "@/base-path";
 
 const responsive = (performanceReason: string) => ({ performanceRole: "responsiveness" as const, performanceReason });
 const slider = (target: string, label: string, defaultValue: number, min: number, max: number, step = 1, unit?: string) => ({ type: "slider", target, label, defaultValue, min, max, step, unit, sliderValueKind: step < 1 ? "continuous" : "discrete" } as const);
@@ -101,7 +102,12 @@ export const appSchema = defineToolcraft({
           title: "Export",
           actionGroup: "secondary",
           controls: {
-            outputActions: { type: "artistic3DExport", target: "actions.output", label: false, defaultValue: null },
+            outputActions: {
+              type: "export", target: "actions.output", label: false, defaultValue: null,
+              exportBackgroundTarget: "scene.background",
+              exportFileName: "artistic-3d",
+              exportOutputSelector: "[data-toolcraft-artistic-3d-output='true'] canvas",
+            },
           },
         },
       ],
@@ -109,5 +115,5 @@ export const appSchema = defineToolcraft({
   },
   persistence: { storage: "localStorage", key: "toolcraft:artistic-3d:state:v2", version: 2, include: ["values", "media", "canvas", "panels"] },
   settingsTransfer: { enabled: true, appId: "artistic-3d", fileName: "artistic-3d-settings" },
-  toolbar: { back: { href: "/", label: "Back to tools" }, history: true, radar: true, theme: true, zoom: true },
+  toolbar: { back: { href: withBasePath("/"), label: "Back to tools" }, history: true, radar: true, theme: true, zoom: true },
 });

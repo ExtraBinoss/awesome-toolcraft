@@ -7,12 +7,19 @@ import {
   ColorOpacityControl as ColorOpacity,
   type ColorControlInput,
   type ColorControlInputPair,
-} from "@/toolcraft/ui/components/controls/color";
-import { PaletteControl as Palette } from "@/toolcraft/ui/components/controls/color";
+} from "@/toolcraft/ui/components/controls/color/color-control";
+import { PaletteControl as Palette } from "@/toolcraft/ui/components/controls/color/palette-control";
 import type { ControlChangeMeta } from "@/toolcraft/ui/components/controls/control-types";
 import type { ImagePickerItem } from "@/toolcraft/ui/components/controls/image-picker/image-picker-control";
+import { ImagePickerControl as ImagePicker } from "@/toolcraft/ui/components/controls/image-picker/image-picker-control";
+import { ChannelMixerControl as ChannelMixer } from "@/toolcraft/ui/components/controls/channel-mixer/channel-mixer-control";
 
 import type { ToolcraftControlSchema } from "../../../schema/types";
+import {
+  loadCurvesRenderer,
+  loadFontPickerRenderer,
+  loadGradientRenderer,
+} from "./controls-panel-heavy-renderer-loaders";
 import {
   asColorOpacityValue,
   asColorValue,
@@ -25,31 +32,20 @@ import {
 } from "../values/controls-panel-values";
 
 const FontPicker = React.lazy(() =>
-  import("@/toolcraft/ui/components/controls/font-picker/font-picker-control").then(
+  loadFontPickerRenderer().then(
     (module) => ({ default: module.FontPickerControl }),
   ),
 );
-const ChannelMixer = React.lazy(() =>
-  import("@/toolcraft/ui/components/controls/channel-mixer/channel-mixer-control").then(
-    (module) => ({ default: module.ChannelMixerControl }),
-  ),
-);
 const Curves = React.lazy(() =>
-  import("@/toolcraft/ui/components/controls/curves/curves-control").then(
+  loadCurvesRenderer().then(
     (module) => ({ default: module.CurvesControl }),
   ),
 );
 const Gradient = React.lazy(() =>
-  import("@/toolcraft/ui/components/controls/gradient/gradient-control").then(
+  loadGradientRenderer().then(
     (module) => ({ default: module.GradientControl }),
   ),
 );
-const ImagePicker = React.lazy(() =>
-  import("@/toolcraft/ui/components/controls/image-picker/image-picker-control").then(
-    (module) => ({ default: module.ImagePickerControl }),
-  ),
-);
-
 function lazyControl(children: React.ReactNode): React.JSX.Element {
   return (
     <React.Suspense
@@ -364,14 +360,14 @@ function renderCompoundControl({
     }
 
     case "imagePicker":
-      return lazyControl(
+      return (
         <ImagePicker
           items={control.items as readonly ImagePickerItem[] | undefined}
           key={id}
           name={name}
           onValueChange={commit}
           value={asString(value, control.items?.[0]?.value ?? "")}
-        />,
+        />
       );
 
     case "palette":

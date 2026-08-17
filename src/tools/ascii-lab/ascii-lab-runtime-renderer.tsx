@@ -16,6 +16,11 @@ const AsciiLabThreeRenderer = React.lazy(() =>
     default: module.AsciiLabRenderer,
   })),
 );
+const AsciiLabImageRenderer = React.lazy(() =>
+  import("./ascii-lab-renderer").then((module) => ({
+    default: module.AsciiLabImageRenderer,
+  })),
+);
 const AsciiLabPaperAmbient = React.lazy(() =>
   import("./ascii-lab-paper-ambient").then((module) => ({
     default: module.AsciiLabPaperAmbient,
@@ -29,10 +34,6 @@ function sourceAsset(mediaAssets: readonly ToolcraftMediaAsset[]): ToolcraftMedi
       (asset) => asset.assetKind === "image" || asset.mimeType.startsWith("image/"),
     )
   );
-}
-
-function isModelAsset(asset: ToolcraftMediaAsset | undefined): boolean {
-  return Boolean(asset && /\.(glb|gltf|obj|stl)$/i.test(asset.fileName));
 }
 
 function colorHexValue(value: unknown, fallback: string): string {
@@ -73,19 +74,22 @@ export function AsciiLabRuntimeRenderer(): React.JSX.Element {
   );
   const source = sourceAsset(mediaAssets);
   const sourceModeValue = useToolcraftValue("ascii.sourceMode");
+  const image3dValue = useToolcraftValue("ascii.image3d");
   const paperAmbientValue = useToolcraftValue("paper.ambient");
   const sourceMode = typeof sourceModeValue === "string" ? sourceModeValue : "image";
 
-  if (sourceMode === "image" && isModelAsset(source)) {
+  if (sourceMode === "image" && source) {
+    const isModel = /\.(glb|gltf|obj|stl)$/i.test(source.fileName);
+    const useThreeRenderer = isModel || image3dValue === true;
     return (
       <React.Suspense
         fallback={
           <div className="absolute inset-0 grid place-items-center bg-[#020307] font-mono text-xs tracking-widest text-white/55">
-            LOADING 3D ENGINE…
+            {useThreeRenderer ? "LOADING 3D ENGINE…" : "LOADING GPU RENDERER…"}
           </div>
         }
       >
-        <AsciiLabThreeRenderer />
+        {useThreeRenderer ? <AsciiLabThreeRenderer /> : <AsciiLabImageRenderer />}
       </React.Suspense>
     );
   }

@@ -2,7 +2,8 @@
 
 import * as React from "react";
 
-import { Button, Field } from "../../primitives";
+import { Button } from "../../primitives/button";
+import { Field } from "../../primitives/field";
 import { ControlFieldLabel } from "../../control-layout";
 import {
   hoverImportantSelectedItemBorderClassName,

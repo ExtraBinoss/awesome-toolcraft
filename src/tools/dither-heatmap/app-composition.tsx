@@ -1,6 +1,5 @@
 import type { ToolcraftAppComposition } from "@/toolcraft/runtime/react/app-shell/toolcraft-app";
 
-import { DitherHeatmapExportControl } from "./dither-heatmap-export-control";
 import { DitherHeatmapRenderer } from "./dither-heatmap-renderer";
 import { appSchema } from "./app-schema";
 
@@ -15,7 +14,6 @@ export const appComposition: ToolcraftAppComposition = {
   schema: appSchema,
   canvasContent: <DitherHeatmapRenderer />,
   renderDefaultCanvasMedia: false,
-  controlRenderers: { ditherHeatmapExport: DitherHeatmapExportControl },
   onPanelAction: ({ action, dispatch, state }) => {
     const colors = palettes[action.value];
     if (!colors) return;

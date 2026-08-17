@@ -4,6 +4,7 @@ import * as React from "react";
 
 import { ControlFieldLabel } from "../../control-layout";
 import { Field } from "../../primitives/field";
+import { HoverMarqueeText } from "../../primitives/hover-marquee-text";
 import { ToggleGroup, ToggleGroupItem } from "../../primitives/toggle-group";
 import type { ControlOption } from "../control-types";
 
@@ -86,7 +87,9 @@ export function SegmentedControl({
                 }}
               />
             ) : null}
-            {option.label}
+            <HoverMarqueeText className="flex-1 text-center">
+              {option.label}
+            </HoverMarqueeText>
           </ToggleGroupItem>
         ))}
       </ToggleGroup>

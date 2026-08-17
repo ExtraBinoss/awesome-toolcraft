@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { useToolcraftDispatch, useToolcraftSelector, useToolcraftStore } from "@/toolcraft/runtime/react/app-shell/use-toolcraft";
+import { withBasePath } from "@/base-path";
+import { toolcraftStateWithoutViewportMatches, useToolcraftDispatch, useToolcraftSelector, useToolcraftStore } from "@/toolcraft/runtime/react/app-shell/use-toolcraft";
 import type { ToolcraftAssetLibraryItem } from "@/toolcraft/runtime/schema/types";
 import type { ToolcraftMediaAsset, ToolcraftState } from "@/toolcraft/runtime/state/types";
 import { BlobTrackCpuTracker, type BlobTrackTrack } from "./BlobTrack.cpu";
@@ -80,7 +81,7 @@ function sourceFromState(state: ToolcraftState, library: readonly ToolcraftAsset
     }
   }
   const jellyfish = library.find((item) => item.value === "jellyfish");
-  return jellyfish ? { kind: "media", src: jellyfish.src, mediaType: jellyfish.kind } : { kind: "media", src: "/baseAssets/videos/jellyfish.webm", mediaType: "video" };
+  return jellyfish ? { kind: "media", src: jellyfish.src, mediaType: jellyfish.kind } : { kind: "media", src: withBasePath("/baseAssets/videos/jellyfish.webm"), mediaType: "video" };
 }
 
 function renderPass(gl: WebGL2RenderingContext, handle: GlProgram, target: GlTarget | null, width: number, height: number, setup: () => void): void {
@@ -90,7 +91,7 @@ function renderPass(gl: WebGL2RenderingContext, handle: GlProgram, target: GlTar
 export function BlobTrackingRenderer({ library }: { library: readonly ToolcraftAssetLibraryItem[] }): React.JSX.Element {
   const dispatch = useToolcraftDispatch();
   const store = useToolcraftStore();
-  const state = useToolcraftSelector(React.useCallback((snapshot) => snapshot, []));
+  const state = useToolcraftSelector(React.useCallback((snapshot) => snapshot, []), toolcraftStateWithoutViewportMatches);
   const sourceValue = state.values["blob.source"];
   const source = React.useMemo(() => sourceFromState(state, library), [library, sourceValue, state.mediaAssets]);
   const valuesRef = React.useRef(state.values);
@@ -106,7 +107,7 @@ export function BlobTrackingRenderer({ library }: { library: readonly ToolcraftA
     const canvas = canvasRef.current, overlay = overlayRef.current, composite = compositeRef.current;
     if (!canvas || !overlay || !composite) return undefined;
     let stopped = false, animation = 0, stream: MediaStream | undefined;
-    const gl = canvas.getContext("webgl2", { alpha: true, antialias: false, premultipliedAlpha: false, preserveDrawingBuffer: true });
+    const gl = canvas.getContext("webgl2", { alpha: true, antialias: false, desynchronized: true, premultipliedAlpha: false, preserveDrawingBuffer: true });
     const overlayContext = overlay.getContext("2d"); const compositeContext = composite.getContext("2d");
     if (!gl || !overlayContext || !compositeContext) { setStatus("WebGL2 is unavailable in this browser."); return undefined; }
     const sourceTexture = gl.createTexture(); if (!sourceTexture) { setStatus("Unable to create the media texture."); return undefined; }

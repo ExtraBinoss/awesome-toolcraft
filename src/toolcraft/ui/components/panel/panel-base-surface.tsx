@@ -13,7 +13,7 @@ export const PanelSurface = React.forwardRef<
       {...props}
       ref={ref}
       className={cn(
-        "floating-popup-surface toolcraft-panel-surface isolate border text-[color:var(--popover-foreground)] supports-backdrop-filter:backdrop-blur-2xl supports-backdrop-filter:backdrop-saturate-150",
+        "floating-popup-surface toolcraft-panel-surface isolate border text-[color:var(--popover-foreground)]",
         className,
       )}
     >

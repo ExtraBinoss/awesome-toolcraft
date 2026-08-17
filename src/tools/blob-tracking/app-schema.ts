@@ -1,4 +1,5 @@
 import { defineToolcraft } from "@/toolcraft/runtime/schema/define-toolcraft";
+import { withBasePath } from "@/base-path";
 
 const slider = (target: string, label: string, defaultValue: number, min: number, max: number, step = 1) => ({ type: "slider", target, label, defaultValue, min, max, step, sliderValueKind: step < 1 ? "continuous" : "discrete" } as const);
 
@@ -6,12 +7,12 @@ export const appSchema = defineToolcraft({
   canvas: { enabled: true, draggable: false, size: { width: 1280, height: 720, unit: "px" }, sizing: { mode: "fixed-output" }, upload: false },
   export: { png: { background: "transparent" } },
   media: { defaultAssets: [
-    { id: "library-gnou", assetKind: "image", dataUrl: "/baseAssets/images/gnou.jpg", fileName: "gnou.jpg", mimeType: "image/jpeg" },
-    { id: "library-clione", assetKind: "image", dataUrl: "/baseAssets/images/Clione.jpg", fileName: "Clione.jpg", mimeType: "image/jpeg" },
-    { id: "library-papillon", assetKind: "image", dataUrl: "/baseAssets/images/papillon_monarque.jpg", fileName: "papillon_monarque.jpg", mimeType: "image/jpeg" },
-    { id: "library-jellyfish", assetKind: "file", dataUrl: "/baseAssets/videos/jellyfish.webm", fileName: "jellyfish.webm", mimeType: "video/webm" },
-    { id: "library-cat-candle", assetKind: "file", dataUrl: "/baseAssets/videos/cat_candle.webm", fileName: "cat_candle.webm", mimeType: "video/webm" },
-    { id: "library-pinguin", assetKind: "file", dataUrl: "/baseAssets/videos/pinguin.webm", fileName: "pinguin.webm", mimeType: "video/webm" },
+    { id: "library-gnou", assetKind: "image", dataUrl: withBasePath("/baseAssets/images/gnou.jpg"), fileName: "gnou.jpg", mimeType: "image/jpeg" },
+    { id: "library-clione", assetKind: "image", dataUrl: withBasePath("/baseAssets/images/Clione.jpg"), fileName: "Clione.jpg", mimeType: "image/jpeg" },
+    { id: "library-papillon", assetKind: "image", dataUrl: withBasePath("/baseAssets/images/papillon_monarque.jpg"), fileName: "papillon_monarque.jpg", mimeType: "image/jpeg" },
+    { id: "library-jellyfish", assetKind: "file", dataUrl: withBasePath("/baseAssets/videos/jellyfish.webm"), fileName: "jellyfish.webm", mimeType: "video/webm" },
+    { id: "library-cat-candle", assetKind: "file", dataUrl: withBasePath("/baseAssets/videos/cat_candle.webm"), fileName: "cat_candle.webm", mimeType: "video/webm" },
+    { id: "library-pinguin", assetKind: "file", dataUrl: withBasePath("/baseAssets/videos/pinguin.webm"), fileName: "pinguin.webm", mimeType: "video/webm" },
   ] },
   panels: { controls: { title: "Blob Tracking", sections: [
     { title: "Source", controls: { source: { type: "assetLibrary", target: "blob.source", label: false, defaultValue: { assetId: "jellyfish", kind: "library", mediaType: "video" } } } },
@@ -42,6 +43,10 @@ export const appSchema = defineToolcraft({
     } },
     { title: "Background", controls: { includeBackground: { type: "switch", target: "export.includeBackground", label: "Include", defaultValue: true }, background: { type: "color", target: "blob.background", label: false, defaultValue: "#050505" } }, layoutGroups: [{ layout: "inline", columns: 2, controls: ["includeBackground", "background"] }] },
     { title: "Image Export", controls: { imageFormat: { type: "select", target: "export.image.format", label: "Format", defaultValue: "png", options: [{ label: "PNG", value: "png" }, { label: "JPG", value: "jpg" }] }, imageResolution: { type: "select", target: "export.image.resolution", label: "Resolution", defaultValue: "4k", options: [{ label: "2K", value: "2k" }, { label: "4K", value: "4k" }, { label: "8K", value: "8k" }] }, videoResolution: { type: "select", target: "export.video.resolution", label: "Video size", defaultValue: "current", options: [{ label: "Current", value: "current" }, { label: "4K", value: "4k" }] } }, layoutGroups: [{ layout: "inline", columns: 2, controls: ["imageFormat", "imageResolution"] }] },
-    { title: "Export", actionGroup: "secondary", controls: { export: { type: "blobExport", target: "blob.export", label: false, defaultValue: null } } },
-  ] }, timeline: { mode: "playback", defaultDurationSeconds: 12 } }, persistence: { storage: "localStorage", key: "toolcraft:blob-tracking:state:v1", version: 1, include: ["values", "media", "canvas", "panels"] }, settingsTransfer: { enabled: true, appId: "blob-tracking", fileName: "blob-tracking-settings" }, toolbar: { back: { href: "/", label: "Back to tools" }, history: true, radar: true, theme: true, zoom: true },
+    { title: "Export", actionGroup: "secondary", controls: { export: {
+      type: "export", target: "blob.export", label: false, defaultValue: null,
+      exportBackgroundTarget: "blob.background", exportFileName: "blob-tracking",
+      exportOutputSelector: "[data-toolcraft-composite-canvas='true']",
+    } } },
+  ] }, timeline: { mode: "playback", defaultDurationSeconds: 12 } }, persistence: { storage: "localStorage", key: "toolcraft:blob-tracking:state:v1", version: 1, include: ["values", "media", "canvas", "panels"] }, settingsTransfer: { enabled: true, appId: "blob-tracking", fileName: "blob-tracking-settings" }, toolbar: { back: { href: withBasePath("/"), label: "Back to tools" }, history: true, radar: true, theme: true, zoom: true },
 });

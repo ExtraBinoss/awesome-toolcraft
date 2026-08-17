@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useRef, useState, type CSSProperties } from 'react';
-import { Eye, EyeOff, Trash2 } from 'lucide-react';
+import { EyeIcon, EyeSlashIcon, TrashIcon } from '@phosphor-icons/react';
 import { AnimatePresence, m } from 'motion/react';
 
 import type {
@@ -236,9 +236,9 @@ export function TimelineKeyframeRow({
             tooltipSide="top"
           >
             {isVisible ? (
-              <Eye data-icon="visibility-visible" />
+              <EyeIcon data-icon="visibility-visible" />
             ) : (
-              <EyeOff data-icon="visibility-hidden" />
+              <EyeSlashIcon data-icon="visibility-hidden" />
             )}
           </TimelineIconButton>
           <span
@@ -353,7 +353,7 @@ export function TimelineKeyframeRow({
             size="icon-sm"
             tooltipSide="top"
           >
-            <Trash2 />
+            <TrashIcon />
           </TimelineIconButton>
         </div>
       </div>

@@ -276,12 +276,14 @@ function getShouldShowScrollFade({
   return side === "top" || side === "left" ? !isAtStart : !isAtEnd;
 }
 
-function useScrollFadeVisibility({
+function useScrollFadeVisibilities({
   dependencyVersion,
   dismissInteraction,
   dismissOnFirstInteraction,
   interactionDismissed,
   isHorizontal,
+  oppositeSide,
+  showOppositeSide,
   side,
   visibilityMode,
   viewportElement,
@@ -291,20 +293,25 @@ function useScrollFadeVisibility({
   dismissOnFirstInteraction: boolean;
   interactionDismissed: boolean;
   isHorizontal: boolean;
+  oppositeSide: ScrollFadeSide;
+  showOppositeSide: boolean;
   side: ScrollFadeSide;
   visibilityMode: ScrollFadeVisibilityMode;
   viewportElement: HTMLDivElement | null;
-}): boolean {
-  const [showFade, setShowFade] = useState(false);
+}): { showFade: boolean; showOppositeFade: boolean } {
+  const [visibility, setVisibility] = useState({
+    showFade: false,
+    showOppositeFade: false,
+  });
 
   useLayoutEffect(() => {
     if (!viewportElement) {
-      setShowFade(false);
+      setVisibility({ showFade: false, showOppositeFade: false });
       return;
     }
 
     const updateFadeVisibility = (): void => {
-      const nextShowFade = getShouldShowScrollFade({
+      const showFade = getShouldShowScrollFade({
         interactionDismissed,
         isHorizontal,
         side,
@@ -312,13 +319,26 @@ function useScrollFadeVisibility({
         viewportElement,
       });
 
-      setShowFade((current) => (current === nextShowFade ? current : nextShowFade));
+      const showOppositeFade = showOppositeSide
+        ? getShouldShowScrollFade({
+            interactionDismissed,
+            isHorizontal,
+            side: oppositeSide,
+            visibilityMode,
+            viewportElement,
+          })
+        : false;
+      setVisibility((current) =>
+        current.showFade === showFade && current.showOppositeFade === showOppositeFade
+          ? current
+          : { showFade, showOppositeFade },
+      );
     };
 
     const handleScroll = (): void => {
       if (dismissOnFirstInteraction) {
         dismissInteraction();
-        setShowFade(false);
+        setVisibility({ showFade: false, showOppositeFade: false });
         return;
       }
 
@@ -349,12 +369,14 @@ function useScrollFadeVisibility({
     dismissOnFirstInteraction,
     interactionDismissed,
     isHorizontal,
+    oppositeSide,
+    showOppositeSide,
     side,
     visibilityMode,
     viewportElement,
   ]);
 
-  return showFade;
+  return visibility;
 }
 
 export function useResolvedScrollFadeDisplayState({
@@ -401,23 +423,15 @@ export function useResolvedScrollFadeDisplayState({
     dismissOnFirstInteraction,
     interactionVersion,
   });
-  const showFade = useScrollFadeVisibility({
+  const { showFade, showOppositeFade } = useScrollFadeVisibilities({
     dependencyVersion,
     dismissInteraction,
     dismissOnFirstInteraction,
     interactionDismissed,
     isHorizontal,
+    oppositeSide,
+    showOppositeSide,
     side,
-    visibilityMode,
-    viewportElement,
-  });
-  const showOppositeFade = useScrollFadeVisibility({
-    dependencyVersion,
-    dismissInteraction,
-    dismissOnFirstInteraction,
-    interactionDismissed,
-    isHorizontal,
-    side: oppositeSide,
     visibilityMode,
     viewportElement,
   });

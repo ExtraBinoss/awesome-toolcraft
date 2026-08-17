@@ -1,16 +1,16 @@
 import * as React from "react";
-import { CollectionActionsControl as CollectionActions } from "@/toolcraft/ui/components/controls/collection-actions";
-import { CheckboxControl as Checkbox, SwitchControl as Switch } from "@/toolcraft/ui/components/controls/boolean";
-import { ColorControl as Color, ColorOpacityControl as ColorOpacity } from "@/toolcraft/ui/components/controls/color";
-import { FontPickerControl as FontPicker } from "@/toolcraft/ui/components/controls/font-picker";
-import { RangeInputControl as RangeInput } from "@/toolcraft/ui/components/controls/range-input";
-import { SegmentedControl as Segmented } from "@/toolcraft/ui/components/controls/segmented";
-import { SelectControl as Select } from "@/toolcraft/ui/components/controls/select";
-import { SliderControl as Slider } from "@/toolcraft/ui/components/controls/slider";
-import { TextInputControl as TextInput } from "@/toolcraft/ui/components/controls/text-input";
+import { CollectionActionsControl as CollectionActions } from "@/toolcraft/ui/components/controls/collection-actions/collection-actions-control";
+import { CheckboxControl as Checkbox, SwitchControl as Switch } from "@/toolcraft/ui/components/controls/boolean/boolean-controls";
+import { ColorControl as Color, ColorOpacityControl as ColorOpacity } from "@/toolcraft/ui/components/controls/color/color-control";
+import { RangeInputControl as RangeInput } from "@/toolcraft/ui/components/controls/range-input/range-input-control";
+import { SegmentedControl as Segmented } from "@/toolcraft/ui/components/controls/segmented/segmented-control";
+import { SelectControl as Select } from "@/toolcraft/ui/components/controls/select/select-control";
+import { SliderControl as Slider } from "@/toolcraft/ui/components/controls/slider/slider-control";
+import { TextInputControl as TextInput } from "@/toolcraft/ui/components/controls/text-input/text-input-control";
 import type { ControlChangeMeta } from "@/toolcraft/ui/components/controls/control-types";
 
 import type { ToolcraftControlSchema } from "../../../schema/types";
+import { loadFontPickerRenderer } from "./controls-panel-heavy-renderer-loaders";
 import {
   asBoolean,
   asColorOpacityValue,
@@ -27,6 +27,10 @@ import {
   getCollectionItemType,
   getCollectionMinItems,
 } from "../values/controls-panel-values";
+
+const FontPicker = React.lazy(() =>
+  loadFontPickerRenderer().then((module) => ({ default: module.FontPickerControl })),
+);
 
 export type CollectionControlSetValue = (
   target: string,
@@ -263,13 +267,14 @@ export function renderCollectionActionsControl({
         );
       case "fontPicker":
         return (
-          <FontPicker
-            defaultValue={asFontPickerValue(itemControl?.defaultValue)}
-            key={key}
-            name={itemName || "Font"}
-            onValueChange={update}
-            value={asFontPickerValue(item)}
-          />
+          <React.Suspense fallback={null} key={key}>
+            <FontPicker
+              defaultValue={asFontPickerValue(itemControl?.defaultValue)}
+              name={itemName || "Font"}
+              onValueChange={update}
+              value={asFontPickerValue(item)}
+            />
+          </React.Suspense>
         );
       case "text":
         return (

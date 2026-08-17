@@ -1,7 +1,16 @@
 "use client";
 
 import * as React from "react";
-import { ArrowLeft, LocateFixed, Moon, Redo2, Sun, Undo2, ZoomIn, ZoomOut } from "lucide-react";
+import {
+  ArrowClockwiseIcon,
+  ArrowCounterClockwiseIcon,
+  ArrowLeftIcon,
+  CrosshairIcon,
+  MagnifyingGlassMinusIcon,
+  MagnifyingGlassPlusIcon,
+  MoonIcon,
+  SunIcon,
+} from "@phosphor-icons/react";
 
 import type { ToolcraftPanelState } from "../../state/types";
 import type { PanelPlacement, PanelStateChange } from "../panel-host/panel-host-types";
@@ -113,7 +122,7 @@ export function ToolbarPanel({
             label={back.label ?? "Back to tools"}
             onClick={() => window.location.assign(back.href)}
           >
-            <ArrowLeft />
+            <ArrowLeftIcon />
           </ToolbarIconButton>
           <ToolbarDivider />
         </>
@@ -126,7 +135,7 @@ export function ToolbarPanel({
             label="Undo"
             onClick={() => dispatch({ type: "history.undo" })}
           >
-            <Undo2 />
+            <ArrowCounterClockwiseIcon />
           </ToolbarIconButton>
           <ToolbarIconButton
             className={desktopToolbarTightButtonGapClassName}
@@ -134,7 +143,7 @@ export function ToolbarPanel({
             label="Redo"
             onClick={() => dispatch({ type: "history.redo" })}
           >
-            <Redo2 />
+            <ArrowClockwiseIcon />
           </ToolbarIconButton>
           <ToolbarDivider />
         </>
@@ -145,7 +154,7 @@ export function ToolbarPanel({
             label="Zoom out"
             onClick={() => dispatch({ type: "canvas.zoomOut" })}
           >
-            <ZoomOut />
+            <MagnifyingGlassMinusIcon />
           </ToolbarIconButton>
           <span
             className="inline-flex h-7 w-[4ch] shrink-0 cursor-default items-center justify-center font-mono text-[12px] leading-[1.125rem] text-[color:color-mix(in_oklab,var(--foreground)_90%,transparent)] tabular-nums select-none"
@@ -162,7 +171,7 @@ export function ToolbarPanel({
             label="Zoom in"
             onClick={() => dispatch({ type: "canvas.zoomIn" })}
           >
-            <ZoomIn />
+            <MagnifyingGlassPlusIcon />
           </ToolbarIconButton>
           <ToolbarDivider />
         </>
@@ -173,9 +182,9 @@ export function ToolbarPanel({
           onClick={toggleResolvedTheme}
         >
           {nextTheme === "light" ? (
-            <Sun data-icon="theme-light" />
+            <SunIcon data-icon="theme-light" />
           ) : (
-            <Moon data-icon="theme-dark" />
+            <MoonIcon data-icon="theme-dark" />
           )}
         </ToolbarIconButton>
       ) : null}
@@ -184,7 +193,7 @@ export function ToolbarPanel({
           label="Center canvas"
           onClick={() => dispatch({ type: "canvas.center" })}
         >
-          <LocateFixed />
+          <CrosshairIcon />
         </ToolbarIconButton>
       ) : null}
     </div>

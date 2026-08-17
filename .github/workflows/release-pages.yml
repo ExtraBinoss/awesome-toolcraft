@@ -1,0 +1,50 @@
+name: Release GitHub Pages
+
+on:
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: >-
+      github.actor == 'ExtraBinoss' &&
+      github.event.pusher.name == 'ExtraBinoss' &&
+      contains(github.event.head_commit.message, '[RELEASE]') &&
+      (github.event.head_commit.author.username == 'ExtraBinoss' ||
+       github.event.head_commit.author.email == '113912449+ExtraBinoss@users.noreply.github.com')
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout release commit
+        uses: actions/checkout@v5
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Build Toolcraft
+        run: npm run build
+      - name: Add SPA fallback
+        run: cp dist/index.html dist/404.html
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+      - name: Deploy Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

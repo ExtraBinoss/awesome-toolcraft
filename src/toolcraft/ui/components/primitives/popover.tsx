@@ -9,7 +9,7 @@ import {
 import { cn } from "../../lib/utils";
 
 const popoverContentSurfaceClassName =
-  "floating-popup-surface z-50 flex w-72 origin-(--transform-origin) flex-col gap-4 rounded-lg border p-2.5 popup-text-xs-plus text-[color:var(--popover-foreground)] outline-hidden duration-100 data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95";
+  "floating-popup-surface z-50 flex w-72 flex-col gap-4 rounded-lg border p-2.5 popup-text-xs-plus text-[color:var(--popover-foreground)] outline-hidden";
 
 const embeddedPopoverCardSurfaceClassName =
   "floating-popup-surface flex min-h-0 w-full flex-col overflow-hidden rounded-xl border border-[color:color-mix(in_oklab,var(--border)_12%,transparent)] bg-[color:color-mix(in_oklab,var(--foreground)_5%,transparent)] p-0 text-[color:var(--foreground)]";
@@ -36,8 +36,39 @@ function PopoverSurface({
   );
 }
 
-function Popover({ ...props }: PopoverPrimitive.Root.Props) {
-  return <PopoverPrimitive.Root data-slot="popover" {...props} />;
+function Popover({
+  defaultOpen = false,
+  onOpenChange,
+  open,
+  ...props
+}: PopoverPrimitive.Root.Props) {
+  const [internalOpen, setInternalOpen] = React.useState(defaultOpen);
+  const controlled = open !== undefined;
+  const resolvedOpen = open ?? internalOpen;
+  const handleOpenChange = React.useCallback(
+    (nextOpen: boolean, eventDetails: PopoverPrimitive.Root.ChangeEventDetails) => {
+      const applyChange = () => {
+        if (!controlled) setInternalOpen(nextOpen);
+        onOpenChange?.(nextOpen, eventDetails);
+      };
+
+      if (nextOpen) {
+        React.startTransition(applyChange);
+      } else {
+        applyChange();
+      }
+    },
+    [controlled, onOpenChange],
+  );
+
+  return (
+    <PopoverPrimitive.Root
+      data-slot="popover"
+      {...props}
+      onOpenChange={handleOpenChange}
+      open={resolvedOpen}
+    />
+  );
 }
 
 function PopoverTrigger({ ...props }: PopoverPrimitive.Trigger.Props) {

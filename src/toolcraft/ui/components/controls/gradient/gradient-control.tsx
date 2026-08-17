@@ -3,7 +3,7 @@
 import type * as React from "react";
 import { useRef, useState } from "react";
 
-import { Field } from "../../primitives";
+import { Field } from "../../primitives/field";
 import {
   type ControlChangeMeta,
   type ControlValueChangeHandler,

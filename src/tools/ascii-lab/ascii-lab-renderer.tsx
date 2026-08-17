@@ -5,21 +5,34 @@ import * as THREE from "three";
 
 import {
   useToolcraftEvaluatedValues,
-  useToolcraftPlayhead,
   useToolcraftSelector,
+  useToolcraftStore,
+  toolcraftStateWithoutViewportMatches,
 } from "@/toolcraft/runtime/react/app-shell/use-toolcraft";
 import type { ToolcraftMediaAsset, ToolcraftState } from "@/toolcraft/runtime/state/types";
+import { isToolcraftCanvasNavigationActive } from "@/toolcraft/runtime/react/canvas/canvas-navigation-performance";
+
+import { AsciiImageCanvas as AsciiImageCanvasFallback } from "./ascii-lab-image-canvas";
 
 const ASCII_VERTEX_SHADER = `
+  uniform sampler2D uTexture;
+  uniform float uRelief;
+  uniform float uSourceIsModel;
   varying vec2 vUv;
   varying vec3 vNormal;
   varying vec3 vWorldPosition;
   void main() {
     vUv = uv;
     vNormal = normalize(mat3(modelMatrix) * normal);
-    vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+    vec3 displacedPosition = position;
+    if (uSourceIsModel < 0.5 && uRelief > 0.0) {
+      vec3 source = texture2D(uTexture, uv).rgb;
+      float luminance = dot(source, vec3(0.299, 0.587, 0.114));
+      displacedPosition += normal * ((luminance - 0.5) * uRelief);
+    }
+    vec4 worldPosition = modelMatrix * vec4(displacedPosition, 1.0);
     vWorldPosition = worldPosition.xyz;
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(displacedPosition, 1.0);
   }
 `;
 
@@ -608,6 +621,7 @@ function makeMaterial(
       uJitter: { value: 0.18 },
       uMode: { value: 2 },
       uResolution: { value: new THREE.Vector2(1280, 720) },
+      uRelief: { value: 0 },
       uSourceIsModel: { value: sourceIsModel ? 1 : 0 },
       uSourceSize: { value: new THREE.Vector2(1280, 720) },
       uTexture: { value: sourceTexture },
@@ -651,7 +665,7 @@ function AsciiScene({
   imageTexture,
   isPlaying,
   model,
-  playheadSeconds,
+  store,
   rotation,
   sourceSize,
   values,
@@ -660,7 +674,7 @@ function AsciiScene({
   imageTexture: THREE.Texture | null;
   isPlaying: boolean;
   model: THREE.Object3D | null;
-  playheadSeconds: number;
+  store: ReturnType<typeof useToolcraftStore>;
   rotation: React.MutableRefObject<[number, number]>;
   sourceSize: SourceSize;
   values: Record<string, unknown>;
@@ -712,9 +726,21 @@ function AsciiScene({
       material.uniforms.uInkMix.value = numberValue(values, "ascii.inkMix", 100) / 100;
       material.uniforms.uFit.value = stringValue(values, "ascii.fit", "contain") === "cover" ? 1 : 0;
       material.uniforms.uSpeed.value = numberValue(values, "ascii.motion", 18) / 100;
+      material.uniforms.uRelief.value = material === imageMaterial
+        ? numberValue(values, "image3d.relief", 22) / 100
+        : 0;
     });
     invalidate();
   }, [gl, imageMaterial, imageTexture, modelMaterial, sourceSize, values, whiteTexture, invalidate]);
+
+  React.useEffect(() => store.subscribePlayhead((timeSeconds) => {
+    if (isToolcraftCanvasNavigationActive()) return;
+    if (values["motion.animate"] !== false) {
+      imageMaterial.uniforms.uTime.value = timeSeconds;
+      modelMaterial.uniforms.uTime.value = timeSeconds;
+    }
+    invalidate();
+  }), [imageMaterial, invalidate, modelMaterial, store, values]);
 
   React.useEffect(() => {
     if (!model) {
@@ -759,29 +785,212 @@ function AsciiScene({
     }
     group.current.rotation.x = rotation.current[0];
     group.current.rotation.y = rotation.current[1];
-    if (values["motion.animate"] !== false) {
-      imageMaterial.uniforms.uTime.value = playheadSeconds;
-      modelMaterial.uniforms.uTime.value = playheadSeconds;
-    }
   });
 
   return (
     <group ref={group}>
       {model ? (
         <primitive object={model} />
+      ) : stringValue(values, "image3d.shape", "plane") === "box" ? (
+        <mesh material={imageMaterial}>
+          <boxGeometry args={[2.4, 1.5, 0.16, 64, 40, 4]} />
+        </mesh>
       ) : (
         <mesh material={imageMaterial}>
-          <planeGeometry args={[2, 2]} />
+          <planeGeometry args={[2.6, 1.65, 96, 60]} />
         </mesh>
       )}
     </group>
   );
 }
 
+function applyImageUniforms(
+  material: THREE.ShaderMaterial,
+  values: Record<string, unknown>,
+  sourceSize: SourceSize,
+  width: number,
+  height: number,
+): void {
+  material.uniforms.uResolution.value.set(width, height);
+  material.uniforms.uSourceSize.value.set(sourceSize[0], sourceSize[1]);
+  material.uniforms.uCellSize.value = numberValue(values, "ascii.cellSize", 12);
+  material.uniforms.uMode.value = modeValue(stringValue(values, "ascii.mode", "hybrid"));
+  material.uniforms.uDirection.value = directionValue(stringValue(values, "ascii.direction", "right"));
+  material.uniforms.uColorMode.value = colorModeValue(stringValue(values, "ascii.colorMode", "source"));
+  material.uniforms.uFgColor.value.set(stringValue(values, "ascii.foreground", "#D8FF65"));
+  material.uniforms.uBgColor.value.set(stringValue(values, "ascii.background", "#050609"));
+  material.uniforms.uContrast.value = numberValue(values, "ascii.contrast", 1.2);
+  material.uniforms.uBrightness.value = numberValue(values, "ascii.brightness", 0);
+  material.uniforms.uDepthStrength.value = numberValue(values, "ascii.depthStrength", 65) / 100;
+  material.uniforms.uDepthContrast.value = numberValue(values, "ascii.depthContrast", 1.3);
+  material.uniforms.uInvert.value = values["ascii.invert"] === true ? 1 : 0;
+  material.uniforms.uJitter.value = numberValue(values, "ascii.jitter", 18) / 100;
+  material.uniforms.uInkMix.value = numberValue(values, "ascii.inkMix", 100) / 100;
+  material.uniforms.uFit.value = stringValue(values, "ascii.fit", "contain") === "cover" ? 1 : 0;
+  material.uniforms.uSpeed.value = numberValue(values, "ascii.motion", 18) / 100;
+}
+
+/** Image-only renderer: owns one WebGL context and does not involve R3F's clock lifecycle. */
+export function AsciiLabImageRenderer(): React.JSX.Element {
+  const canvasRef = React.useRef<HTMLCanvasElement>(null);
+  const store = useToolcraftStore();
+  const committedState = useToolcraftSelector(
+    React.useCallback((snapshot) => snapshot, []),
+    toolcraftStateWithoutViewportMatches,
+  );
+  const state = committedState;
+  const source = sourceAsset(state);
+  const charsetValue = stringValue(state.values, "ascii.charset", " .,:;irsXA253hMHGS#9B&@");
+  const renderScale = numberValue(state.values, "canvas.renderScale", 1);
+  const valuesRef = React.useRef(state.values);
+  const renderRef = React.useRef<(() => void) | null>(null);
+  const [gpuReady, setGpuReady] = React.useState(false);
+  const [gpuError, setGpuError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    valuesRef.current = state.values;
+  }, [state.values]);
+
+  React.useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !source || isModelAsset(source)) return undefined;
+
+    let active = true;
+    let frame = 0;
+    let imageTexture: THREE.Texture | null = null;
+    const width = Math.max(1, Math.round(1280 * renderScale));
+    const height = Math.max(1, Math.round(720 * renderScale));
+    setGpuReady(false);
+    setGpuError(null);
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({
+        alpha: true,
+        antialias: false,
+        canvas,
+        ...({ desynchronized: true } as WebGLContextAttributes),
+        powerPreference: "high-performance",
+        preserveDrawingBuffer: false,
+      });
+    } catch (error: unknown) {
+      setGpuError(error instanceof Error ? error.message : "WebGL is unavailable.");
+      return undefined;
+    }
+    renderer.setPixelRatio(1);
+    renderer.setSize(width, height, false);
+    const scene = new THREE.Scene();
+    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
+    camera.position.z = 1;
+    const geometry = new THREE.PlaneGeometry(2, 2);
+    const charsetTextures = createCharsetTextures(charsetValue);
+    const whiteTexture = createWhiteTexture();
+    const material = makeMaterial(
+      charsetTextures.atlas,
+      charsetTextures.charset,
+      whiteTexture,
+      false,
+      charsetTextures.count,
+    );
+    const mesh = new THREE.Mesh(geometry, material);
+    scene.add(mesh);
+    let sourceSize: SourceSize = [1280, 720];
+
+    const render = () => {
+      applyImageUniforms(material, valuesRef.current, sourceSize, width, height);
+      renderer.setClearColor(stringValue(valuesRef.current, "scene.background", "#020307"), 1);
+      renderer.render(scene, camera);
+    };
+    renderRef.current = render;
+    render();
+
+    const handleContextLost = (event: Event) => {
+      event.preventDefault();
+      if (active) {
+        setGpuReady(false);
+        setGpuError("WebGL context lost; using the compatible renderer.");
+      }
+    };
+    canvas.addEventListener("webglcontextlost", handleContextLost);
+
+    void loadImageTexture(source)
+      .then(({ size, texture }) => {
+        if (!active) {
+          texture.dispose();
+          return;
+        }
+        imageTexture = texture;
+        sourceSize = size;
+        material.uniforms.uTexture.value = texture;
+        render();
+        setGpuReady(true);
+      })
+      .catch((error: unknown) => {
+        if (active) {
+          setGpuReady(false);
+          setGpuError(error instanceof Error ? error.message : "The image could not be decoded.");
+        }
+      });
+
+    const unsubscribe = store.subscribePlayhead((timeSeconds) => {
+      if (isToolcraftCanvasNavigationActive()) return;
+      if (valuesRef.current["motion.animate"] === false) return;
+      if (store.getState().timeline.keyframeGroups.length > 0) {
+        valuesRef.current = store.getEvaluatedValues(undefined, timeSeconds);
+        applyImageUniforms(material, valuesRef.current, sourceSize, width, height);
+      }
+      material.uniforms.uTime.value = timeSeconds;
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => renderer.render(scene, camera));
+    });
+
+    return () => {
+      active = false;
+      unsubscribe();
+      cancelAnimationFrame(frame);
+      canvas.removeEventListener("webglcontextlost", handleContextLost);
+      if (renderRef.current === render) renderRef.current = null;
+      scene.remove(mesh);
+      geometry.dispose();
+      material.dispose();
+      imageTexture?.dispose();
+      whiteTexture.dispose();
+      charsetTextures.atlas.dispose();
+      charsetTextures.charset.dispose();
+      renderer.dispose();
+    };
+  }, [charsetValue, renderScale, source?.dataUrl, source?.fileName, source?.mimeType, store]);
+
+  React.useEffect(() => {
+    renderRef.current?.();
+  }, [state.values]);
+
+  return (
+    <div className="absolute inset-0 overflow-hidden" data-toolcraft-ascii-lab-output="true" data-toolcraft-product-output>
+      {!gpuReady && source && !isModelAsset(source) ? (
+        <AsciiImageCanvasFallback asset={source} store={store} />
+      ) : null}
+      <canvas
+        ref={canvasRef}
+        className="absolute inset-0 h-full w-full"
+        data-toolcraft-ascii-lab-canvas="true"
+        style={{ visibility: gpuReady ? "visible" : "hidden" }}
+      />
+      {gpuError ? (
+        <div className="pointer-events-none absolute right-3 bottom-3 rounded-md bg-black/70 px-2 py-1 font-mono text-[10px] text-white/55">
+          GPU fallback active
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function AsciiLabRenderer(): React.JSX.Element {
-  const committedState = useToolcraftSelector(React.useCallback((snapshot) => snapshot, []));
+  const store = useToolcraftStore();
+  const committedState = useToolcraftSelector(
+    React.useCallback((snapshot) => snapshot, []),
+    toolcraftStateWithoutViewportMatches,
+  );
   const evaluatedValues = useToolcraftEvaluatedValues();
-  const playheadSeconds = useToolcraftPlayhead();
   const isPlaying = useToolcraftSelector(
     React.useCallback((snapshot) => snapshot.timeline.isPlaying, []),
   );
@@ -901,6 +1110,13 @@ export function AsciiLabRenderer(): React.JSX.Element {
   const paperSpeed = numberValue(values, "ascii.motion", 18) / 100;
   const paperForeground = stringValue(values, "ascii.foreground", "#D8FF65");
   const paperBackground = stringValue(values, "scene.background", "#020307");
+  const image3dTilt = THREE.MathUtils.degToRad(numberValue(values, "image3d.tilt", 10));
+  const image3dPerspective = numberValue(values, "image3d.perspective", 38);
+
+  React.useEffect(() => {
+    if (!dragging.current && !isModel) rotation.current[0] = image3dTilt;
+    invalidateRef.current();
+  }, [image3dTilt, isModel]);
 
   return (
     <div
@@ -926,25 +1142,17 @@ export function AsciiLabRenderer(): React.JSX.Element {
           type="4x4"
         />
       ) : null}
-      {!isModel && source ? (
-        <AsciiImageCanvas
-          asset={source}
-          playheadSeconds={playheadSeconds}
-          values={values}
-        />
-      ) : (
-        <Canvas
-          camera={{ position: [0, 0, 5], zoom: 1 }}
+      <Canvas
+          camera={{ fov: image3dPerspective, position: [0, 0, 4] }}
           dpr={numberValue(values, "canvas.renderScale", 1)}
           frameloop="demand"
-          gl={{ alpha: true, antialias: true, powerPreference: "high-performance", preserveDrawingBuffer: true }}
+          gl={{ alpha: true, antialias: false, powerPreference: "high-performance", preserveDrawingBuffer: false }}
           onCreated={(root) => {
             root.gl.setClearColor(paperBackground, paperAmbient ? 0 : 1);
             root.gl.domElement.dataset.toolcraftAsciiLabCanvas = "true";
             invalidateRef.current = root.invalidate;
             root.invalidate();
           }}
-          orthographic
         >
           {paperAmbient ? null : <color attach="background" args={[paperBackground]} />}
           <FrameScheduler
@@ -959,13 +1167,12 @@ export function AsciiLabRenderer(): React.JSX.Element {
             imageTexture={imageTexture}
             isPlaying={isPlaying}
             model={model}
-            playheadSeconds={playheadSeconds}
             rotation={rotation}
             sourceSize={sourceSize}
+            store={store}
             values={values}
           />
         </Canvas>
-      )}
       <div className="pointer-events-none absolute top-3 left-3 rounded-md bg-black/60 px-2 py-1 font-mono text-[10px] tracking-wide text-white/70">
         {isModel ? "DRAG TO ROTATE · ASCII 3D" : "ASCII IMAGE FIELD"}
       </div>

@@ -18,7 +18,7 @@ const loadedFontFaceSet = new Set<string>();
 const pendingFontFaceMap = new Map<string, Promise<void>>();
 const queuedPreviewTaskMap = new Map<string, QueuedPreviewTask>();
 const activeQueuedFontIdSet = new Set<string>();
-const maxPreviewLoadConcurrency = 6;
+const maxPreviewLoadConcurrency = 2;
 
 let activeQueuedTaskCount = 0;
 let queuedTaskOrderCounter = 0;

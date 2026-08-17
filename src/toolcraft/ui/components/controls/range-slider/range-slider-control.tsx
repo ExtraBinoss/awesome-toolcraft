@@ -2,11 +2,9 @@
 
 import * as React from "react";
 
-import {
-  EditableSliderValueLabel,
-  Field,
-  Slider,
-} from "../../primitives";
+import { EditableSliderValueLabel } from "../../primitives/editable-slider-value-label";
+import { Field } from "../../primitives/field";
+import { Slider } from "../../primitives/slider";
 import { ControlFieldLabel } from "../../control-layout";
 import {
   formatRangeSliderValue,

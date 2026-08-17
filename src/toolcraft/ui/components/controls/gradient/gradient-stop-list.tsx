@@ -1,13 +1,13 @@
 import { MinusIcon, PlusIcon } from "@phosphor-icons/react";
 import * as React from "react";
+import { Button } from "../../primitives/button";
+import { Field } from "../../primitives/field";
 import {
-  Button,
-  Field,
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
   InputGroupText,
-} from "../../primitives";
+} from "../../primitives/input-group";
 import { selectedItemSurfaceClassName } from "../../primitives/selection-state";
 import { cn } from "../../../lib/utils";
 

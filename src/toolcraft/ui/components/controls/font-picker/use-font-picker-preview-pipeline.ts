@@ -134,14 +134,21 @@ export function useFontPickerPreviewPipeline({
 
   React.useEffect(() => {
     if (!open) {
-      return;
+      return undefined;
     }
 
     if (selectedFont) {
       warmFontPreview(selectedFont, "high");
     }
 
-    queueFontPickerPreviewLoadBatch(visibleFonts, { priority: "high" });
+    const preload = () => {
+      queueFontPickerPreviewLoadBatch(visibleFonts.slice(0, 4), { priority: "normal" });
+    };
+    const idleId = window.requestIdleCallback(preload, { timeout: 800 });
+
+    return () => {
+      window.cancelIdleCallback(idleId);
+    };
   }, [open, selectedFont, visibleFonts, warmFontPreview]);
 
   React.useEffect(() => {

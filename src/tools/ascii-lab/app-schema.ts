@@ -1,4 +1,5 @@
 import { defineToolcraft } from "@/toolcraft/runtime/schema/define-toolcraft";
+import { withBasePath } from "@/base-path";
 
 const responsive = (performanceReason: string) => ({
   performanceReason,
@@ -44,7 +45,7 @@ export const appSchema = defineToolcraft({
     defaultAssets: [
       {
         assetKind: "image",
-        dataUrl: "/baseAssets/images/gnou.jpg",
+        dataUrl: withBasePath("/baseAssets/images/gnou.jpg"),
         fileName: "gnou.jpg",
         id: "ascii-lab-default-gnou",
         mimeType: "image/jpeg",
@@ -69,14 +70,23 @@ export const appSchema = defineToolcraft({
               type: "segmented",
             },
             source: {
-              accept: ".png,.jpg,.jpeg,.webp,.avif,.gif,.glb,.gltf,.obj,.stl",
+              accept: ".png,.jpg,.jpeg,.webp,.avif,.gif",
               assetKind: "file",
               defaultValue: null,
-              description: "Drop an image or a GLB, GLTF, OBJ or STL model.",
+              description: "Drop an image, then optionally project it onto a 3D relief surface.",
               label: false,
               target: "ascii.source",
               type: "fileDrop",
               visibleWhen: { target: "ascii.sourceMode", equals: "image" },
+            },
+            image3d: {
+              defaultValue: false,
+              description: "Projects the image onto a relief surface and loads the Three.js renderer on demand.",
+              label: "3D image",
+              target: "ascii.image3d",
+              type: "switch",
+              visibleWhen: { target: "ascii.sourceMode", equals: "image" },
+              ...workload("3D image loads Three.js only while the relief renderer is active."),
             },
             text: {
               defaultValue: "TOOLCRAFT",
@@ -89,6 +99,39 @@ export const appSchema = defineToolcraft({
             },
           },
           title: "Source",
+        },
+        {
+          controls: {
+            image3dShape: {
+              defaultValue: "plane",
+              label: "Surface",
+              options: [
+                { label: "Plane", value: "plane" },
+                { label: "Block", value: "box" },
+              ],
+              target: "image3d.shape",
+              type: "segmented",
+              visibleWhen: { target: "ascii.image3d", equals: true },
+            },
+            image3dRelief: {
+              ...slider("image3d.relief", "Relief", 22, 0, 80, 1, "%"),
+              ...responsive("Relief displaces the surface from the source image luminance on the GPU."),
+              visibleWhen: { target: "ascii.image3d", equals: true },
+            },
+            image3dTilt: {
+              ...slider("image3d.tilt", "Tilt", 10, -60, 60, 1, "°"),
+              ...responsive("Tilt controls the resting angle of the image surface."),
+              visibleWhen: { target: "ascii.image3d", equals: true },
+            },
+            image3dPerspective: {
+              ...slider("image3d.perspective", "Perspective", 38, 15, 75, 1, "°"),
+              ...responsive("Perspective controls the camera field of view."),
+              visibleWhen: { target: "ascii.image3d", equals: true },
+            },
+          },
+          layoutGroups: [{ columns: 2, controls: ["image3dRelief", "image3dTilt"], layout: "inline" }],
+          title: "3D image",
+          visibleWhen: { target: "ascii.sourceMode", equals: "image" },
         },
         {
           controls: {
@@ -200,6 +243,35 @@ export const appSchema = defineToolcraft({
               ...slider("ascii.textGlow", "Source glow", 8, 0, 40, 1, "%"),
               ...responsive("Glow softens the source mask before it becomes ASCII."),
             },
+            textShadowEnabled: {
+              defaultValue: true,
+              label: "Shadow",
+              target: "ascii.textShadowEnabled",
+              type: "switch",
+            },
+            textShadowColor: {
+              defaultValue: "#7C3AED",
+              label: "Shadow color",
+              target: "ascii.textShadowColor",
+              type: "color",
+              visibleWhen: { target: "ascii.textShadowEnabled", equals: true },
+            },
+            textShadowOpacity: {
+              ...slider("ascii.textShadowOpacity", "Shadow opacity", 65, 0, 100, 1, "%"),
+              visibleWhen: { target: "ascii.textShadowEnabled", equals: true },
+            },
+            textShadowBlur: {
+              ...slider("ascii.textShadowBlur", "Shadow blur", 12, 0, 40, 1, "%"),
+              visibleWhen: { target: "ascii.textShadowEnabled", equals: true },
+            },
+            textShadowX: {
+              ...slider("ascii.textShadowX", "Shadow X", 5, -30, 30, 1, "%"),
+              visibleWhen: { target: "ascii.textShadowEnabled", equals: true },
+            },
+            textShadowY: {
+              ...slider("ascii.textShadowY", "Shadow Y", 8, -30, 30, 1, "%"),
+              visibleWhen: { target: "ascii.textShadowEnabled", equals: true },
+            },
             textColorMode: {
               defaultValue: "gradient",
               label: "Text ink",
@@ -227,6 +299,10 @@ export const appSchema = defineToolcraft({
           layoutGroups: [
             { columns: 2, controls: ["textFont", "textWeight"], layout: "inline" },
             { columns: 2, controls: ["textSize", "textTracking"], layout: "inline" },
+            { columns: 2, controls: ["textGlow", "textShadowEnabled"], layout: "inline" },
+            { columns: 2, controls: ["textShadowColor", "textShadowOpacity"], layout: "inline" },
+            { columns: 2, controls: ["textShadowBlur", "textShadowX"], layout: "inline" },
+            { columns: 2, controls: ["textShadowY"], layout: "inline" },
             { columns: 2, controls: ["textColor", "textAccent"], layout: "inline" },
           ],
           title: "Text design",
@@ -368,13 +444,15 @@ export const appSchema = defineToolcraft({
           controls: {
             autoRotate: {
               defaultValue: true,
-              label: "Auto rotate model",
+              label: "Auto rotate",
               target: "motion.autoRotate",
               type: "switch",
+              visibleWhen: { target: "ascii.image3d", equals: true },
             },
             rotationSpeed: {
               ...slider("motion.rotationSpeed", "Rotation speed", 24, 0, 100, 1, "%"),
-              ...responsive("Rotation updates the model transform only."),
+              ...responsive("Rotation updates the 3D surface transform only."),
+              visibleWhen: { target: "ascii.image3d", equals: true },
             },
             animate: {
               defaultValue: true,
@@ -383,7 +461,7 @@ export const appSchema = defineToolcraft({
               type: "switch",
             },
             previewFps: {
-              defaultValue: "30",
+              defaultValue: "60",
               label: "Preview FPS",
               options: [
                 { label: "24 FPS", value: "24" },
@@ -451,9 +529,12 @@ export const appSchema = defineToolcraft({
           controls: {
             export: {
               defaultValue: null,
+              exportBackgroundTarget: "scene.background",
+              exportFileName: "ascii-lab",
+              exportOutputSelector: "[data-toolcraft-ascii-lab-canvas='true']",
               label: false,
               target: "ascii.export",
-              type: "asciiLabExport",
+              type: "export",
             },
           },
           title: "Export",
@@ -465,13 +546,13 @@ export const appSchema = defineToolcraft({
   },
   persistence: {
     include: ["values", "media", "canvas", "panels", "timeline"],
-    key: "toolcraft:ascii-lab:state:v2",
+    key: "toolcraft:ascii-lab:state:v3",
     storage: "localStorage",
-    version: 2,
+    version: 3,
   },
   settingsTransfer: { appId: "ascii-lab", enabled: true, fileName: "ascii-lab-settings" },
   toolbar: {
-    back: { href: "/", label: "Back to tools" },
+    back: { href: withBasePath("/"), label: "Back to tools" },
     history: true,
     radar: true,
     theme: true,

@@ -5,8 +5,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
 
-import { createToolcraftPngExportCanvas } from "@/toolcraft/runtime/export/export";
-import { useToolcraftEvaluatedValues, useToolcraftSelector } from "@/toolcraft/runtime/react/app-shell/use-toolcraft";
+import { toolcraftStateWithoutViewportMatches, useToolcraftEvaluatedValues, useToolcraftSelector } from "@/toolcraft/runtime/react/app-shell/use-toolcraft";
 import type { ToolcraftMediaAsset, ToolcraftState } from "@/toolcraft/runtime/state/types";
 
 const vertexShader = `
@@ -138,7 +137,7 @@ function Scene({ model, values, rotation }: { model: THREE.Object3D | null; valu
 }
 
 export function Artistic3DRenderer(): React.JSX.Element {
-  const committedState = useToolcraftSelector(React.useCallback((snapshot) => snapshot, []));
+  const committedState = useToolcraftSelector(React.useCallback((snapshot) => snapshot, []), toolcraftStateWithoutViewportMatches);
   const evaluatedValues = useToolcraftEvaluatedValues();
   const state = React.useMemo(
     () => ({ ...committedState, values: evaluatedValues }),
@@ -187,13 +186,3 @@ export function Artistic3DRenderer(): React.JSX.Element {
     </div>
   );
 }
-
-async function exportArtistic3D(state: ToolcraftState): Promise<void> {
-  const source = document.querySelector<HTMLCanvasElement>("[data-toolcraft-artistic-3d-output='true'] canvas");
-  if (!source) return;
-  const canvas = createToolcraftPngExportCanvas({ state, background: stringValue(state.values, "scene.background", "#101014"), includeBackground: true, resolution: String(state.values["export.image.resolution"] ?? "2k"), render: ({ context, cssWidth, cssHeight }) => context.drawImage(source, 0, 0, cssWidth, cssHeight) });
-  const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob((result) => result ? resolve(result) : reject(new Error("Artistic 3D export failed.")), "image/png"));
-  const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.download = "artistic-3d.png"; link.click(); window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-
-Artistic3DRenderer.exportImage = exportArtistic3D;

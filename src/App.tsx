@@ -3,6 +3,7 @@ import { lazy, Suspense, useEffect } from "react";
 import { HubPage } from "./HubPage";
 import { toolPageLoaders } from "./tool-loading";
 import { logToolLoad } from "./tool-load-debug";
+import { withoutBasePath } from "./base-path";
 
 const GradientGeneratorPage = lazy(() =>
   toolPageLoaders["/tools/gradient-generator"]().then((module) => ({
@@ -63,7 +64,7 @@ function RouteLoading({ toolName }: { toolName: string }) {
 }
 
 export function App() {
-  const path = window.location.pathname.replace(/\/+$/, "") || "/";
+  const path = withoutBasePath(window.location.pathname).replace(/\/+$/, "") || "/";
   logToolLoad(`route:render ${path}`);
 
   if (path === "/tools/gradient-generator") {

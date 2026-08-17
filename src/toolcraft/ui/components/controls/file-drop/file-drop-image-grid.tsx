@@ -15,7 +15,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { XIcon } from "@phosphor-icons/react";
 
 import { cn } from "../../../lib/utils";
-import { Button } from "../../primitives";
+import { Button } from "../../primitives/button";
 import {
   getImageTransformStyle,
 } from "./file-drop-model";

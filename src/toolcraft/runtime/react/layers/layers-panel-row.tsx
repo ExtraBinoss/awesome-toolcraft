@@ -1,10 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { StackSimpleIcon } from "@phosphor-icons/react";
+import { EyeIcon, EyeSlashIcon, StackSimpleIcon, TrashIcon } from "@phosphor-icons/react";
 import { Button } from "@/toolcraft/ui/components/primitives/button";
 import { ScrollFade } from "@/toolcraft/ui/components/primitives/scroll-fade";
-import { Eye, EyeOff, Trash2 } from "lucide-react";
 
 import type { ToolcraftLayer } from "../../state/types";
 import {
@@ -275,7 +274,7 @@ function LayerActionButtons({
         type="button"
         variant="ghost"
       >
-        {layer.visible ? <Eye style={mutedIconStyle} /> : <EyeOff style={mutedIconStyle} />}
+        {layer.visible ? <EyeIcon style={mutedIconStyle} /> : <EyeSlashIcon style={mutedIconStyle} />}
       </Button>
       <Button
         aria-label={`Delete ${displayName}`}
@@ -290,7 +289,7 @@ function LayerActionButtons({
         type="button"
         variant="ghost"
       >
-        <Trash2 style={mutedIconStyle} />
+        <TrashIcon style={mutedIconStyle} />
       </Button>
     </div>
   );

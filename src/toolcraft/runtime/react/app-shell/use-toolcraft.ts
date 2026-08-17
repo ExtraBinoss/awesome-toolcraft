@@ -33,6 +33,25 @@ export function useToolcraftSelector<Value>(
   return useAtomValue(selectedAtom, { store: store.jotai });
 }
 
+/** Equality for renderers whose pixels do not depend on viewport pan/zoom. */
+export function toolcraftStateWithoutViewportMatches(
+  left: ToolcraftState,
+  right: ToolcraftState,
+): boolean {
+  return left === right || (
+    left.canvas.size === right.canvas.size &&
+    left.defaults === right.defaults &&
+    left.history === right.history &&
+    left.layers === right.layers &&
+    left.mediaAssets === right.mediaAssets &&
+    left.panels === right.panels &&
+    left.schema === right.schema &&
+    left.selectedLayerId === right.selectedLayerId &&
+    left.timeline === right.timeline &&
+    left.values === right.values
+  );
+}
+
 export function useToolcraftValue(target: string): unknown {
   const store = useToolcraftStore();
   return useAtomValue(store.atoms.value(target), { store: store.jotai });
@@ -60,14 +79,21 @@ export function useToolcraftEvaluatedValues(
   timeSeconds?: number,
 ): Record<string, unknown> {
   const store = useToolcraftStore();
-  const state = useAtomValue(store.atoms.state, { store: store.jotai });
+  const values = useToolcraftSelector(React.useCallback((state) => state.values, []));
+  const keyframeGroups = useToolcraftSelector(
+    React.useCallback((state) => state.timeline.keyframeGroups, []),
+  );
   const playhead = useToolcraftPlayhead();
   const resolvedTime = timeSeconds ?? playhead;
 
-  return React.useMemo(
-    () => evaluateToolcraftTimelineValues(state, resolvedTime),
-    [resolvedTime, state],
-  );
+  return React.useMemo(() => {
+    const current = store.getState();
+    return evaluateToolcraftTimelineValues({
+      ...current,
+      timeline: { ...current.timeline, keyframeGroups },
+      values,
+    }, resolvedTime);
+  }, [keyframeGroups, resolvedTime, store, values]);
 }
 
 export function useToolcraftEvaluatedValue(

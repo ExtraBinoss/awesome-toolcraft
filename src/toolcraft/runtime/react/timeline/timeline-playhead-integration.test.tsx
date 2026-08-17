@@ -112,7 +112,7 @@ describe("timeline playhead integration", () => {
     store.dispose();
   });
 
-  it("starts the shared clock from the real timeline play button", () => {
+  it("starts the shared clock from the real timeline play button", async () => {
     let currentTimestamp = 0;
     vi.spyOn(window.performance, "now").mockImplementation(() => currentTimestamp);
 
@@ -138,7 +138,7 @@ describe("timeline playhead integration", () => {
       </ToolcraftStoreProvider>,
     );
 
-    fireEvent.click(view.getByRole("button", { name: "Play playback" }));
+    fireEvent.click(await view.findByRole("button", { name: "Play playback" }));
     expect(store.getState().timeline.isPlaying).toBe(true);
 
     currentTimestamp = 1_000;

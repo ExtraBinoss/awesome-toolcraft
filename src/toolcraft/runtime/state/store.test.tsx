@@ -148,6 +148,35 @@ describe("createToolcraftStore", () => {
 });
 
 describe("selective React subscriptions", () => {
+  it("flushes a pending setting change when the tool unmounts", () => {
+    const storageKey = appSchema.persistence.storage === "localStorage"
+      ? appSchema.persistence.key
+      : "";
+    window.localStorage.removeItem(storageKey);
+    let dispatch: ToolcraftDispatch | undefined;
+
+    function PersistenceProbe(): null {
+      dispatch = useToolcraftDispatch();
+      return null;
+    }
+
+    const view = render(
+      <ToolcraftRoot schema={appSchema}>
+        <PersistenceProbe />
+      </ToolcraftRoot>,
+    );
+    act(() => {
+      dispatch?.({ target: "gradient.blur", type: "controls.setValue", value: 47 });
+    });
+    view.unmount();
+
+    const persisted = JSON.parse(window.localStorage.getItem(storageKey) ?? "null") as {
+      state?: { values?: Record<string, unknown> };
+    } | null;
+    expect(persisted?.state?.values?.["gradient.blur"]).toBe(47);
+    window.localStorage.removeItem(storageKey);
+  });
+
   it("does not rerender a target subscriber when another target changes", () => {
     let dispatch: ToolcraftDispatch | undefined;
     let renders = 0;

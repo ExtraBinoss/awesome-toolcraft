@@ -1,10 +1,10 @@
 import * as React from "react";
+import { isToolcraftCanvasNavigationActive } from "@/toolcraft/runtime/react/canvas/canvas-navigation-performance";
 
 import {
-  createToolcraftPngExportCanvas,
   shouldIncludeToolcraftPreviewBackground,
 } from "@/toolcraft/runtime/export/export";
-import { useToolcraftSelector, useToolcraftStore } from "@/toolcraft/runtime/react/app-shell/use-toolcraft";
+import { toolcraftStateWithoutViewportMatches, useToolcraftSelector, useToolcraftStore } from "@/toolcraft/runtime/react/app-shell/use-toolcraft";
 import type { ToolcraftState } from "@/toolcraft/runtime/state/types";
 
 import fragmentShader from "./fragment.glsl?raw";
@@ -61,7 +61,7 @@ function compile(gl: WebGL2RenderingContext, type: number, source: string): WebG
 function getRenderer(canvas: HTMLCanvasElement): RendererHandle {
   const cached = rendererCache.get(canvas);
   if (cached) return cached;
-  const gl = canvas.getContext("webgl2", { alpha: true, antialias: false, premultipliedAlpha: false, preserveDrawingBuffer: true });
+  const gl = canvas.getContext("webgl2", { alpha: true, antialias: false, desynchronized: true, premultipliedAlpha: false, preserveDrawingBuffer: true });
   if (!gl) throw new Error("WebGL 2 is required to render Suminagashi.");
   const program = gl.createProgram();
   if (!program) throw new Error("Unable to create Suminagashi program.");
@@ -123,7 +123,7 @@ function drawSuminagashi(canvas: HTMLCanvasElement, state: ToolcraftState, time:
 
 export function SuminagashiRenderer(): React.JSX.Element {
   const store = useToolcraftStore();
-  const state = useToolcraftSelector(React.useCallback((snapshot) => snapshot, []));
+  const state = useToolcraftSelector(React.useCallback((snapshot) => snapshot, []), toolcraftStateWithoutViewportMatches);
   const includeBackground = shouldIncludeToolcraftPreviewBackground({ state });
   const values = state.values;
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
@@ -169,6 +169,11 @@ export function SuminagashiRenderer(): React.JSX.Element {
     let frame = 0;
     let previous = performance.now();
     const render = (now = performance.now()) => {
+      if (isToolcraftCanvasNavigationActive()) {
+        previous = now;
+        frame = requestAnimationFrame(render);
+        return;
+      }
       const committed = stateRef.current;
       const current = { ...committed, values: store.getEvaluatedValues() };
       timeRef.current += (now - previous) / 1000;
@@ -183,35 +188,3 @@ export function SuminagashiRenderer(): React.JSX.Element {
 
   return <div style={{ width: "100%", height: "100%", display: "grid", placeItems: "center", background: "transparent" }} data-toolcraft-product-output><canvas ref={canvasRef} style={{ display: "block", width: "100%", height: "100%" }} /></div>;
 }
-
-function renderSuminagashiToCanvas(context: CanvasRenderingContext2D, state: ToolcraftState, includeBackground: boolean): void {
-  const output = document.createElement("canvas");
-  output.width = context.canvas.width;
-  output.height = context.canvas.height;
-  drawSuminagashi(output, state, 0, includeBackground);
-  context.setTransform(1, 0, 0, 1, 0, 0);
-  context.clearRect(0, 0, context.canvas.width, context.canvas.height);
-  context.drawImage(output, 0, 0);
-}
-
-async function exportSuminagashi(state: ToolcraftState): Promise<void> {
-  const includeBackground = state.values["export.includeBackground"] !== false;
-  const format = String(state.values["export.image.format"] ?? "png");
-  const resolution = String(state.values["export.image.resolution"] ?? "4k");
-  const canvas = createToolcraftPngExportCanvas({
-    background: stringValue(state, "suminagashi.paper", "#F3EBDD"),
-    includeBackground,
-    resolution,
-    state,
-    render: ({ context }) => renderSuminagashiToCanvas(context, state, includeBackground),
-  });
-  const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob((value) => value ? resolve(value) : reject(new Error("Suminagashi export failed.")), format === "jpg" ? "image/jpeg" : "image/png", 0.96));
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `suminagashi.${format === "jpg" ? "jpg" : "png"}`;
-  link.click();
-  URL.revokeObjectURL(url);
-}
-
-SuminagashiRenderer.exportImage = exportSuminagashi;

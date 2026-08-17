@@ -20,7 +20,7 @@ export const PanelContentSurface = React.forwardRef<
       children: React.ReactNode,
       viewportElement: HTMLDivElement | null,
     ) => React.ReactNode;
-    scrollFadeMode?: "always" | "overflow";
+    scrollFadeMode?: "always" | "none" | "overflow";
     stickyFooterActive?: boolean;
     stickyFooterProgress?: number | null;
     stickyFooter?: React.ReactNode;
@@ -101,7 +101,7 @@ export const PanelContentSurface = React.forwardRef<
     };
   }, [scrollFadeMode, viewportElement]);
 
-  if (scrollFadeMode === "overflow" && !hasOverflow) {
+  if (scrollFadeMode === "none" || (scrollFadeMode === "overflow" && !hasOverflow)) {
     const viewport = (
       <div
         {...props}

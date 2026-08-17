@@ -1,3 +1,5 @@
+import { withBasePath } from "./base-path";
+
 export type ToolEntry = {
   slug: string;
   name: string;
@@ -14,47 +16,47 @@ export const tools: ToolEntry[] = [
     name: "ASCII Lab",
     category: "ASCII / Image / 3D",
     status: "Available",
-    image: "/tool-images/ascii-lab.png",
-    href: "/tools/ascii-lab",
+    image: withBasePath("/tool-images/ascii-lab.png"),
+    href: withBasePath("/tools/ascii-lab"),
   },
   {
     slug: "dither-heatmap",
     name: "Dither / Heatmap",
     category: "Image / Video",
     status: "Available",
-    image: "/tool-images/dither-heatmap.png",
-    href: "/tools/dither-heatmap",
+    image: withBasePath("/tool-images/dither-heatmap.png"),
+    href: withBasePath("/tools/dither-heatmap"),
   },
   {
     slug: "artistic-3d",
     name: "Artistic 3D",
     category: "3D / Shaders",
     status: "Available",
-    image: "/tool-images/artistic-3d.png",
-    href: "/tools/artistic-3d",
+    image: withBasePath("/tool-images/artistic-3d.png"),
+    href: withBasePath("/tools/artistic-3d"),
   },
   {
     slug: "blob-tracking",
     name: "Blob Tracking",
     category: "Interactive",
     status: "Available",
-    image: "/tool-images/blob-tracking-butterfly.avif",
-    href: "/tools/blob-tracking",
+    image: withBasePath("/tool-images/blob-tracking-butterfly.avif"),
+    href: withBasePath("/tools/blob-tracking"),
   },
   {
     slug: "gradient-generator",
     name: "Gradient Generator",
     category: "Design",
     status: "Available",
-    image: "/tool-images/gradient-generator.jpg",
-    href: "/tools/gradient-generator",
+    image: withBasePath("/tool-images/gradient-generator.jpg"),
+    href: withBasePath("/tools/gradient-generator"),
   },
   {
     slug: "suminagashi",
     name: "Suminagashi Marbling",
     category: "Generative",
     status: "Available",
-    image: "/tool-images/suminagashi.avif",
-    href: "/tools/suminagashi",
+    image: withBasePath("/tool-images/suminagashi.avif"),
+    href: withBasePath("/tools/suminagashi"),
   },
 ];

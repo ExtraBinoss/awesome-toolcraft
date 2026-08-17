@@ -181,6 +181,7 @@ export type ToolcraftMediaAsset = {
   layerId: string;
   mimeType: string;
   position: ToolcraftPoint;
+  revision?: number;
   size?: ToolcraftCanvasSize;
   sourceTarget?: string;
   transform?: ToolcraftMediaTransform;

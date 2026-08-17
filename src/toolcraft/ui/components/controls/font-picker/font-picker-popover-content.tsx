@@ -1,10 +1,8 @@
 import * as React from "react";
 import { MagnifyingGlassIcon } from "@phosphor-icons/react";
 
-import {
-  Input,
-  PopoverContent,
-} from "../../primitives";
+import { Input } from "../../primitives/input";
+import { PopoverContent } from "../../primitives/popover";
 import { cn } from "../../../lib/utils";
 import {
   FONT_PICKER_FILTER_OPTIONS,
@@ -99,7 +97,7 @@ export function FontPickerPopoverContent({
   return (
     <PopoverContent
       align="start"
-      className="w-(--anchor-width) gap-0 overflow-hidden rounded-lg border border-[color:color-mix(in_oklab,var(--border)_20%,transparent)] bg-[color:color-mix(in_oklab,var(--popover)_88%,transparent)] p-0 text-[color:var(--popover-foreground)] shadow-sm backdrop-blur-[12.5px]"
+      className="w-(--anchor-width) gap-0 overflow-hidden rounded-lg border border-[color:color-mix(in_oklab,var(--border)_20%,transparent)] bg-[color:color-mix(in_oklab,var(--popover)_98%,black)] p-0 text-[color:var(--popover-foreground)] shadow-sm"
       finalFocus={false}
       sideOffset={6}
       style={popoverWidth ? { width: popoverWidth } : undefined}

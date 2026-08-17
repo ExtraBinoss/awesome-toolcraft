@@ -3,7 +3,7 @@
 import * as React from "react";
 
 import { ControlFieldLabel } from "../../control-layout";
-import { Field } from "../../primitives";
+import { Field } from "../../primitives/field";
 import { cn } from "../../../lib/utils";
 
 type ImagePickerColumns = 2 | 3 | 4;

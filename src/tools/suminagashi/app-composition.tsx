@@ -18,7 +18,6 @@ export const appComposition: ToolcraftAppComposition = {
   canvasContent: <SuminagashiRenderer />,
   renderDefaultCanvasMedia: false,
   onPanelAction: ({ action, dispatch, state }) => {
-    if (action.value === "export.png") return SuminagashiRenderer.exportImage(state);
     if (action.value === "suminagashi.randomize") {
       dispatch([
         { type: "controls.setValue", target: "suminagashi.seed", value: Math.floor(Math.random() * 1000) + 1, label: "Randomize seed" },

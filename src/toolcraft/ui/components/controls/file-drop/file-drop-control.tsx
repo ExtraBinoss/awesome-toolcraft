@@ -15,7 +15,7 @@ import {
 
 import { cn } from "../../../lib/utils";
 import { ActionsControl } from "../actions/actions-control";
-import { Field } from "../../primitives";
+import { Field } from "../../primitives/field";
 import { FileDropEmptyState } from "./file-drop-empty-state";
 import { FileDropFileList } from "./file-drop-file-list";
 import { FileDropImageGrid } from "./file-drop-image-grid";

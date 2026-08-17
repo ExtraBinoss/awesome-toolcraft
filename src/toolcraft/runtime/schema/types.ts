@@ -401,6 +401,10 @@ export type ToolcraftControlSchema = {
   curveIntent?: ToolcraftCurveIntent;
   defaultValue?: unknown;
   description?: string;
+  exportBackgroundTarget?: string;
+  exportFileName?: string;
+  exportIncludeBackgroundTarget?: string;
+  exportOutputSelector?: string;
   disabled?: boolean;
   disabledWhen?: ToolcraftControlDisabledConditionSchema;
   hardMaxItems?: number;

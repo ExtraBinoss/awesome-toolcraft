@@ -21,7 +21,36 @@ export const appComposition: ToolcraftAppComposition = {
   canvasContent: <GradientRenderer />,
   renderDefaultCanvasMedia: false,
   onPanelAction: ({ action, dispatch, state }) => {
-    if (action.value === "export.png") return GradientRenderer.exportImage(state);
+    if (action.value === "textFill.randomSolid") {
+      dispatch([
+        { type: "controls.setValue", target: "text.fill.mode", value: "solid", label: "Use solid text fill" },
+        { type: "controls.setValue", target: "text.fill.color", value: hslToHex(Math.floor(Math.random() * 360), 82 + Math.random() * 14, 54 + Math.random() * 18), label: "Randomize text color" },
+      ]);
+    }
+    if (action.value === "textFill.randomGradient") {
+      const current = state.values["text.fill.gradient"] as { stops?: Array<Record<string, unknown>> } | undefined;
+      const baseStops = current?.stops ?? [
+        { color: "#FFFFFF", position: "0%" },
+        { color: "#7DD3FC", position: "50%" },
+        { color: "#C084FC", position: "100%" },
+      ];
+      const baseHue = Math.floor(Math.random() * 360);
+      const direction = Math.random() > 0.5 ? 1 : -1;
+      dispatch([
+        { type: "controls.setValue", target: "text.fill.mode", value: "gradient", label: "Use gradient text fill" },
+        {
+          type: "controls.setValue", target: "text.fill.gradient", label: "Randomize text gradient",
+          value: {
+            angle: Math.floor(Math.random() * 360),
+            gradientType: ["linear", "radial", "angular", "diamond"][Math.floor(Math.random() * 4)],
+            stops: baseStops.map((stop, index) => ({
+              ...stop,
+              color: hslToHex((baseHue + direction * index * (55 + Math.random() * 45) + 360) % 360, 80 + Math.random() * 16, 50 + Math.random() * 18),
+            })),
+          },
+        },
+      ]);
+    }
     if (action.value === "gradient.randomize") {
       const current = state.values["gradient.fill"] as { angle?: number; stops?: unknown[] } | undefined;
       dispatch([

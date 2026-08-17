@@ -15,7 +15,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { PaperclipIcon, XIcon } from "@phosphor-icons/react";
 
 import { cn } from "../../../lib/utils";
-import { Button } from "../../primitives";
+import { Button } from "../../primitives/button";
 import { FileDropPlusGlyph } from "./file-drop-plus-glyph";
 import type { FileDropPreview, FileDropPreviewEntry } from "./file-drop-types";
 

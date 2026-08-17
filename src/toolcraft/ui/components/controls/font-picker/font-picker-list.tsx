@@ -1,7 +1,6 @@
 import * as React from "react";
 import { CheckIcon } from "@phosphor-icons/react";
 
-import { ScrollFade } from "../../primitives";
 import { cn } from "../../../lib/utils";
 import type {
   FontPickerFontCatalogEntry,
@@ -12,10 +11,8 @@ import { getFontFamilyStyle } from "./font-picker-value";
 export const fontItemHeightPx = 36;
 export const fontItemGapPx = 1;
 export const fontVirtualItemStepPx = fontItemHeightPx + fontItemGapPx;
-export const fontListOverscanItems = 6;
+export const fontListOverscanItems = 2;
 export const fontListHeightWithFooterPx = 240;
-export const fontPreloadBufferAheadItems = 60;
-export const fontPreloadBufferBehindItems = 30;
 
 export type FontPickerPinnedSelectedRowSide = "bottom" | "top" | null;
 
@@ -48,23 +45,18 @@ const menuItemInteractionClassName =
 export function FontPickerList({
   attachScrollViewport,
   bottomSpacerHeight,
-  category,
   clearHoverPreview,
-  filteredFontCount,
   onFontBlur,
   onFontFocus,
   onFontMouseEnter,
   onFontSelect,
   pinnedSelectedRowSide,
-  query,
   scrollToFontIndex,
   selectedFont,
   selectedFontId,
   selectedFontIndex,
   selectedFontPreviewStyle,
   topSpacerHeight,
-  virtualEndIndex,
-  virtualStartIndex,
   visibleFonts,
 }: FontPickerListProps): React.JSX.Element {
   return (
@@ -74,22 +66,10 @@ export function FontPickerList({
     >
       <div className="px-1 pt-1">
         <div className="relative h-60">
-          <ScrollFade
-            className="toolcraft-scrollbar h-full"
-            containerClassName="h-full"
+          <div
+            className="toolcraft-scrollbar h-full overflow-y-auto overscroll-contain"
             data-slot="font-picker-list-viewport"
-            height={24}
-            preset="default"
-            showOppositeSide
-            side="bottom"
-            viewportRef={attachScrollViewport}
-            watch={[
-              filteredFontCount,
-              query,
-              category,
-              virtualStartIndex,
-              virtualEndIndex,
-            ]}
+            ref={attachScrollViewport}
           >
             {visibleFonts.length ? (
               <div
@@ -144,7 +124,7 @@ export function FontPickerList({
                 ) : null}
               </div>
             ) : null}
-          </ScrollFade>
+          </div>
           {!visibleFonts.length ? (
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
               <div className="rounded-sm px-2 text-center text-xs text-[color:var(--muted-foreground)]">
